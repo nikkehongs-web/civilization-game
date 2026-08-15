@@ -2,192 +2,646 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#17130e">
-<title>문명 v0.2</title>
+<title>문명 v0.3</title>
 <style>
 :root{
-  --bg:#17130e;--panel:#261e14;--panel2:#322819;--line:#6f5836;
-  --gold:#d9b56d;--text:#f5ead3;--muted:#b8a98f;--green:#86b96f;--blue:#75acc9
+  --bg:#15110c;--panel:#251d14;--panel2:#332819;--line:#6c5534;
+  --gold:#dcb86e;--text:#f6ead2;--muted:#b9aa8e;--green:#8fbd77;
+  --blue:#79b4d2;--red:#d07969;--ink:#17120d;
 }
-*{box-sizing:border-box}
-body{margin:0;background:linear-gradient(#15110c,#1d170f);color:var(--text);
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:linear-gradient(#14100b,#1c160f);color:var(--text);
 font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
-header{position:sticky;top:0;z-index:20;padding:12px 14px;background:#18130ded;
-border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
-.top{display:flex;justify-content:space-between;gap:12px;align-items:center}
-h1{margin:0;font-size:19px;color:var(--gold)} .date{font-size:12px;color:var(--muted);text-align:right}
-main{padding:10px;max-width:1100px;margin:auto}
-.grid{display:grid;grid-template-columns:1.25fr .9fr;gap:10px}
-@media(max-width:800px){.grid{grid-template-columns:1fr}}
+button,input{font:inherit}
+header{position:sticky;top:0;z-index:40;background:#17120ded;border-bottom:1px solid var(--line);
+backdrop-filter:blur(10px);padding:12px 14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.title{font-size:19px;font-weight:900;color:var(--gold)}
+.badge{font-size:10px;border:1px solid #7a6039;border-radius:999px;padding:3px 6px;margin-left:4px}
+.date{font-size:12px;color:var(--muted);text-align:right;line-height:1.35}
+main{padding:10px;max-width:1180px;margin:auto}
+.grid{display:grid;grid-template-columns:1.35fr .85fr;gap:10px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
 .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
 border-radius:15px;padding:12px;box-shadow:0 8px 24px #0005}
 .panel h2{margin:0 0 9px;font-size:14px;color:var(--gold)}
-.map{height:430px;position:relative;overflow:hidden;border-radius:13px;border:1px solid #8b7347;
+.small{font-size:11px;color:var(--muted);line-height:1.45}
+.section-gap{margin-top:10px}
+
+/* WORLD MAP */
+.map-shell{position:relative;height:470px;border:1px solid #8a7248;border-radius:14px;overflow:hidden;background:#806d45}
+.world{position:absolute;left:0;top:0;width:900px;height:650px;transform-origin:0 0;touch-action:none;
 background:
-radial-gradient(circle at 50% 48%,#8d754355 0 17%,transparent 18%),
-radial-gradient(circle at 20% 31%,#4b663d66 0 18%,transparent 19%),
-radial-gradient(circle at 51% 15%,#6e665255 0 15%,transparent 16%),
-radial-gradient(circle at 81% 43%,#8b744455 0 18%,transparent 19%),
-radial-gradient(circle at 54% 82%,#39657866 0 23%,transparent 24%),
-radial-gradient(circle at 20% 79%,#9b763f55 0 17%,transparent 18%),
-radial-gradient(circle at 82% 78%,#7c453955 0 17%,transparent 18%),
-radial-gradient(circle at 81% 15%,#78678255 0 15%,transparent 16%),
-#c5a96b}
-.node{position:absolute;transform:translate(-50%,-50%);z-index:5;background:#1b150fe8;
-border:1px solid #826941;border-radius:10px;padding:6px 8px;font-size:10px;white-space:nowrap;
-box-shadow:0 3px 10px #0007}
-.node strong{display:block;color:#ffe1a3;font-size:11px}
-.node.active{outline:2px solid #ffe28a;box-shadow:0 0 18px #ffd86a99}
-.route{position:absolute;height:2px;transform-origin:left center;background:#f2cf7b88;z-index:2}
-.route.water{background:#9bd5ec99}
-.marker{position:absolute;transform:translate(-50%,-50%);z-index:9;font-size:22px;
-filter:drop-shadow(0 2px 3px #000);transition:left .7s ease,top .7s ease}
-.marker span{display:block;font-size:9px;background:#17120ddd;border:1px solid #7d653e;
+radial-gradient(circle at 48% 45%,#927b4855 0 16%,transparent 17%),
+radial-gradient(circle at 17% 26%,#4a663c88 0 18%,transparent 19%),
+radial-gradient(circle at 51% 11%,#6b645388 0 15%,transparent 16%),
+radial-gradient(circle at 82% 39%,#8d754688 0 18%,transparent 19%),
+radial-gradient(circle at 52% 84%,#37697e88 0 23%,transparent 24%),
+radial-gradient(circle at 18% 82%,#9b764088 0 17%,transparent 18%),
+radial-gradient(circle at 83% 80%,#7b463b88 0 17%,transparent 18%),
+radial-gradient(circle at 83% 12%,#78688788 0 15%,transparent 16%),
+repeating-linear-gradient(18deg,transparent 0 28px,#4a3c2511 29px 30px),
+#c8ad6f}
+.map-tools{position:absolute;right:8px;top:8px;z-index:20;display:flex;gap:5px}
+.map-tools button{width:38px;height:36px;padding:0;border-radius:10px;font-size:18px;background:#18130de8}
+.map-help{position:absolute;left:8px;bottom:8px;z-index:20;background:#17120ddd;border:1px solid #6e5938;
+border-radius:9px;padding:6px 8px;font-size:9px;color:#dac8a6}
+.region{position:absolute;transform:translate(-50%,-50%);z-index:5;background:#1a150fe7;border:1px solid #79633f;
+border-radius:11px;padding:7px 9px;font-size:11px;white-space:nowrap;box-shadow:0 4px 12px #0007}
+.region strong{display:block;color:#ffe0a0;font-size:12px}.region .rp{font-size:9px;color:#bfae90}
+.region.contact{border-color:#ba9250}.region.active{outline:2px solid #ffe18b;box-shadow:0 0 19px #ffd76588}
+.settle{position:absolute;transform:translate(-50%,-50%);z-index:9;width:31px;height:31px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;border:2px solid #ead08a;background:#21190fdc;
+box-shadow:0 3px 10px #0009;font-size:16px}
+.settle .popdot{position:absolute;left:24px;top:-4px;background:#17120de8;border:1px solid #917647;border-radius:999px;
+font-size:8px;padding:2px 4px;white-space:nowrap;color:#ffe3a4}
+.route{position:absolute;height:2px;background:#eed18188;transform-origin:left center;z-index:3}
+.route.water{background:#a4dff399}
+.marker{position:absolute;z-index:13;transform:translate(-50%,-50%);font-size:23px;filter:drop-shadow(0 2px 3px #000);
+transition:left .65s ease,top .65s ease}.marker span{display:block;font-size:9px;background:#17120ddd;border:1px solid #806941;
 padding:2px 5px;border-radius:999px;white-space:nowrap}
-.legend{position:absolute;left:8px;bottom:8px;z-index:10;background:#17120ddd;border:1px solid #6d5837;
-border-radius:8px;padding:6px;font-size:9px;color:#d8c6a6}
+.marker.hidden{display:none}
+
+/* HUD */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
-.stat{background:#18130da8;border:1px solid #5f4b31;border-radius:11px;padding:9px}
-.stat b{display:block;color:#ffe2a4;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{font-size:11px;border:1px solid #665230;border-radius:999px;padding:6px 8px;background:#19140f}
-.good{border-color:#648457;color:#c3e8b0}.lock{border-color:#816159;color:#e4b1a6}
+.stat{background:#18130da8;border:1px solid #5e4a30;border-radius:11px;padding:9px}
+.stat b{display:block;color:#ffe1a2;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:11px;padding:6px 8px;border:1px solid #655130;
+border-radius:999px;background:#18130e}.good{border-color:#638255;color:#c4e7b2}.lock{border-color:#81625a;color:#e4b2a8}
+.warn{border-color:#916d36;color:#f1ce8b}
+.objective{font-size:15px;font-weight:900;color:#ffdda0}
 .techgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.tech{background:#19140f;border:1px solid #5d4930;border-radius:10px;padding:8px;font-size:12px}
-.techhead{display:flex;justify-content:space-between}.grade{font-weight:900;color:#ffe09c}
-.bar{height:5px;background:#0d0a08;border-radius:999px;overflow:hidden;margin-top:6px}.fill{height:100%;background:linear-gradient(90deg,#6e9362,#d5b766)}
-.event{padding:8px 0;border-bottom:1px dashed #59472e;font-size:12px}.event small{color:var(--muted)}
-.log{max-height:240px;overflow:auto}
-.mission{background:#19140f;border:1px solid #5e4a2e;border-radius:10px;padding:8px;margin-bottom:7px;font-size:11px}
-.mtop{display:flex;justify-content:space-between;gap:8px}.mtop em{font-style:normal;color:#acd8e9}
+.tech{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:8px;font-size:11px}
+.techhead{display:flex;justify-content:space-between;gap:5px}.grade{color:#ffe09c;font-weight:900}
+.bar{height:5px;background:#0c0907;border-radius:999px;overflow:hidden;margin-top:6px}.fill{height:100%;background:linear-gradient(90deg,#6b9361,#d8b96a)}
+.event{padding:8px 0;border-bottom:1px dashed #59472e;font-size:12px;line-height:1.4}.event small{color:var(--muted)}
+.log{max-height:270px;overflow:auto}
+.mission{padding:8px;background:#18130e;border:1px solid #59462d;border-radius:10px;margin-bottom:7px;font-size:11px}
+.mtop{display:flex;justify-content:space-between;gap:8px}.mtop em{font-style:normal;color:#b0dcec}
 .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-button{appearance:none;border:1px solid #82683b;background:linear-gradient(#4a3a21,#302515);
-color:#fff0cc;border-radius:10px;padding:10px 7px;font-weight:800;font-size:12px}
-button.primary{background:linear-gradient(#7c5e26,#5a4218);border-color:#c19a4d}
-button.blue{background:linear-gradient(#365a6d,#233b48);border-color:#5f8ca0}
-button.red{background:linear-gradient(#67372c,#42221b);border-color:#9d5b50}
-.command{display:flex;gap:7px;margin-top:8px}
-.command input{flex:1;min-width:0;background:#14100c;border:1px solid #665132;color:var(--text);
-border-radius:10px;padding:10px}
-.small{font-size:11px;color:var(--muted)} .objective{font-size:16px;font-weight:900;color:#ffdda0}
-.bok{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.bok div{background:#19140f;border:1px solid #5f4b30;border-radius:10px;padding:9px;font-size:11px}.bok b{display:block;color:#ffe0a1;font-size:18px}
-footer{text-align:center;color:#8d806b;font-size:10px;padding:18px 10px 34px}
+.btn{appearance:none;border:1px solid #81683d;background:linear-gradient(#493a22,#302515);color:#fff0cd;
+border-radius:10px;padding:10px 7px;font-weight:800;font-size:12px}.btn.primary{background:linear-gradient(#7e6027,#594117);border-color:#c29a4d}
+.btn.blue{background:linear-gradient(#345c70,#223b49);border-color:#628ca0}.btn.red{background:linear-gradient(#66362b,#42231b);border-color:#985b50}
+.btn.active{outline:2px solid #a4dff3}
+.command{display:flex;gap:7px;margin-top:8px}.command input{flex:1;min-width:0;background:#14100c;border:1px solid #655132;
+color:var(--text);padding:10px;border-radius:10px}
+.people{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.person{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:9px}
+.person strong{display:block;color:#ffe0a0;font-size:12px}.person span{font-size:10px;color:var(--muted)}
+.region-list{display:grid;gap:7px}.rrow{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:8px}
+.rtop{display:flex;justify-content:space-between;gap:7px;font-size:11px}.rmeta{font-size:9px;color:var(--muted);margin-top:4px}
+
+/* MODALS */
+.modal{display:none;position:fixed;inset:0;background:#0009;z-index:80;padding:16px;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}.sheet{width:min(640px,100%);max-height:86vh;overflow:auto;background:linear-gradient(#352a1a,#211a12);
+border:1px solid #8c7045;border-radius:18px 18px 12px 12px;padding:15px;box-shadow:0 20px 60px #000}
+.sheet h3{margin:0 0 8px;color:#ffe0a0}.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.box{background:#17120d;
+border:1px solid #59462d;border-radius:10px;padding:9px;font-size:11px}
+.choice{width:100%;text-align:left;margin-top:7px}
+.alertTitle{font-size:18px;color:#ffd98c;font-weight:900}
+.pauseflag{display:none;background:#6a2f24;color:#ffd9ca;border:1px solid #a75a4d;border-radius:999px;padding:4px 8px;font-size:10px;margin-left:6px}
+.pauseflag.show{display:inline-block}
+.historyCard{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:9px;margin-bottom:7px;font-size:11px}
+footer{text-align:center;color:#8c806b;font-size:10px;padding:18px 10px 34px}
 </style>
 </head>
 <body>
-<header><div class="top"><h1>《문명》 세계 운영 <small>v0.2</small></h1><div class="date" id="date"></div></div></header>
+<header>
+<div class="top">
+  <div class="title">《문명》 세계 운영 <span class="badge">v0.3</span><span id="pauseFlag" class="pauseflag">AUTO 정지</span></div>
+  <div id="date" class="date"></div>
+</div>
+</header>
+
 <main>
 <section class="grid">
 <div class="panel">
 <h2>🌍 살아있는 세계지도</h2>
-<div class="map" id="map">
-<div class="node" style="left:19%;top:30%"><strong>실바리온</strong>수목·수림</div>
-<div class="node" style="left:51%;top:14%"><strong>카르딘</strong>금속·산맥</div>
-<div class="node" style="left:81%;top:43%"><strong>세라칸</strong>목축·대초원</div>
-<div class="node active" style="left:54%;top:84%"><strong>네레이아</strong>항해·해권</div>
-<div class="node" style="left:18%;top:79%"><strong>솔라크</strong>미접촉</div>
-<div class="node" style="left:82%;top:78%"><strong>드라바스</strong>미접촉</div>
-<div class="node" style="left:81%;top:15%"><strong>루메라</strong>미접촉</div>
-<div class="node" style="left:50%;top:48%"><strong>🌳 감나무뜰</strong>문명의 시초</div>
-<div class="node" style="left:45%;top:37%"><strong>🌲 북부 숲터</strong>사냥·목재</div>
-<div class="node" style="left:39%;top:52%"><strong>🌾 서부 초원</strong>목축·교역</div>
-<div class="node" style="left:53%;top:62%"><strong>🌊 큰물터</strong>선박·어업</div>
-<div class="node" style="left:44%;top:57%"><strong>📦 교역터</strong>외부교류</div>
-<div class="route" id="rk"></div><div class="route" id="rs"></div><div class="route water" id="rn"></div>
-<div class="marker" id="mk">🐕<span>카르딘 원정</span></div>
-<div class="marker" id="ms">🐎<span>세라칸 원정</span></div>
-<div class="marker" id="mn">⛵<span>네레이아 교역선</span></div>
-<div class="legend">시간을 진행하면 원정대·배가 실제로 이동</div>
-</div></div>
-<div>
-<div class="panel"><h2>👥 아르케아 현황</h2><div class="stats">
-<div class="stat"><b id="pop"></b><span>총인구</span></div><div class="stat"><b id="adult"></b><span>성인</span></div>
-<div class="stat"><b id="children"></b><span>아이</span></div><div class="stat"><b id="outsider"></b><span>장기체류 외부인</span></div>
-</div></div>
-<div class="panel" style="margin-top:10px"><h2>🎯 목표</h2><div class="objective">항해기술 흡수 → 장거리 대양원정</div><div class="small">기술 1순위 · 인구 증가 2순위</div></div>
-<div class="panel" style="margin-top:10px"><h2>📜 정책</h2><div class="chips">
-<span class="chip good">기술 1순위</span><span class="chip good">인구 증가</span><span class="chip">공동노동</span>
-<span class="chip good">자유이주</span><span class="chip lock">독자기술 비공개</span><span class="chip good">외부인 수용</span>
-</div></div>
-</div></section>
+<div class="map-shell" id="mapShell">
+  <div class="world" id="world">
+    <div class="region contact" data-region="silvarion" style="left:18%;top:28%"><strong>실바리온</strong><span class="rp" id="rp-silvarion"></span></div>
+    <div class="region contact" data-region="kardin" style="left:51%;top:11%"><strong>카르딘</strong><span class="rp" id="rp-kardin"></span></div>
+    <div class="region contact" data-region="serakan" style="left:83%;top:39%"><strong>세라칸</strong><span class="rp" id="rp-serakan"></span></div>
+    <div class="region contact active" data-region="nereia" style="left:54%;top:86%"><strong>네레이아</strong><span class="rp" id="rp-nereia"></span></div>
+    <div class="region" data-region="solark" style="left:17%;top:82%"><strong>솔라크</strong><span class="rp" id="rp-solark"></span></div>
+    <div class="region" data-region="dravas" style="left:83%;top:80%"><strong>드라바스</strong><span class="rp" id="rp-dravas"></span></div>
+    <div class="region" data-region="lumera" style="left:84%;top:12%"><strong>루메라</strong><span class="rp" id="rp-lumera"></span></div>
 
-<section class="grid" style="margin-top:10px">
-<div class="panel"><h2>🧭 진행 중 원정</h2><div id="missions"></div></div>
-<div class="panel"><h2>🐕 복실이 계통</h2><div class="bok">
-<div><b id="guard"></b>마을 경비계</div><div><b id="trail"></b>추적·원정계</div>
-<div><b id="boar"></b>멧돼지 사역계</div><div><b id="mount"></b>승용·짐동물</div>
-</div></div>
-</section>
+    <button class="settle" data-settle="감나무뜰" style="left:49%;top:48%">🌳<span class="popdot" id="sp-감나무뜰"></span></button>
+    <button class="settle" data-settle="북부 숲터" style="left:42%;top:37%">🌲<span class="popdot" id="sp-북부 숲터"></span></button>
+    <button class="settle" data-settle="서부 초원" style="left:38%;top:55%">🌾<span class="popdot" id="sp-서부 초원"></span></button>
+    <button class="settle" data-settle="큰물터" style="left:55%;top:64%">🌊<span class="popdot" id="sp-큰물터"></span></button>
+    <button class="settle" data-settle="교역터" style="left:45%;top:62%">📦<span class="popdot" id="sp-교역터"></span></button>
 
-<section class="grid" style="margin-top:10px">
-<div class="panel"><h2>🛠 기술</h2><div class="techgrid" id="techgrid"></div></div>
-<div class="panel"><h2>🏘 정착지 인구</h2><div id="settlements"></div></div>
-</section>
-
-<section class="grid" style="margin-top:10px">
-<div class="panel"><h2>📰 최근 사건</h2><div class="log" id="log"></div></div>
-<div class="panel"><h2>🎮 시간·명령</h2>
-<div class="controls">
-<button onclick="advance(7)">＋7일</button><button onclick="advance(30)">▶ 1개월</button><button class="primary" onclick="advance(365)">⏩ 1년</button>
-<button onclick="focusTech()">🛠 기술 집중</button><button class="blue" onclick="newExpedition()">🧭 새 원정</button><button onclick="save(true)">💾 저장</button>
+    <div class="route" id="rk"></div><div class="route" id="rs"></div><div class="route water" id="rn"></div>
+    <div class="marker" id="mk">🐕<span>카르딘 원정</span></div>
+    <div class="marker" id="ms">🐎<span>세라칸 원정</span></div>
+    <div class="marker" id="mn">⛵<span>네레이아 교역선</span></div>
+  </div>
+  <div class="map-tools">
+    <button class="btn" onclick="zoomMap(0.18)">＋</button>
+    <button class="btn" onclick="zoomMap(-0.18)">−</button>
+    <button class="btn" onclick="resetMapView()">⌂</button>
+  </div>
+  <div class="map-help">드래그로 이동 · ＋/− 확대축소 · 정착지 아이콘을 누르면 상세</div>
 </div>
-<div class="command"><input id="cmd" placeholder="예: 기술 우선 / 네레이아 탐험 / 1년 진행"><button class="primary" onclick="runCommand()">실행</button></div>
-<button class="red" style="width:100%;margin-top:8px" onclick="resetGame()">초기화</button>
-<div class="small" style="margin-top:7px">자동저장. v0.1 데이터가 있으면 일부 이어받음.</div>
-</div></section>
+</div>
+
+<div>
+<div class="panel">
+<h2>👥 아르케아 현황</h2>
+<div class="stats">
+ <div class="stat"><b id="pop">0</b><span>총인구</span></div>
+ <div class="stat"><b id="adult">0</b><span>성인</span></div>
+ <div class="stat"><b id="children">0</b><span>아이</span></div>
+ <div class="stat"><b id="outsider">0</b><span>장기체류 외부인</span></div>
+</div>
+</div>
+<div class="panel section-gap">
+<h2>🎯 현재 문명 목표</h2>
+<div class="objective">기술 흡수 → 생활수준 상승 → 자발적 이민 → 다시 기술 성장</div>
+<div class="small" style="margin-top:5px">기술 1순위 · 인구/이민 2순위 · 독자개량 기술은 외부 비공개</div>
+</div>
+<div class="panel section-gap">
+<h2>📜 핵심 정책</h2>
+<div class="chips">
+<span class="chip good">기술 1순위</span><span class="chip good">인구 성장</span><span class="chip">공동노동</span>
+<span class="chip good">자유이주</span><span class="chip lock">독자기술 비공개</span><span class="chip good">외부인 환영</span>
+<span class="chip warn">분쟁지역 무기거래 제한</span>
+</div>
+</div>
+</div>
+</section>
+
+<section class="grid section-gap">
+<div class="panel"><h2>🧭 진행 중 원정</h2><div id="missions"></div></div>
+<div class="panel"><h2>🌐 외부 문명 AI</h2><div class="region-list" id="regionList"></div></div>
+</section>
+
+<section class="grid section-gap">
+<div class="panel"><h2>🛠 아르케아 기술</h2><div class="techgrid" id="techgrid"></div></div>
+<div class="panel"><h2>👤 주요 인물</h2><div class="people" id="people"></div></div>
+</section>
+
+<section class="grid section-gap">
+<div class="panel"><h2>📰 최근 사건</h2><div class="log" id="log"></div></div>
+<div class="panel">
+<h2>🎮 시간·AUTO·명령</h2>
+<div class="controls">
+<button class="btn" onclick="advance(7)">＋7일</button>
+<button class="btn" onclick="advance(30)">▶ 1개월</button>
+<button class="btn primary" onclick="advanceYear()">⏩ 1년</button>
+<button class="btn blue" id="autoBtn" onclick="toggleAuto()">AUTO 시작</button>
+<button class="btn" onclick="focusTech()">🛠 기술 집중</button>
+<button class="btn" onclick="saveGame(true)">💾 저장</button>
+</div>
+<div class="command">
+<input id="cmd" placeholder="예: 네레이아 탐험 / 기술 우선 / 1년 진행">
+<button class="btn primary" onclick="runCommand()">실행</button>
+</div>
+<button class="btn red" style="width:100%;margin-top:8px" onclick="resetGame()">초기화</button>
+<div class="small" style="margin-top:7px">AUTO는 1개월씩 진행하며 중요 사건이 발생하면 즉시 멈춤. v0.2 저장은 자동 승계.</div>
+</div>
+</section>
+
+<section class="grid section-gap">
+<div class="panel"><h2>🏘 정착지</h2><div id="settleList"></div></div>
+<div class="panel"><h2>📚 연대기</h2><div id="history"></div></div>
+</section>
 </main>
-<footer>《문명》 v0.2 · iPhone · GitHub Pages</footer>
+
+<div class="modal" id="infoModal"><div class="sheet">
+<h3 id="infoTitle">상세</h3><div id="infoBody"></div>
+<button class="btn" style="width:100%;margin-top:10px" onclick="closeInfo()">닫기</button>
+</div></div>
+
+<div class="modal" id="eventModal"><div class="sheet">
+<div class="alertTitle">⚠️ 중요 사건 — AUTO 정지</div>
+<h3 id="eventTitle" style="margin-top:8px"></h3>
+<div id="eventBody" class="small"></div>
+<div id="eventChoices" style="margin-top:9px"></div>
+</div></div>
+
+<div class="modal" id="yearModal"><div class="sheet">
+<h3>📖 지난 1년의 역사</h3>
+<div id="yearBody"></div>
+<button class="btn primary" style="width:100%;margin-top:10px" onclick="closeYear()">계속</button>
+</div></div>
+
+<footer>《문명》 v0.3 · 문명을 굴리면 역사가 되고, 역사가 소설의 재료가 된다.</footer>
 
 <script>
 const G=['F','E','D','C','B','A','S','SS','SSS'];
+const REGION_NAMES={kardin:'카르딘',serakan:'세라칸',silvarion:'실바리온',nereia:'네레이아',solark:'솔라크',dravas:'드라바스',lumera:'루메라'};
 const P={
- gam:{x:50,y:48,n:'감나무뜰'},west:{x:39,y:52,n:'서부 초원'},big:{x:53,y:62,n:'큰물터'},
- kar:{x:51,y:14,n:'카르딘'},ser:{x:81,y:43,n:'세라칸'},ner:{x:54,y:84,n:'네레이아'}
+ gam:{x:49,y:48},north:{x:42,y:37},west:{x:38,y:55},big:{x:55,y:64},trade:{x:45,y:62},
+ kar:{x:51,y:11},ser:{x:83,y:39},ner:{x:54,y:86}
 };
-const D={
+const DEFAULT={
  year:6,day:82,pop:70,adult:31,children:39,outsider:2,
- settlements:{'감나무뜰':28,'북부 숲터':8,'서부 초원':8,'큰물터':16,'교역터':10},
+ settlements:{
+  '감나무뜰':{pop:28,role:'문명의 시초 · 농업·기록·교육·제작',rep:'마루'},
+  '북부 숲터':{pop:8,role:'사냥·목재·약초·경계',rep:'한결'},
+  '서부 초원':{pop:8,role:'목축·승용동물·교역',rep:'해온'},
+  '큰물터':{pop:16,role:'어업·선박·수운',rep:'가람'},
+  '교역터':{pop:10,role:'교통·상업·외부인 정착',rep:'응결'}
+ },
  animals:{guard:9,trail:7,boar:6,mount:42},
  tech:{
   농업:{g:3,p:48},금속가공:{g:1,p:78},목공:{g:2,p:64},목축:{g:2,p:72},
-  해양선박:{g:2,p:31},판재선:{g:1,p:52},염장:{g:2,p:45},수상매듭:{g:2,p:61},기록:{g:1,p:69},동물운용:{g:2,p:74}
+  해양선박:{g:2,p:31},판재선:{g:1,p:52},염장:{g:2,p:45},수상매듭:{g:2,p:61},
+  기록:{g:1,p:69},동물운용:{g:2,p:74}
  },
  missions:[
-  {name:'카르딘 기술연수',from:'gam',to:'kar',p:62,r:.28,d:1,icon:'🐕'},
-  {name:'세라칸 목축교류',from:'west',to:'ser',p:45,r:.25,d:1,icon:'🐎'},
-  {name:'네레이아 교역선',from:'big',to:'ner',p:74,r:.34,d:-1,icon:'⛵'}
+  {id:'k',name:'카르딘 기술연수',from:'gam',to:'kar',p:62,r:.28,d:1,icon:'🐕'},
+  {id:'s',name:'세라칸 목축교류',from:'west',to:'ser',p:45,r:.25,d:1,icon:'🐎'},
+  {id:'n',name:'네레이아 교역선',from:'big',to:'ner',p:74,r:.34,d:-1,icon:'⛵'}
  ],
- logs:[['네레이아 외곽 대섬과 첫 해외교역 성공','6년 82일'],['판재선 건조 기초 습득','6년 76일'],['아르케아 최초 해외상륙','6년 62일']]
+ regions:{
+  kardin:{pop:54,tech:2.0,growth:.021,contact:true,relation:68,special:'금속·광산·산악로'},
+  serakan:{pop:69,tech:1.8,growth:.028,contact:true,relation:61,special:'목축·선택번식·이동생활'},
+  silvarion:{pop:58,tech:1.7,growth:.024,contact:true,relation:66,special:'수목·숲·목재 분류'},
+  nereia:{pop:91,tech:2.3,growth:.026,contact:true,relation:72,special:'항해·선박·염장'},
+  solark:{pop:37,tech:1.5,growth:.020,contact:false,relation:0,special:'미확인'},
+  dravas:{pop:49,tech:1.6,growth:.019,contact:false,relation:0,special:'미확인'},
+  lumera:{pop:42,tech:1.5,growth:.022,contact:false,relation:0,special:'미확인'}
+ },
+ people:[
+  {name:'마루',role:'아르케아 대표',note:'왕이 아닌 선출 대표. 공동규칙 조정.'},
+  {name:'복실이',role:'동물계통 시조',note:'감나무뜰 중심. 후대 원정견 혈통의 시작.'},
+  {name:'해온',role:'교섭·외부교류',note:'외부 집단과 기술교류·협상에 강점.'},
+  {name:'솔',role:'동물운용 총괄',note:'사냥·추적·경비·번식 계통을 연결.'},
+  {name:'온새',role:'장례·위생',note:'사망·위생·돌봄 관습을 제도화.'},
+  {name:'가람',role:'수운·항로',note:'큰물터와 원정선의 실무 중심.'}
+ ],
+ logs:[
+  ['네레이아 외곽 대섬과 첫 해외교역 성공','6년 82일'],
+  ['판재선 건조 기초 습득','6년 76일'],
+  ['아르케아 최초 해외상륙','6년 62일']
+ ],
+ history:[],
+ policyHistory:[
+  {when:'초기',name:'자유이주',detail:'아르케아 소속과 거주지는 분리. 원하는 정착지로 이동 가능.'},
+  {when:'초기',name:'기술 1순위',detail:'생존에 문제가 없는 한 잉여 자원을 기술·교육·원정에 우선 배정.'},
+  {when:'초기',name:'독자기술 비공개',detail:'외부에서 배운 개념을 아르케아가 독자 개량한 부분은 외부에 자동 공유하지 않음.'}
+ ],
+ lastImportantYear:5
 };
-const clone=x=>JSON.parse(JSON.stringify(x));
-let s; try{s=JSON.parse(localStorage.getItem('civilization_v02'))}catch(e){}
-if(!s){s=clone(D);try{let old=JSON.parse(localStorage.getItem('civilization_v01'));if(old){['year','day','pop','adult','children','outsider','logs'].forEach(k=>{if(old[k]!=null)s[k]=old[k]})}}catch(e){}}
-function norm(){while(s.day>365){s.day-=365;s.year++}}
-function stamp(){return `${s.year}년 ${s.day}일`}
-function add(m){s.logs.unshift([m,stamp()]);s.logs=s.logs.slice(0,35)}
-function save(show){localStorage.setItem('civilization_v02',JSON.stringify(s));if(show)alert('저장됐어!')}
-function line(el,a,b){let dx=b.x-a.x,dy=b.y-a.y;el.style.left=a.x+'%';el.style.top=a.y+'%';el.style.width=Math.hypot(dx,dy)+'%';el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}
-function mark(el,m){let a=P[m.from],b=P[m.to],q=m.p/100;el.style.left=(a.x+(b.x-a.x)*q)+'%';el.style.top=(a.y+(b.y-a.y)*q)+'%'}
-function techTick(days){let m=days/30;Object.entries(s.tech).forEach(([n,t])=>{let gain=(4+Math.random()*6)*m;if(['해양선박','판재선','금속가공','동물운용'].includes(n))gain*=1.35;t.p+=gain;while(t.p>=100&&t.g<G.length-1){t.p-=100;t.g++;add(`${n} 기술이 ${G[t.g]} 단계로 상승`)}})}
-function missionTick(days){s.missions.forEach(m=>{m.p+=days*m.r*m.d;if(m.p>=100){m.p=100;m.d=-1;add(`${m.name}: 목적지 도착 · 기술교류 시작`)}else if(m.p<=0){m.p=0;m.d=1;add(`${m.name}: 아르케아 귀환 · 복귀교육`)}})}
-function popTick(days){let months=Math.floor(days/30),birth=0,imm=0,death=0;for(let i=0;i<months;i++){if(Math.random()<.5)birth++;if(Math.random()<.17)imm++;if(Math.random()<.03)death++}if(days>=365){birth+=Math.max(2,Math.round(s.pop*.055));if(Math.random()<.65)imm+=1+Math.floor(Math.random()*3)}if(birth){s.children+=birth;s.pop+=birth;s.settlements['감나무뜰']+=Math.ceil(birth*.4);s.settlements['큰물터']+=birth-Math.ceil(birth*.4);add(`출생 ${birth}명 · 공동육아 확대`)}if(imm){s.adult+=imm;s.pop+=imm;s.settlements['교역터']+=imm;add(`외부 기술자·가족 ${imm}명 정착`)}if(death&&s.adult>20){s.adult-=death;s.pop-=death;s.settlements['감나무뜰']=Math.max(1,s.settlements['감나무뜰']-death);add(`사망 ${death}명`)}} 
-function rand(days){if(days<7)return;let r=Math.random();if(r<.18){s.tech.해양선박.p+=9;add('네레이아 선박 장인의 기술 시연')}else if(r<.32){s.animals.trail++;add('복실이계 원정견 적합 개체 추가 선별')}else if(r<.44){s.animals.mount+=1+Math.floor(Math.random()*2);add('승용동물 새끼 사회화 성공')}else if(r<.56){s.outsider++;add('외부 기술자 1명 장기체류 신청')}else if(r<.68)add('새 항로·자원 정보 획득')}
-function advance(days){s.day+=days;norm();missionTick(days);techTick(days);popTick(days);rand(days);add(`${days}일 경과 · 자동 시뮬레이션`);save(false);render()}
-function focusTech(){Object.values(s.tech).forEach(t=>t.p+=5);add('기술 1순위 자원배분 강화');save(false);render()}
-function newExpedition(){add(['솔라크','드라바스','루메라'][Math.floor(Math.random()*3)]+' 방향 신규 탐사대 준비');save(false);render()}
-function runCommand(){let v=cmd.value.trim();if(!v)return;if(v.includes('1년')||v.includes('일년'))advance(365);else if(v.includes('1개월')||v.includes('한달')||v.includes('한 달'))advance(30);else if(v.includes('7일'))advance(7);else if(v.includes('기술'))focusTech();else if(v.includes('탐험')||v.includes('원정'))newExpedition();else {add('플레이어 명령: '+v);save(false);render()}cmd.value=''}
-function resetGame(){if(confirm('v0.2 진행을 초기화할까?')){s=clone(D);localStorage.removeItem('civilization_v02');render()}}
-function render(){
- norm();date.innerHTML=`세계력 ${s.year}년 ${s.day}일<br>아르케아`;pop.textContent=s.pop;adult.textContent=s.adult;children.textContent=s.children;outsider.textContent=s.outsider;
- guard.textContent=s.animals.guard;trail.textContent=s.animals.trail;boar.textContent=s.animals.boar;mount.textContent=s.animals.mount;
- line(rk,P.gam,P.kar);line(rs,P.west,P.ser);line(rn,P.big,P.ner);mark(mk,s.missions[0]);mark(ms,s.missions[1]);mark(mn,s.missions[2]);
- missions.innerHTML=s.missions.map(m=>`<div class="mission"><div class="mtop"><b>${m.icon} ${m.name}</b><em>${m.d>0?'이동':'귀환'} ${Math.round(m.p)}%</em></div><div class="bar"><div class="fill" style="width:${m.p}%"></div></div></div>`).join('');
- techgrid.innerHTML=Object.entries(s.tech).map(([n,t])=>`<div class="tech"><div class="techhead"><span>${n}</span><span class="grade">${G[t.g]}</span></div><div class="bar"><div class="fill" style="width:${Math.min(100,t.p)}%"></div></div></div>`).join('');
- settlements.innerHTML=Object.entries(s.settlements).map(([n,v])=>`<div class="event"><b>${n}</b> · ${v}명</div>`).join('');
- log.innerHTML=s.logs.slice(0,18).map(e=>`<div class="event">${e[0]}<br><small>세계력 ${e[1]}</small></div>`).join('');
- save(false)
+
+function clone(x){return JSON.parse(JSON.stringify(x))}
+let state=null;
+try{state=JSON.parse(localStorage.getItem('civilization_v03')||'null')}catch(e){}
+if(!state){
+  state=clone(DEFAULT);
+  let v2=null;try{v2=JSON.parse(localStorage.getItem('civilization_v02')||'null')}catch(e){}
+  if(v2){
+    ['year','day','pop','adult','children','outsider','animals','tech','missions','logs'].forEach(k=>{
+      if(v2[k]!==undefined)state[k]=clone(v2[k]);
+    });
+    if(v2.settlements){
+      Object.entries(v2.settlements).forEach(([name,val])=>{
+        if(state.settlements[name]) state.settlements[name].pop = typeof val==='number'?val:(val.pop||state.settlements[name].pop);
+      });
+    }
+    state.logs.unshift(['v0.2 진행 데이터를 v0.3으로 승계','시스템']);
+  }
 }
-render();
+
+let autoTimer=null;
+let eventLock=false;
+let mapScale=.72,mapX=0,mapY=0;
+const world=document.getElementById('world'),shell=document.getElementById('mapShell');
+
+function normalize(){
+ while(state.day>365){state.day-=365;state.year++}
+ while(state.day<1){state.day+=365;state.year=Math.max(0,state.year-1)}
+}
+function stamp(){return `${state.year}년 ${state.day}일`}
+function addLog(msg){state.logs.unshift([msg,stamp()]);state.logs=state.logs.slice(0,60)}
+function saveGame(show=false){
+ localStorage.setItem('civilization_v03',JSON.stringify(state));
+ if(show)alert('저장됐어!');
+}
+function grade(t){return G[Math.max(0,Math.min(G.length-1,t.g))]}
+function totalSettlementPop(){return Object.values(state.settlements).reduce((a,b)=>a+(b.pop||0),0)}
+function rebalancePop(){
+ const sum=totalSettlementPop();
+ if(sum===state.pop)return;
+ const diff=state.pop-sum;
+ state.settlements['감나무뜰'].pop=Math.max(1,state.settlements['감나무뜰'].pop+diff);
+}
+
+/* MAP PAN/ZOOM */
+function applyMap(){world.style.transform=`translate(${mapX}px,${mapY}px) scale(${mapScale})`}
+function resetMapView(){
+ const w=shell.clientWidth,h=shell.clientHeight;
+ mapScale=Math.min(w/900,h/650)*1.03;
+ mapX=(w-900*mapScale)/2;
+ mapY=(h-650*mapScale)/2;
+ applyMap();
+}
+function zoomMap(delta){
+ const old=mapScale;mapScale=Math.max(.45,Math.min(1.65,mapScale+delta));
+ const cx=shell.clientWidth/2,cy=shell.clientHeight/2;
+ mapX=cx-(cx-mapX)*(mapScale/old);mapY=cy-(cy-mapY)*(mapScale/old);applyMap();
+}
+let drag=null;
+world.addEventListener('pointerdown',e=>{
+ drag={x:e.clientX,y:e.clientY,mx:mapX,my:mapY};world.setPointerCapture(e.pointerId)
+});
+world.addEventListener('pointermove',e=>{
+ if(!drag)return;mapX=drag.mx+(e.clientX-drag.x);mapY=drag.my+(e.clientY-drag.y);applyMap()
+});
+world.addEventListener('pointerup',()=>drag=null);
+world.addEventListener('pointercancel',()=>drag=null);
+
+/* SIMULATION */
+function techTick(days){
+ const mult=days/30;
+ Object.entries(state.tech).forEach(([name,t])=>{
+  let gain=(2.7+Math.random()*4.6)*mult;
+  if(['해양선박','판재선','금속가공','동물운용'].includes(name))gain*=1.35;
+  t.p+=gain;
+  while(t.p>=100&&t.g<G.length-1){
+   t.p-=100;t.g++;addLog(`${name} 기술이 ${grade(t)} 단계로 상승`);
+   if(t.g>=3 && ['해양선박','금속가공'].includes(name)) maybeImportant('tech',name);
+  }
+ });
+}
+function missionTick(days){
+ state.missions.forEach(m=>{
+  m.p+=days*m.r*m.d;
+  if(m.p>=100){
+   m.p=100;m.d=-1;addLog(`${m.name}: 목적지 도착 · 현지 학습 시작`);
+   if(Math.random()<.25) maybeImportant('contact',m.name);
+  } else if(m.p<=0){
+   m.p=0;m.d=1;addLog(`${m.name}: 아르케아 귀환 · 복귀교육 시작`);
+   const key=m.id==='k'?'금속가공':m.id==='s'?'목축':'해양선박';
+   state.tech[key].p+=10+Math.random()*12;
+  }
+ });
+}
+function populationTick(days){
+ const months=Math.max(0,Math.floor(days/30));
+ let births=0,imm=0,deaths=0;
+ for(let i=0;i<months;i++){
+  if(Math.random()<.42)births++;
+  if(Math.random()<.16)imm++;
+  if(Math.random()<.028&&state.pop>25)deaths++;
+ }
+ if(days>=365){
+  births+=Math.max(1,Math.round(state.pop*.035));
+  if(Math.random()<.7)imm+=1+Math.floor(Math.random()*3);
+ }
+ if(births){
+  state.children+=births;state.pop+=births;
+  distributePeople(births,'birth');addLog(`출생 ${births}명 · 공동육아 부담과 미래 노동력이 함께 증가`);
+ }
+ if(imm){
+  state.adult+=imm;state.pop+=imm;state.settlements['교역터'].pop+=Math.ceil(imm*.55);
+  state.settlements['감나무뜰'].pop+=imm-Math.ceil(imm*.55);
+  addLog(`외부인 ${imm}명 정착 · 기술과 생활방식 유입`);
+  if(imm>=3)maybeImportant('immigration',imm);
+ }
+ if(deaths){
+  const d=Math.min(deaths,state.adult-15);if(d>0){
+   state.adult-=d;state.pop-=d;state.settlements['감나무뜰'].pop=Math.max(1,state.settlements['감나무뜰'].pop-d);
+   addLog(`사망 ${d}명 · 온새 계통이 장례와 위생을 담당`);
+  }
+ }
+}
+function distributePeople(n,kind){
+ const keys=['감나무뜰','큰물터','서부 초원','북부 숲터','교역터'];
+ for(let i=0;i<n;i++){
+  const weights=kind==='birth'?[.34,.23,.18,.10,.15]:[.30,.18,.15,.08,.29];
+  let r=Math.random(),acc=0,idx=0;
+  for(let j=0;j<weights.length;j++){acc+=weights[j];if(r<=acc){idx=j;break}}
+  state.settlements[keys[idx]].pop++;
+ }
+}
+function regionAITick(days){
+ const years=days/365;
+ Object.entries(state.regions).forEach(([id,r])=>{
+  const expected=r.pop*r.growth*years;
+  const change=Math.floor(expected+Math.random()*1.6);
+  if(change>0)r.pop+=change;
+  r.tech+=((.035+Math.random()*.065)*years);
+  if(r.contact && Math.random()<days/900){
+   r.relation=Math.max(0,Math.min(100,r.relation+Math.round(Math.random()*6-2)));
+  }
+ });
+}
+function randomTick(days){
+ if(days<7)return;
+ const r=Math.random();
+ if(r<.10){state.animals.trail++;addLog('복실이계 원정견에서 인간친화성과 추적력이 좋은 개체가 선별됨')}
+ else if(r<.18){state.animals.mount+=1+Math.floor(Math.random()*2);addLog('승용·짐동물 새끼가 태어나 조기 사회화 시작')}
+ else if(r<.27){state.tech.목공.p+=8;addLog('실바리온식 목재 분류가 선박·건축 제작에 재적용됨')}
+ else if(r<.36){state.tech.금속가공.p+=8;addLog('카르딘에서 배운 금속 지식을 아르케아 작업장이 재현')}
+ else if(r<.45){state.tech.해양선박.p+=8;addLog('네레이아 기술을 참고한 선체 실험 성공')}
+ else if(r<.53){addLog('교역터에 외부 상인과 방문객이 늘어 언어·도량형 차이가 문제로 떠오름')}
+ else if(r<.61){addLog('정착지 사이 직업 교환 관습이 젊은 세대의 적성 탐색에 사용됨')}
+}
+function ageTick(days){
+ if(days<365)return;
+ const mature=Math.min(state.children,Math.max(0,Math.floor(state.children*.035)));
+ if(mature>0){state.children-=mature;state.adult+=mature;addLog(`성장한 2세대 ${mature}명이 성인 공동체에 합류`)}
+}
+function advance(days,fromAuto=false){
+ if(eventLock)return;
+ const beforeYear=state.year;
+ state.day+=days;normalize();
+ missionTick(days);techTick(days);populationTick(days);regionAITick(days);ageTick(days);randomTick(days);
+ if(days>=30)policyPressure();
+ if(state.year>beforeYear){
+  const yearsPassed=state.year-beforeYear;
+  for(let i=0;i<yearsPassed;i++) makeAnnualChronicle(beforeYear+i);
+ }
+ rebalancePop();addLog(`${days}일 경과 · 세계가 자율 진행`);saveGame();render();
+ if(fromAuto && eventLock) stopAuto();
+}
+function advanceYear(){
+ if(eventLock)return;
+ const snap=yearSnapshot();
+ const start=state.year;
+ advance(365,false);
+ const summary=buildYearSummary(snap,start);
+ showYear(summary);
+}
+function yearSnapshot(){
+ return {pop:state.pop,tech:Object.fromEntries(Object.entries(state.tech).map(([k,v])=>[k,[v.g,v.p]])),
+ regions:Object.fromEntries(Object.entries(state.regions).map(([k,v])=>[k,v.pop]))};
+}
+function buildYearSummary(snap,startYear){
+ const techups=[];
+ Object.entries(state.tech).forEach(([k,v])=>{if(v.g>snap.tech[k][0])techups.push(`${k} ${G[snap.tech[k][0]]}→${G[v.g]}`)});
+ const ext=[];
+ Object.entries(state.regions).forEach(([k,v])=>{const d=v.pop-snap.regions[k];if(d)ext.push(`${REGION_NAMES[k]} ${d>0?'+':''}${d}명`)});
+ return {
+  title:`세계력 ${startYear}년 → ${state.year}년`,
+  pop:`아르케아 인구 ${snap.pop} → ${state.pop} (${state.pop-snap.pop>=0?'+':''}${state.pop-snap.pop})`,
+  tech:techups.length?techups.join(' · '):'기술 등급 상승은 없었지만 숙련도가 누적됨',
+  ext:ext.slice(0,5).join(' · ')||'외부 문명 인구 변화 미미',
+  events:state.logs.slice(0,7).map(x=>x[0])
+ };
+}
+function makeAnnualChronicle(year){
+ const item={
+  when:`${year+1}년`,
+  text:`인구 ${state.pop}명. ${bestTech()} 중심으로 기술이 성장했고, 외부 문명과의 교류·독자 발전이 동시에 진행됐다.`
+ };
+ state.history.unshift(item);state.history=state.history.slice(0,25);
+}
+function bestTech(){
+ return Object.entries(state.tech).sort((a,b)=>(b[1].g*100+b[1].p)-(a[1].g*100+a[1].p))[0][0];
+}
+function focusTech(){
+ Object.values(state.tech).forEach(t=>t.p+=5);
+ addLog('기술 1순위 정책 강화 · 원정·교육·작업장에 잉여자원 우선배정');saveGame();render()
+}
+function policyPressure(){
+ if(state.year-state.lastImportantYear<1)return;
+ const roll=Math.random();
+ if(roll<.08){state.lastImportantYear=state.year;importantEvent({
+  title:'교역터의 외부인 증가',
+  body:'외부 기술자와 가족이 늘면서 “얼마나 오래 살아야 아르케아의 공동의사결정에 참여할 수 있는가”가 논쟁이 됐다.',
+  choices:[
+   {label:'① 거주 1년 + 기본규칙 교육 뒤 참여',effect:'개방형 시민 규칙',fn:()=>{state.policyHistory.unshift({when:stamp(),name:'거주 시민 참여',detail:'1년 거주와 기본규칙 교육 후 공동의사결정 참여.'});state.outsider=Math.max(0,state.outsider-1);addLog('📜 [신규 정책] 거주 1년 뒤 공동의사결정 참여 허용')}},
+   {label:'② 정착지별로 먼저 시험',effect:'점진적 통합',fn:()=>{state.policyHistory.unshift({when:stamp(),name:'정착지 시험 시민권',detail:'정착지별 참여를 먼저 시험한 뒤 공통규칙으로 확대.'});addLog('📜 [신규 정책] 외부인 참여를 정착지 단위로 시범 운영')}}
+  ]
+ })}
+}
+function maybeImportant(type,data){
+ if(eventLock)return;
+ if(type==='immigration' && Math.random()<.20){
+  importantEvent({
+   title:'카르딘 기술자 가족의 대규모 이주 요청',
+   body:`이번 이동 규모는 ${data}명. 그중 한 명은 아직 아르케아가 재현하지 못한 광석 실험 경험이 있다. 받아들이면 기술 가능성이 커지지만 주거·식량 부담도 늘어난다.`,
+   choices:[
+    {label:'① 전원 수용 · 교역터 임시거주',effect:'인구·기술 우선',fn:()=>{state.tech.금속가공.p+=15;addLog('카르딘 기술자 가족 전원 수용 · 금속 실험 지식 유입')}},
+    {label:'② 단계 수용 · 주거 완성 뒤 추가 이동',effect:'안정 우선',fn:()=>{addLog('이민을 단계적으로 수용 · 주거와 식량 비축 우선')}}
+   ]
+  });
+ }
+ if(type==='tech' && data==='해양선박' && Math.random()<.35){
+  importantEvent({
+   title:'장거리 대양원정 가능성',
+   body:'선박 안정성과 항법 숙련이 기준을 넘어섰다. 아직 미지의 해역이 대부분이지만, 이제 “먼 바다로 나갈 것인가”를 실제로 결정할 수 있다.',
+   choices:[
+    {label:'① 대양원정 준비 개시',effect:'탐험·위험 증가',fn:()=>{addLog('대양원정 준비 개시 · 2척 이상·보급 30% 여유·복실이계 원정견 편성')}},
+    {label:'② 연안항로를 더 촘촘히 확보',effect:'안전·교역 증가',fn:()=>{state.tech.해양선박.p+=10;addLog('대양원정보다 연안 거점망 확충을 우선')}}
+   ]
+  });
+ }
+}
+function importantEvent(ev){
+ stopAuto();eventLock=true;pauseFlag.classList.add('show');
+ eventTitle.textContent=ev.title;eventBody.textContent=ev.body;eventChoices.innerHTML='';
+ ev.choices.forEach(c=>{
+  const b=document.createElement('button');b.className='btn choice';b.innerHTML=`<b>${c.label}</b><br><span class="small">${c.effect}</span>`;
+  b.onclick=()=>{c.fn();eventLock=false;pauseFlag.classList.remove('show');eventModal.classList.remove('show');saveGame();render()};
+  eventChoices.appendChild(b);
+ });
+ eventModal.classList.add('show');
+}
+function toggleAuto(){
+ if(autoTimer){stopAuto();return}
+ autoBtn.textContent='AUTO 정지';autoBtn.classList.add('active');
+ autoTimer=setInterval(()=>{if(!eventLock)advance(30,true)},1100);
+}
+function stopAuto(){
+ if(autoTimer){clearInterval(autoTimer);autoTimer=null}
+ autoBtn.textContent='AUTO 시작';autoBtn.classList.remove('active');
+}
+function runCommand(){
+ const v=cmd.value.trim();if(!v)return;
+ if(v.includes('1년')||v.includes('일년'))advanceYear();
+ else if(v.includes('1개월')||v.includes('한 달')||v.includes('한달'))advance(30);
+ else if(v.includes('기술'))focusTech();
+ else if(v.includes('네레이아')){state.tech.해양선박.p+=8;addLog('네레이아 교류에 인력·교역품 추가 배정');render()}
+ else if(v.includes('카르딘')){state.tech.금속가공.p+=8;addLog('카르딘 기술연수 인원 확대');render()}
+ else if(v.includes('세라칸')){state.tech.목축.p+=8;addLog('세라칸 목축교류 확대');render()}
+ else {addLog(`관측자 명령 기록: ${v}`);render()}
+ cmd.value='';saveGame();
+}
+
+/* DETAIL UI */
+function openSettlement(name){
+ const s=state.settlements[name];
+ infoTitle.textContent=`${name} · ${s.pop}명`;
+ infoBody.innerHTML=`
+  <div class="sheet-grid">
+   <div class="box"><b>역할</b><br>${s.role}</div>
+   <div class="box"><b>지역 대표</b><br>${s.rep}</div>
+   <div class="box"><b>이동 원칙</b><br>아르케아 내부 자유이주</div>
+   <div class="box"><b>전체 비중</b><br>${Math.round(s.pop/state.pop*100)}%</div>
+  </div>`;
+ infoModal.classList.add('show');
+}
+function openRegion(id){
+ const r=state.regions[id];
+ infoTitle.textContent=REGION_NAMES[id];
+ infoBody.innerHTML=`
+ <div class="sheet-grid">
+  <div class="box"><b>추정 인구</b><br>${r.pop}명</div>
+  <div class="box"><b>기술지수</b><br>${r.tech.toFixed(2)}</div>
+  <div class="box"><b>접촉상태</b><br>${r.contact?'접촉':'미접촉'}</div>
+  <div class="box"><b>관계</b><br>${r.contact?r.relation+'/100':'알 수 없음'}</div>
+ </div>
+ <div class="box" style="margin-top:7px"><b>강점</b><br>${r.special}</div>
+ <div class="small" style="margin-top:8px">※ 외부 문명은 플레이어가 조종하지 않아도 자체적으로 인구와 기술이 성장한다.</div>`;
+ infoModal.classList.add('show');
+}
+function closeInfo(){infoModal.classList.remove('show')}
+function showYear(y){
+ yearBody.innerHTML=`
+ <div class="historyCard"><b>${y.title}</b><br>${y.pop}</div>
+ <div class="historyCard"><b>기술</b><br>${y.tech}</div>
+ <div class="historyCard"><b>외부 세계</b><br>${y.ext}</div>
+ <div class="historyCard"><b>대표 사건</b><br>• ${y.events.join('<br>• ')}</div>`;
+ yearModal.classList.add('show');
+}
+function closeYear(){yearModal.classList.remove('show')}
+
+/* RENDER */
+function line(el,a,b){
+ const dx=b.x-a.x,dy=b.y-a.y;
+ el.style.left=a.x+'%';el.style.top=a.y+'%';el.style.width=Math.hypot(dx,dy)+'%';
+ el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`;
+}
+function marker(el,m){
+ const a=P[m.from],b=P[m.to],q=m.p/100;
+ el.style.left=(a.x+(b.x-a.x)*q)+'%';el.style.top=(a.y+(b.y-a.y)*q)+'%';
+}
+function render(){
+ normalize();
+ date.innerHTML=`세계력 ${state.year}년 ${state.day}일<br>아르케아`;
+ pop.textContent=state.pop;adult.textContent=state.adult;children.textContent=state.children;outsider.textContent=state.outsider;
+ Object.entries(state.settlements).forEach(([n,s])=>{const el=document.getElementById('sp-'+n);if(el)el.textContent=s.pop+'명'});
+ Object.entries(state.regions).forEach(([id,r])=>{const el=document.getElementById('rp-'+id);if(el)el.textContent=`${r.contact?'접촉':'미접촉'} · ${r.pop}명`});
+ line(rk,P.gam,P.kar);line(rs,P.west,P.ser);line(rn,P.big,P.ner);
+ marker(mk,state.missions[0]);marker(ms,state.missions[1]);marker(mn,state.missions[2]);
+ missions.innerHTML=state.missions.map(m=>`<div class="mission"><div class="mtop"><b>${m.icon} ${m.name}</b><em>${m.d>0?'목적지로':'귀환'} ${Math.round(m.p)}%</em></div><div class="bar"><div class="fill" style="width:${m.p}%"></div></div></div>`).join('');
+ techgrid.innerHTML=Object.entries(state.tech).map(([n,t])=>`<div class="tech"><div class="techhead"><span>${n}</span><span class="grade">${grade(t)}</span></div><div class="bar"><div class="fill" style="width:${Math.min(100,t.p)}%"></div></div></div>`).join('');
+ people.innerHTML=state.people.map(p=>`<div class="person"><strong>${p.name}</strong><span>${p.role}</span><div class="small" style="margin-top:4px">${p.note}</div></div>`).join('');
+ regionList.innerHTML=Object.entries(state.regions).map(([id,r])=>`<div class="rrow" onclick="openRegion('${id}')"><div class="rtop"><b>${REGION_NAMES[id]}</b><span>${r.pop}명 · 기술 ${r.tech.toFixed(1)}</span></div><div class="rmeta">${r.contact?'관계 '+r.relation+'/100 · ':'미접촉 · '}${r.special}</div></div>`).join('');
+ log.innerHTML=state.logs.slice(0,20).map(e=>`<div class="event">${e[0]}<br><small>${e[1]==='시스템'?'시스템':'세계력 '+e[1]}</small></div>`).join('');
+ settleList.innerHTML=Object.entries(state.settlements).map(([n,s])=>`<div class="event" onclick="openSettlement('${n}')"><b>${n}</b> · ${s.pop}명<br><small>${s.role}</small></div>`).join('');
+ history.innerHTML=(state.history.length?state.history:[{when:'현재',text:'아직 1년 단위 연대기가 없다. “1년”을 진행하면 자동 생성된다.'}]).slice(0,8).map(h=>`<div class="historyCard"><b>${h.when}</b><br>${h.text}</div>`).join('');
+ saveGame();
+}
+function resetGame(){
+ if(confirm('v0.3 진행 데이터를 초기화할까? v0.2 저장은 지우지 않아.')){
+  stopAuto();state=clone(DEFAULT);localStorage.removeItem('civilization_v03');render();resetMapView()
+ }
+}
+
+document.querySelectorAll('[data-settle]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openSettlement(el.dataset.settle)}));
+document.querySelectorAll('[data-region]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRegion(el.dataset.region)}));
+infoModal.addEventListener('click',e=>{if(e.target===infoModal)closeInfo()});
+window.addEventListener('resize',resetMapView);
+render();setTimeout(resetMapView,50);
 </script>
 </body>
 </html>
