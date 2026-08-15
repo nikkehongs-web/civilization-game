@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#17130e" />
+<title>문명 v0.1</title>
+<style>
+  :root{
+    --bg:#17130e; --panel:#241d14; --panel2:#302718; --line:#6b5533;
+    --gold:#d9b56d; --text:#f5ead3; --muted:#b9a98d; --green:#86b96f;
+    --blue:#73a9c8; --red:#c87366; --shadow:rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(#15110c,#1c160f);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+  header{position:sticky;top:0;z-index:5;padding:14px 16px;background:#18130de8;
+         backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  h1{font-size:20px;margin:0;color:var(--gold)}
+  .date{font-size:13px;color:var(--muted)}
+  main{padding:12px;max-width:1100px;margin:auto}
+  .grid{display:grid;grid-template-columns:1.3fr .9fr;gap:12px}
+  @media(max-width:780px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+         border-radius:15px;padding:14px;box-shadow:0 8px 22px var(--shadow)}
+  .panel h2{font-size:15px;margin:0 0 10px;color:var(--gold)}
+  .map{position:relative;min-height:360px;border-radius:13px;overflow:hidden;
+       background:
+       radial-gradient(circle at 55% 52%,#806d3b45 0 17%,transparent 18%),
+       radial-gradient(circle at 25% 30%,#4c6a3c55 0 18%,transparent 19%),
+       radial-gradient(circle at 78% 26%,#6b644955 0 16%,transparent 17%),
+       radial-gradient(circle at 22% 75%,#8b6d3855 0 15%,transparent 16%),
+       radial-gradient(circle at 55% 78%,#355f7055 0 21%,transparent 22%),
+       radial-gradient(circle at 82% 72%,#7a443655 0 17%,transparent 18%),
+       #c5aa6a;
+       border:1px solid #887247}
+  .map:before{content:"";position:absolute;inset:0;background:
+    repeating-linear-gradient(15deg,transparent 0 24px,#4b3d2512 25px 26px)}
+  .node{position:absolute;transform:translate(-50%,-50%);padding:7px 9px;border-radius:10px;
+        background:#1c160fdd;border:1px solid #8c7445;color:#f6e8c9;font-size:12px;
+        box-shadow:0 2px 10px #0007;white-space:nowrap}
+  .node strong{display:block;color:#ffe0a1;font-size:12px}
+  .active{outline:2px solid #ffe28a;box-shadow:0 0 18px #ffd86a99}
+  .route{position:absolute;height:2px;background:#f7d27a88;transform-origin:left center}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat{background:#18130d99;border:1px solid #5c4930;border-radius:12px;padding:11px}
+  .stat b{display:block;font-size:22px;color:#ffe2a3}
+  .stat span{font-size:12px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:12px;padding:7px 9px;border:1px solid #6b5533;border-radius:999px;background:#19140f}
+  .chip.good{border-color:#638457;color:#bfe5aa}
+  .chip.lock{border-color:#7d6760;color:#d6aaa0}
+  .tech{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .tech div{padding:9px 10px;border-radius:10px;background:#1b150f;border:1px solid #5f4d31;font-size:13px}
+  .tech b{float:right;color:#ffe09d}
+  .log{max-height:240px;overflow:auto}
+  .event{padding:9px 0;border-bottom:1px dashed #5a4930;font-size:13px}
+  .event small{color:var(--muted)}
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  button{appearance:none;border:1px solid #81683b;background:linear-gradient(#4b3b22,#302616);
+         color:#fff0cc;border-radius:11px;padding:12px 8px;font-weight:700}
+  button:active{transform:translateY(1px);filter:brightness(.9)}
+  .primary{background:linear-gradient(#7b5d24,#5a4218);border-color:#c39d51}
+  .danger{background:linear-gradient(#653328,#40201a);border-color:#9c5c50}
+  .command{display:flex;gap:8px;margin-top:10px}
+  input{flex:1;min-width:0;background:#15110d;border:1px solid #6b5533;color:var(--text);
+        border-radius:10px;padding:12px;font-size:14px}
+  .objective{font-size:18px;font-weight:800;color:#ffdea0}
+  footer{padding:20px 12px 40px;color:#8f8069;text-align:center;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>《문명》 세계 운영 시뮬레이션</h1>
+    <div class="date" id="date">세계력 6년 82일</div>
+  </div>
+</header>
+
+<main>
+  <section class="grid">
+    <div class="panel">
+      <h2>🌍 세계지도</h2>
+      <div class="map" id="map">
+        <div class="node" style="left:50%;top:49%"><strong>아르케아</strong>감나무뜰 · 시초</div>
+        <div class="node" style="left:52%;top:16%"><strong>카르딘</strong>금속·산맥</div>
+        <div class="node" style="left:79%;top:44%"><strong>세라칸</strong>목축·대초원</div>
+        <div class="node" style="left:20%;top:35%"><strong>실바리온</strong>수목·수림</div>
+        <div class="node active" style="left:53%;top:80%"><strong>네레이아</strong>항해·해권</div>
+        <div class="node" style="left:20%;top:78%"><strong>솔라크</strong>미접촉</div>
+        <div class="node" style="left:82%;top:77%"><strong>드라바스</strong>미접촉</div>
+        <div class="node" style="left:80%;top:17%"><strong>루메라</strong>미접촉</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>👥 아르케아 현황</h2>
+        <div class="stats">
+          <div class="stat"><b id="pop">70</b><span>총인구</span></div>
+          <div class="stat"><b id="adult">31</b><span>성인</span></div>
+          <div class="stat"><b id="children">39</b><span>아이</span></div>
+          <div class="stat"><b id="outsider">2</b><span>장기체류 외부인</span></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h2>📜 현재 정책</h2>
+        <div class="chips">
+          <span class="chip good">기술 1순위</span>
+          <span class="chip good">인구 증가</span>
+          <span class="chip">공동노동 유지</span>
+          <span class="chip good">자유 이주</span>
+          <span class="chip lock">독자기술 비공개</span>
+          <span class="chip">외부인 적극 수용</span>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h2>🎯 현재 목표</h2>
+        <div class="objective">네레이아 항해기술 확보 → 장거리 대양원정</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid" style="margin-top:12px">
+    <div class="panel">
+      <h2>🛠 기술</h2>
+      <div class="tech" id="tech">
+        <div>농업 <b>C</b></div>
+        <div>금속가공 <b>E</b></div>
+        <div>목공 <b>D</b></div>
+        <div>목축 <b>D</b></div>
+        <div>해양선박 <b>D-</b></div>
+        <div>판재선 건조 <b>E</b></div>
+        <div>염장 <b>D</b></div>
+        <div>수상매듭 <b>D</b></div>
+        <div>기록체계 <b>E</b></div>
+        <div>동물운용 <b>D</b></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🐕 주요 인물·계통</h2>
+      <div class="event"><b>이명자</b> — 감나무뜰의 시초 · 세계력 3년 사망</div>
+      <div class="event"><b>마루</b> — 선출 대표 · 공동체 조율</div>
+      <div class="event"><b>복실이</b> — 경비견 원조 · 후손이 원정견/추적견으로 분화</div>
+    </div>
+  </section>
+
+  <section class="grid" style="margin-top:12px">
+    <div class="panel">
+      <h2>📰 최근 사건</h2>
+      <div class="log" id="log">
+        <div class="event">네레이아 외곽 대섬과 첫 해외교역 성공<br><small>세계력 6년 82일</small></div>
+        <div class="event">판재선 건조 기초 습득<br><small>세계력 6년 76일</small></div>
+        <div class="event">분쟁지역 무기교역 제한 정책 채택<br><small>세계력 6년 70일</small></div>
+        <div class="event">아르케아 최초 해외상륙<br><small>세계력 6년 62일</small></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🎮 다음 행동</h2>
+      <div class="controls">
+        <button onclick="action('탐험')">🧭 탐험</button>
+        <button onclick="action('기술')">🛠 기술</button>
+        <button onclick="action('인구')">👶 인구</button>
+        <button onclick="advance(30)">▶ 1개월</button>
+        <button class="primary" onclick="advance(365)">⏩ 1년</button>
+        <button onclick="saveGame()">💾 저장</button>
+      </div>
+      <div class="command">
+        <input id="cmd" placeholder="예: 기술 우선, 네레이아 탐험" />
+        <button onclick="runCommand()">실행</button>
+      </div>
+      <button class="danger" style="width:100%;margin-top:8px" onclick="resetGame()">초기화</button>
+    </div>
+  </section>
+</main>
+
+<footer>문명 v0.1 · 아이폰 브라우저 저장(localStorage) 지원</footer>
+
+<script>
+const DEFAULT = {
+  year:6, day:82, pop:70, adult:31, children:39, outsider:2,
+  logs:[
+    ["네레이아 외곽 대섬과 첫 해외교역 성공","6년 82일"],
+    ["판재선 건조 기초 습득","6년 76일"],
+    ["분쟁지역 무기교역 제한 정책 채택","6년 70일"],
+    ["아르케아 최초 해외상륙","6년 62일"]
+  ]
+};
+let state = JSON.parse(localStorage.getItem("civilization_v01")||"null") || structuredClone(DEFAULT);
+
+function normalize(){
+  while(state.day>365){ state.day-=365; state.year++; }
+}
+function render(){
+  normalize();
+  document.getElementById("date").textContent=`세계력 ${state.year}년 ${state.day}일`;
+  pop.textContent=state.pop; adult.textContent=state.adult; children.textContent=state.children; outsider.textContent=state.outsider;
+  log.innerHTML=state.logs.slice(0,12).map(x=>`<div class="event">${x[0]}<br><small>세계력 ${x[1]}</small></div>`).join("");
+}
+function stamp(){ return `${state.year}년 ${state.day}일`; }
+function addLog(msg){ state.logs.unshift([msg,stamp()]); render(); saveGame(false); }
+function advance(days){
+  state.day += days; normalize();
+  if(days>=365){
+    const births = Math.max(2, Math.round(state.pop*0.08));
+    state.children += births; state.pop += births;
+    addLog(`1년 경과 · 출생 ${births}명 · 기술/원정망 자동 발전`);
+  } else {
+    const chance = Math.random();
+    if(chance<.34){ state.children++; state.pop++; addLog("새 아이가 태어났다"); }
+    else if(chance<.67){ addLog("외부 기술자와 교역·연수 진행"); }
+    else { addLog("원정대가 새로운 항로 정보를 가져왔다"); }
+  }
+}
+function action(kind){
+  const m={
+    "탐험":"원정대 편성 · 미접촉 권역 탐색 강화",
+    "기술":"기술학습자·작업장에 자원 우선 배정",
+    "인구":"주거·공동육아·식량지원 확대"
+  };
+  addLog(m[kind]);
+}
+function runCommand(){
+  const v=cmd.value.trim(); if(!v)return;
+  if(v.includes("1년")) advance(365);
+  else if(v.includes("한달")||v.includes("1개월")||v.includes("한 달")) advance(30);
+  else if(v.includes("인구")) action("인구");
+  else if(v.includes("기술")) action("기술");
+  else if(v.includes("탐험")||v.includes("원정")) action("탐험");
+  else addLog(`명령 기록: ${v}`);
+  cmd.value="";
+}
+function saveGame(show=true){
+  localStorage.setItem("civilization_v01",JSON.stringify(state));
+  if(show) alert("저장됐어!");
+}
+function resetGame(){
+  if(confirm("문명 데이터를 초기화할까?")){
+    state=structuredClone(DEFAULT); localStorage.removeItem("civilization_v01"); render();
+  }
+}
+render();
+</script>
+</body>
+</html>
