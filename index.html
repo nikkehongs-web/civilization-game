@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=9.6.1">
+<link rel="stylesheet" href="./styles.css?v=10.2">
 
 </head>
 <body>
@@ -27,7 +27,7 @@
       var txt=document.getElementById('runtimeDiagText');
       if(box&&txt){
         box.classList.remove('hidden');
-        txt.textContent='v9.6.1 시작 오류: '+text;
+        txt.textContent='v10 시작 오류: '+text;
       }
       var loading=document.getElementById('loading');
       if(loading){
@@ -78,6 +78,28 @@
 </section>
 
 
+
+<section id="monsterTargetHud" class="monster-target-hud hidden">
+  <div><small id="monsterTargetCode">EXPERIMENT</small><b id="monsterTargetName">실험체</b><span id="monsterTargetMeta">LV.1</span></div>
+  <div class="monster-hp"><i id="monsterHpBar"></i></div>
+  <span id="monsterMutationText">변이 정보</span>
+</section>
+
+<section id="rpgPanel" class="rpg-panel hidden">
+ <div class="rpg-shell">
+  <div class="rpg-head"><div><small>OBSERVER COMBAT SYSTEM</small><b>장비 · 성장 · 실험체 기록</b></div><button id="rpgClose">×</button></div>
+  <div id="rpgSummary" class="rpg-summary"></div>
+  <div class="rpg-columns">
+   <section><h3>⚔ 장착 장비</h3><div id="rpgEquipment"></div><h3>★ 성장 스킬</h3><div id="rpgSkills" class="rpg-skills"></div></section>
+   <section><h3>🎒 인벤토리</h3><div id="rpgInventory" class="rpg-inventory"></div></section>
+  </div>
+  <div class="rpg-columns lower">
+   <section><h3>🏪 전투 보급</h3><div id="rpgShop"></div></section>
+   <section><h3>🧪 실험체 분석 기록</h3><div id="rpgLab"></div></section>
+  </div>
+ </div>
+</section>
+
 <section id="conflictHud" class="conflict-hud hidden">
   <div class="conflict-head"><small id="conflictType">위험</small><b id="conflictTitle">습격</b></div>
   <span id="conflictStatus">상황 확인 중</span>
@@ -102,7 +124,7 @@
 <section id="playerHud" class="player-hud glass">
   <div id="playerFocusBtn" class="player-orb" title="내 캐릭터 추적">⚔️</div>
   <div class="player-copy"><b id="playerName">나 · 관찰자</b><span id="playerStatus">마을을 걷는 중 · 각성은 세계력 55년</span><div class="player-hp"><i id="playerHpBar"></i></div></div>
-  <button id="autoHuntBtn" class="hunt-btn locked">사냥 AUTO</button>
+  <div class="player-actions"><button id="rpgBtn" class="rpg-btn">🎒 장비</button><button id="autoHuntBtn" class="hunt-btn locked">사냥 AUTO</button></div>
 </section>
 
 <div id="mobileGameControls" class="mobile-game-controls">
@@ -161,6 +183,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=9.6.1"></script>
+<script type="module" src="./game.js?v=10.2"></script>
 </body>
 </html>
