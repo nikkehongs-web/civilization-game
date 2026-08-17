@@ -104,9 +104,9 @@ function drawLake(ctx,screenFn,x,y,rx,ry){
 
 
 export class CivitasWorldMap{
- constructor({overlay,canvas,detail,legend,status,countryList,getState,data,onClose,onOpenRegion}){
+ constructor({overlay,canvas,detail,legend,status,countryList,getState,data,onClose,onOpenRegion,onTravelCountry,onTravelCity,onTravelRegion}){
   this.overlay=overlay;this.canvas=canvas;this.ctx=canvas.getContext('2d');
-  this.detail=detail;this.legend=legend;this.status=status;this.countryList=countryList;this.getState=getState;this.data=data;this.onClose=onClose;this.onOpenRegion=onOpenRegion;
+  this.detail=detail;this.legend=legend;this.status=status;this.countryList=countryList;this.getState=getState;this.data=data;this.onClose=onClose;this.onOpenRegion=onOpenRegion;this.onTravelCountry=onTravelCountry;this.onTravelCity=onTravelCity;this.onTravelRegion=onTravelRegion;
   this.mode='current';this.scale=1;this.ox=0;this.oy=0;this.countryPage=0;this.selectedCountry=null;this.pointerMap=new Map();this.lastPair=null;this.lastSingle=null;this.moved=false;
   this.cityById=new Map(data.cities.map(c=>[c.id,c]));
   this.regionStats=this.buildRegionStats();
@@ -209,11 +209,19 @@ export class CivitasWorldMap{
  }
  renderLegend(){
   this.legend.innerHTML=this.data.regions.map(r=>`<button data-region="${r.name}"><i style="background:${REGION_COLORS[r.name]}"></i><span>${r.name}</span><b>${r.cities}</b></button>`).join('');
-  this.legend.querySelectorAll('[data-region]').forEach(b=>b.onclick=()=>this.showRegion(b.dataset.region))
+  this.legend.querySelectorAll('[data-region]').forEach(b=>b.onclick=()=>{const n=b.dataset.region;this.close();this.onTravelRegion?.(n)})
  }
  bindRegionOpen(name){
   const b=this.detail.querySelector('[data-open-region]');
   if(b)b.onclick=()=>{this.close();this.onOpenRegion?.(name)}
+ }
+ bindObserverTravel(){
+  const rc=this.detail.querySelector('[data-travel-country]');
+  if(rc)rc.onclick=()=>{const n=rc.dataset.travelCountry;this.close();this.onTravelCountry?.(n)}
+  const city=this.detail.querySelector('[data-travel-city]');
+  if(city)city.onclick=()=>{const id=city.dataset.travelCity,c=this.cityById.get(id);this.close();if(c)this.onTravelCity?.(c)}
+  const reg=this.detail.querySelector('[data-travel-region]');
+  if(reg)reg.onclick=()=>{const n=reg.dataset.travelRegion;this.close();this.onTravelRegion?.(n)}
  }
 
  showRegion(name){
@@ -221,18 +229,59 @@ export class CivitasWorldMap{
   const founded=this.data.cities.filter(c=>c.region===name&&st.world.foundedCities.includes(c.id)).length;
   const pop=Object.entries(st.world.countries||{}).filter(([n,c])=>c.region===name).reduce((s,[n,c])=>s+c.population,0);
   const start=this.cityById.get(this.data.meta.startCityId),center={x:r.centerX,y:r.centerY},km=Math.round(worldDistanceKm(start,center));
-  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 ${Math.ceil(km/30)}일+</em><em>관찰자 인구 ${pop}</em><em>${known?'주민 접촉 완료':'주민 미접촉'}</em><em>200년 도시 ${r.cities}</em><em>현재 거점 ${founded}</em></div><button class="region-map-open" data-open-region>🏔 ${name} 3D 지역지도 열기</button>`;this.bindRegionOpen(name)
+  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 ${Math.ceil(km/30)}일+</em><em>관찰자 인구 ${pop}</em><em>${known?'주민 접촉 완료':'주민 미접촉'}</em><em>200년 도시 ${r.cities}</em><em>현재 거점 ${founded}</em></div><span class="observer-travel-note">👁 관찰자 이동은 주민 원정과 별개입니다. 즉시 이동해도 이 지역 주민들이 감나무뜰을 알게 되지는 않습니다.</span><button class="observer-travel-btn" data-travel-region="${name}">👁 ${name}으로 관찰 이동</button><button class="region-map-open" data-open-region>🏔 지역 전체 지도 열기</button>`;this.bindRegionOpen(name);this.bindObserverTravel()
  }
  showCity(city){
   const st=this.getState(),founded=st.world.foundedCities.includes(city.id),start=this.cityById.get(this.data.meta.startCityId);
   const km=Math.round(worldDistanceKm(start,city)),walk=Math.ceil(km/30),sail=Math.ceil(km/110);
-  this.detail.innerHTML=`<b>${city.name}</b><span>${city.country}</span><p>${city.region}</p><div><em>${city.id}</em><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 단순환산 ${walk}일</em><em>항해 단순환산 ${sail}일</em><em>${founded?'현재 세계에 형성됨':'세계력 200년 기준 좌표'}</em></div><button class="region-map-open" data-open-region>🗺 ${city.region} 3D 지역지도 열기</button>`;this.bindRegionOpen(city.region)
+  this.detail.innerHTML=`<b>${city.name}</b><span>${city.country}</span><p>${city.region}</p><div><em>${city.id}</em><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 단순환산 ${walk}일</em><em>항해 단순환산 ${sail}일</em><em>${founded?'현재 세계에 형성됨':'세계력 200년 기준 좌표'}</em></div><span class="observer-travel-note">라엔 주민들의 여행시간과 무관하게 관찰자만 즉시 현지로 이동합니다.</span><button class="observer-travel-btn" data-travel-city="${city.id}">👁 ${city.name}에 직접 서보기</button><button class="region-map-open" data-open-region>🗺 ${city.region} 전체 지도</button>`;this.bindRegionOpen(city.region);this.bindObserverTravel()
  }
- pickAt(x,y){
-  const p=this.mapPoint(x,y),st=this.getState(),allowed=this.mode==='future'?this.data.cities:this.data.cities.filter(c=>st.world.foundedCities.includes(c.id));
+
+ pointInPolygon(p,poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+   const a=poly[i],b=poly[j];
+   const hit=((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/((b.y-a.y)||1e-9)+a.x);
+   if(hit)inside=!inside
+  }
+  return inside
+ }
+ regionAtPoint(p){
+  // Continents/land regions use the same irregular polygons drawn on the map.
+  for(const r of this.data.regions){
+   const style=GEO_STYLE[r.name]||{};
+   if(style.kind==='islands'||style.kind==='volcanic')continue;
+   const poly=this.regionPolygons.get(r.name)||[];
+   if(poly.length>=3&&this.pointInPolygon(p,poly))return r.name
+  }
+  // Island/volcanic regions: use distance to their canonical city-island anchors.
   let best=null,bd=Infinity;
-  for(const c of allowed){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=c}}
-  if(best&&bd<18/this.scale){this.showCity(best);return}
+  for(const r of this.data.regions){
+   const cities=this.data.cities.filter(c=>c.region===r.name);
+   for(const c of cities){
+    const d=Math.hypot(c.x-p.x,c.y-p.y);
+    if(d<bd){bd=d;best=r.name}
+   }
+  }
+  return bd<55/Math.max(.75,this.scale)?best:null
+ }
+
+ pickAt(x,y){
+  const p=this.mapPoint(x,y);
+
+  // Observer can use all 126 canonical city anchors regardless of resident contact.
+  let best=null,bd=Infinity;
+  for(const c of this.data.cities){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=c}}
+  if(best&&bd<16/Math.max(.8,this.scale)){
+   this.close();this.onTravelCity?.(best);return
+  }
+
+  const region=this.regionAtPoint(p);
+  if(region){
+   this.close();this.onTravelRegion?.(region);return
+  }
+
+  // Ocean tap: show nearest region info instead of teleporting accidentally.
   let br=null,brd=Infinity;
   for(const r of this.regionStats.values()){const d=Math.hypot(r.centerX-p.x,r.centerY-p.y);if(d<brd){brd=d;br=r}}
   if(br)this.showRegion(br.name)
@@ -387,10 +436,12 @@ export class CivitasWorldMap{
    <div class="census-head"><b>실제 주민 명부 ${people.length}명</b><span>${page+1}/${pages}쪽</span></div>
    <div class="country-census">${rows.map(p=>`<div><b>${p.n}</b><span>${p.g==='F'?'여':'남'} · ${p.a}세 · ${p.j}</span><small>${p.ct} · ${p.f}</small></div>`).join('')}</div>
    <div class="census-page"><button data-census-prev ${page<=0?'disabled':''}>‹ 이전</button><button data-census-next ${page>=pages-1?'disabled':''}>다음 ›</button></div>
-   <button class="region-map-open" data-open-region>🗺 ${c.region} 3D 지역지도 열기</button>`;
+   <span class="observer-travel-note">👁 너는 관찰자라서 이 나라가 감나무뜰과 미접촉이어도 직접 갈 수 있습니다. 이 이동은 외교/첫 접촉 판정에 영향을 주지 않습니다.</span>
+   <button class="observer-travel-btn" data-travel-country="${name}">👁 ${name}으로 관찰 이동</button>
+   <button class="region-map-open" data-open-region>🗺 ${c.region} 전체 지도</button>`;
   this.detail.querySelector('[data-census-prev]')?.addEventListener('click',()=>this.renderCountryDetail(name,page-1));
   this.detail.querySelector('[data-census-next]')?.addEventListener('click',()=>this.renderCountryDetail(name,page+1));
-  this.bindRegionOpen(c.region)
+  this.bindRegionOpen(c.region);this.bindObserverTravel()
  }
  renderCountries(){
   if(!this.countryList)return;const st=this.getState(),wars=st.world.wars||[],external=st.world.externalWars||[];

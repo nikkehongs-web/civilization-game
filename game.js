@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=9.2';
+import { CivitasWorldMap } from './world-map.js?v=9.5';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -47,9 +47,9 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=9.2')
+const WORLD_DATA = await fetch('./world.json?v=9.5')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.2')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.5')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -533,6 +533,57 @@ function makeLandmarkVisual(l){
  g.position.copy(l.p);g.visible=(l.level||0)<=state.localMap.level;landmarkGroup.add(g);landmarkVisuals.push({g,l});return g
 }
 LOCAL_LANDMARKS.forEach(makeLandmarkVisual);
+
+function dir8FromVector(dx,dz){
+ const a=Math.atan2(dx,-dz),i=(Math.round(a/(Math.PI/4))+8)%8;
+ return ['북','북동','동','남동','남','남서','서','북서'][i]
+}
+function dirArrow(dx,dz){
+ const a=Math.atan2(dx,-dz),i=(Math.round(a/(Math.PI/4))+8)%8;
+ return ['↑','↗','→','↘','↓','↙','←','↖'][i]
+}
+function currentMainBiome(){
+ const cx=Math.floor(player.position.x/STREAM_CHUNK),cz=Math.floor(player.position.z/STREAM_CHUNK);
+ return {meadow:'들판',forest:'숲',lakewood:'호숫가 숲',hills:'구릉',grassland:'초원',wetland:'습지'}[chunkBiome(cx,cz)]||'들판'
+}
+function nearestMainLandmark(){
+ let best=LOCAL_LANDMARKS[0],bd=Infinity;
+ for(const l of LOCAL_LANDMARKS){
+   if((l.level||0)>state.localMap.level)continue;
+   const d=Math.hypot(player.position.x-l.p.x,player.position.z-l.p.z);
+   if(d<bd){bd=d;best=l}
+ }
+ return{landmark:best,distance:bd}
+}
+function mainPlaceName(){
+ const x=player.position.x,z=player.position.z,d=Math.hypot(x,z);
+ if(d<18)return'감나무뜰 중심';
+ const near=nearestMainLandmark();
+ if(near.distance<30)return near.landmark.name;
+ const ring=d<120?'근교':d<300?'외곽':d<700?'탐사권':'미답지';
+ return `라엔 분지 ${dir8FromVector(x,z)}쪽 ${ring}`
+}
+function updatePlayerLocationHud(force=false){
+ if(regionViewActive&&regionObserver){
+   const p=regionObserver.position,city=nearestRegionCity(p.x,p.z);
+   const ctry=regionVisitCountry||city?.country||'관찰 지역',reg=regionViewName||'지역';
+   $('playerLocationName').textContent=city?`${ctry} · ${city.name}`:ctry;
+   $('playerLocationBiome').textContent=`${reg} · 관찰자 현지 이동`;
+   $('playerLocationCoord').textContent=`현지 X ${p.x.toFixed(1)} · Z ${p.z.toFixed(1)}`;
+   $('playerFacingText').textContent=`시선 ${dir8FromVector(Math.sin(regionObserver.rotation.y),Math.cos(regionObserver.rotation.y))}`;
+   $('playerHomeText').textContent='🌍 관찰자 이동 · 시간 소모 없음';
+   $('playerLandmarkText').textContent=city?`🏘 최근 도시 ${city.name}`:'◇ 지역 탐사 중';
+   return
+ }
+ const x=player.position.x,z=player.position.z,d=Math.hypot(x,z),near=nearestMainLandmark(),homeDx=-x,homeDz=-z;
+ $('playerLocationName').textContent=mainPlaceName();
+ $('playerLocationBiome').textContent=`라엔 분지 · ${currentMainBiome()}`;
+ $('playerLocationCoord').textContent=`X ${x.toFixed(1)} · Z ${z.toFixed(1)}`;
+ $('playerFacingText').textContent=`시선 ${dir8FromVector(Math.sin(player.rotation.y),Math.cos(player.rotation.y))}`;
+ $('playerHomeText').textContent=d<8?'⌂ 감나무뜰 안':`⌂ ${dirArrow(homeDx,homeDz)} 감나무뜰 ${Math.round(d)}m`;
+ $('playerLandmarkText').textContent=`${near.landmark.icon} ${dirArrow(near.landmark.p.x-x,near.landmark.p.z-z)} ${near.landmark.name} ${Math.round(near.distance)}m`;
+}
+
 function updateLandmarkVisibility(){for(const x of landmarkVisuals)x.g.visible=(x.l.level||0)<=state.localMap.level}
 let navWaypoint=null;
 function setHomeWaypoint(autoWalk=false){
@@ -689,10 +740,7 @@ function streamTerrainAroundPlayer(force=false){
    const x=cx+dx,z=cz+dz,key=chunkKey(x,z);needed.add(key);if(!streamChunks.has(key))buildStreamChunk(x,z)
  }
  for(const key of [...streamChunks.keys()])if(!needed.has(key))removeStreamChunk(key);
- if($('openWorldPos')){
-   const d=Math.round(Math.hypot(player.position.x,player.position.z));
-   $('openWorldPos').textContent=d<20?'감나무뜰 중심':`${localPlaceName(player.position.x,player.position.z)} · 중심 ${d}m`;
- }
+ updatePlayerLocationHud(true);
 }
 
 // Dynamic settlement: civilization data is mirrored in the 3D world.
@@ -1095,6 +1143,7 @@ function createPlayerModel(){
  scene.add(g);return g
 }
 const player=createPlayerModel();
+const playerHereLabel=makeFloatingNameSprite('▼ 나');playerHereLabel.position.set(0,3.65,0);playerHereLabel.scale.set(2.2,.58,1);player.add(playerHereLabel);
 streamTerrainAroundPlayer(true);
 
 function makeFloatingNameSprite(text){
@@ -1905,6 +1954,9 @@ function zoomCamera(factor){
  if(camMode==='auto')setCameraMode('follow');
 }
 function resetPlayerCamera(){
+ if(regionViewActive&&regionObserver){
+   yaw=.72;pitch=.70;distance=30;autoFocus.copy(regionObserver.position);setCameraMode('follow');return
+ }
  followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';
  yaw=.72;pitch=.72;distance=CAMERA_DEFAULT_DISTANCE;
  setCameraMode('follow');
@@ -1959,6 +2011,10 @@ function handleTap(e){
  mouse.x=((e.clientX-rect.left)/Math.max(1,rect.width))*2-1;
  mouse.y=-((e.clientY-rect.top)/Math.max(1,rect.height))*2+1;
  ray.setFromCamera(mouse,camera);
+ if(regionViewActive&&regionWalkPlane){
+   const hit=ray.intersectObject(regionWalkPlane,false)[0];
+   if(hit){moveRegionObserverTo(hit.point);return}
+ }
  const mhit=ray.intersectObjects(monsters.filter(m=>!m.userData.dead),true)[0];
  if(mhit){
    let o=mhit.object;while(o.parent&&o.parent!==monsterGroup)o=o.parent;
@@ -2050,6 +2106,10 @@ joystick?.addEventListener('pointerup',e=>{if(e.pointerId===manualMove.pointerId
 joystick?.addEventListener('pointercancel',resetJoystick,{passive:false});
 
 function focusForCamera(now){
+ if(regionViewActive&&regionObserver){
+   if(camMode==='free')return autoFocus.clone();
+   return regionObserver.position.clone()
+ }
  if(camMode==='follow'){
    if(followId==='PLAYER')return player.position.clone();
    if(followId==='BOKSHIL')return bokshil.position.clone();
@@ -2065,6 +2125,19 @@ function focusForCamera(now){
 }
 function updateCamera(now){
  let target=focusForCamera(now);
+ if(regionViewActive&&regionObserver){
+   const moving=manualMove.active||regionObserver.userData.moving;
+   if(moving){
+     const facing=new THREE.Vector3(Math.sin(regionObserver.rotation.y),0,Math.cos(regionObserver.rotation.y));
+     target=regionObserver.position.clone().addScaledVector(facing,2.8);
+     yaw=lerpAngle(yaw,regionObserver.rotation.y+Math.PI,.075);pitch=THREE.MathUtils.lerp(pitch,.66,.04)
+   }
+   if(camMode!=='free')autoFocus.lerp(target,moving?.18:.10);
+   distance=clampCameraDistance(distance);
+   const cp=Math.cos(pitch),sp=Math.sin(pitch);
+   const off=new THREE.Vector3(Math.sin(yaw)*cp*distance,Math.max(10,4+sp*distance*.72),Math.cos(yaw)*cp*distance);
+   camera.position.lerp(autoFocus.clone().add(off),.18);camera.lookAt(autoFocus.clone().add(new THREE.Vector3(0,1,0)));return
+ }
  const playerMoving=followId==='PLAYER'&&camMode==='follow'&&!state.player.dead&&(manualMove.active||player.userData.moving||selectedMonster);
  if(playerMoving){
    // Put the camera behind the direction of travel and look slightly ahead.
@@ -2814,32 +2887,105 @@ function setMiniInfo(x,z,prefix='📍'){
  const d=Math.hypot(x-player.position.x,z-player.position.z);
  el.textContent=`${prefix} ${localPlaceName(x,z)} · X ${x.toFixed(1)} / Z ${z.toFixed(1)} · ${Math.round(d)}m`
 }
-function drawMini(){
- const w=mini.width,h=mini.height,c=miniCenter(),range=miniRange();
- mctx.clearRect(0,0,w,h);
- mctx.fillStyle='#617a50';mctx.fillRect(0,0,w,h);
 
- // subtle local grid moves under the player
- mctx.save();mctx.strokeStyle='rgba(255,255,255,.055)';mctx.lineWidth=1;
- const grid=20,firstX=Math.floor((c.x-range)/grid)*grid,firstZ=Math.floor((c.z-range)/grid)*grid;
- for(let x=firstX;x<=c.x+range;x+=grid){const a=worldToMini(x,c.z-range),b=worldToMini(x,c.z+range);mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke()}
- for(let z=firstZ;z<=c.z+range;z+=grid){const a=worldToMini(c.x-range,z),b=worldToMini(c.x+range,z);mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke()}
- mctx.restore();
+const MINI_BIOME_COLORS={
+ meadow:'#899563',forest:'#617753',lakewood:'#667b59',
+ hills:'#7c845f',grassland:'#87915e',wetland:'#667f68'
+};
+function miniChunkRect(cx,cz){
+ const half=STREAM_CHUNK/2;
+ const a=worldToMini(cx*STREAM_CHUNK-half,cz*STREAM_CHUNK-half);
+ const b=worldToMini(cx*STREAM_CHUNK+half,cz*STREAM_CHUNK+half);
+ return{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(b.x-a.x),h:Math.abs(b.y-a.y)}
+}
+function drawMiniStreamingTerrain(){
+ const c=miniCenter(),range=miniRange(),w=mini.width,h=mini.height;
+ const minCX=Math.floor((c.x-range)/STREAM_CHUNK)-1,maxCX=Math.floor((c.x+range)/STREAM_CHUNK)+1;
+ const minCZ=Math.floor((c.z-range)/STREAM_CHUNK)-1,maxCZ=Math.floor((c.z+range)/STREAM_CHUNK)+1;
 
- // river only appears when it is actually within the moving viewport
+ // Exactly the same biome function as 3D chunk streaming.
+ for(let cz=minCZ;cz<=maxCZ;cz++)for(let cx=minCX;cx<=maxCX;cx++){
+   const biome=chunkBiome(cx,cz),r=miniChunkRect(cx,cz);
+   mctx.fillStyle=MINI_BIOME_COLORS[biome]||'#81905f';
+   mctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);
+
+   // Same deterministic pond rule/position used by buildStreamChunk().
+   const central=Math.abs(cx)<=1&&Math.abs(cz)<=1;
+   const waterChance=chunkSeed(cx,cz,777);
+   const hasPond=!central&&((biome==='lakewood'&&waterChance<.52)||(biome==='wetland'&&waterChance<.42)||(waterChance<.055));
+   if(hasPond){
+     const wx=cx*STREAM_CHUNK+(chunkSeed(cx,cz,779)-.5)*55;
+     const wz=cz*STREAM_CHUNK+(chunkSeed(cx,cz,780)-.5)*55;
+     const q=worldToMini(wx,wz);
+     const radiusWorld=11+chunkSeed(cx,cz,778)*14;
+     const edge=worldToMini(wx+radiusWorld,wz);
+     const rr=Math.max(2,Math.abs(edge.x-q.x));
+     mctx.save();mctx.fillStyle='#6697a5';mctx.globalAlpha=.92;
+     mctx.beginPath();mctx.ellipse(q.x,q.y,rr,rr*.68,0,0,Math.PI*2);mctx.fill();mctx.restore()
+   }
+
+   // Same deterministic terrain objects as 3D streaming.
+   const count=central?5:(IS_MOBILE?13:22);
+   for(let i=0;i<count;i++){
+     const lx=(chunkSeed(cx,cz,i*4)-.5)*(STREAM_CHUNK-14);
+     const lz=(chunkSeed(cx,cz,i*4+1)-.5)*(STREAM_CHUNK-14);
+     const wx=cx*STREAM_CHUNK+lx,wz=cz*STREAM_CHUNK+lz,q=worldToMini(wx,wz);
+     if(!miniVisible(q,4))continue;
+     const typeSeed=chunkSeed(cx,cz,i*4+2);
+     let type='rock';
+     if(biome==='forest'||biome==='lakewood')type=typeSeed<.72?'tree':typeSeed<.87?'bush':'rock';
+     else if(biome==='hills')type=typeSeed<.38?'tree':typeSeed<.82?'rock':'bush';
+     else if(biome==='wetland')type=typeSeed<.35?'tree':'bush';
+     else type=typeSeed<.34?'tree':typeSeed<.68?'bush':'rock';
+
+     if(type==='tree'){
+       mctx.fillStyle='#31563a';mctx.beginPath();mctx.arc(q.x,q.y,2.2,0,Math.PI*2);mctx.fill()
+     }else if(type==='bush'){
+       mctx.fillStyle='#4b754b';mctx.beginPath();mctx.arc(q.x,q.y,1.5,0,Math.PI*2);mctx.fill()
+     }else{
+       mctx.fillStyle='#77786f';mctx.fillRect(q.x-1.4,q.y-1.1,2.8,2.2)
+     }
+   }
+
+   // Same occasional explorer cairn marker.
+   if(!central&&chunkSeed(cx,cz,991)<.075){
+     const wx=cx*STREAM_CHUNK+(chunkSeed(cx,cz,992)-.5)*52;
+     const wz=cz*STREAM_CHUNK+(chunkSeed(cx,cz,993)-.5)*52;
+     const q=worldToMini(wx,wz);
+     if(miniVisible(q,8)){mctx.fillStyle='#e0cf9a';mctx.font='bold 8px system-ui';mctx.textAlign='center';mctx.fillText('◇',q.x,q.y+2)}
+   }
+ }
+}
+function drawMiniVillageOverlay(){
+ const c=miniCenter(),range=miniRange(),nearVillage=Math.abs(c.x)<range+115&&Math.abs(c.z)<range+95;
+ if(!nearVillage)return;
+
+ // Original village features only exist around the real settlement.
  const riverX=30,ra=worldToMini(riverX,c.z-range*1.2),rb=worldToMini(riverX,c.z+range*1.2);
- if(ra.x>-20&&ra.x<w+20){mctx.strokeStyle='#68a1b2';mctx.lineWidth=12;mctx.beginPath();mctx.moveTo(ra.x,ra.y);mctx.lineTo(rb.x,rb.y);mctx.stroke()}
+ if(ra.x>-20&&ra.x<mini.width+20){mctx.strokeStyle='#68a1b2';mctx.lineWidth=12;mctx.beginPath();mctx.moveTo(ra.x,ra.y);mctx.lineTo(rb.x,rb.y);mctx.stroke()}
 
- // local roads
  mctx.strokeStyle='#ae9369';mctx.lineWidth=5;
  for(const[a,b]of[[LOC.center,LOC.field],[LOC.center,LOC.river],[LOC.center,LOC.forest],[LOC.center,LOC.stone]]){
    const p=worldToMini(a.x,a.z),q=worldToMini(b.x,b.z);
    if(miniVisible(p,40)||miniVisible(q,40)){mctx.beginPath();mctx.moveTo(p.x,p.y);mctx.lineTo(q.x,q.y);mctx.stroke()}
  }
 
- // field
  const f=worldToMini(LOC.field.x,LOC.field.z);
  if(miniVisible(f,25)){mctx.fillStyle='#84633e';mctx.fillRect(f.x-15,f.y-11,30,22)}
+}
+
+function drawMini(){
+ const w=mini.width,h=mini.height,c=miniCenter(),range=miniRange();
+ mctx.clearRect(0,0,w,h);
+ drawMiniStreamingTerrain();
+ drawMiniVillageOverlay();
+
+ // subtle world-coordinate grid, using the same coordinates as the 3D scene.
+ mctx.save();mctx.strokeStyle='rgba(255,255,255,.05)';mctx.lineWidth=1;
+ const grid=20,firstX=Math.floor((c.x-range)/grid)*grid,firstZ=Math.floor((c.z-range)/grid)*grid;
+ for(let x=firstX;x<=c.x+range;x+=grid){const a=worldToMini(x,c.z-range),b=worldToMini(x,c.z+range);mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke()}
+ for(let z=firstZ;z<=c.z+range;z+=grid){const a=worldToMini(c.x-range,z),b=worldToMini(c.x+range,z);mctx.beginPath();mctx.moveTo(a.x,a.y);mctx.lineTo(b.x,b.y);mctx.stroke()}
+ mctx.restore();
 
  // buildings move across the minimap as player walks
  for(let i=0;i<(state.buildings.house||0);i++){
@@ -2887,6 +3033,10 @@ function drawMini(){
  mctx.save();mctx.translate(cx,cy);mctx.rotate(-a);
  mctx.fillStyle='#7293ff';mctx.strokeStyle='#e9efff';mctx.lineWidth=2;
  mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,7);mctx.lineTo(0,4);mctx.lineTo(-6,7);mctx.closePath();mctx.fill();mctx.stroke();mctx.restore();
+ mctx.save();mctx.font='bold 9px -apple-system,sans-serif';mctx.textAlign='center';mctx.fillStyle='#eef2ff';mctx.fillText('나',cx,cy+20);
+ const hd=Math.hypot(player.position.x,player.position.z);
+ if(hd>18){const a=Math.atan2(-player.position.x,player.position.z),rr=Math.min(w,h)*.39,hx=cx+Math.sin(a)*rr,hy=cy-Math.cos(a)*rr;mctx.fillStyle='#f0cf80';mctx.font='bold 10px -apple-system,sans-serif';mctx.fillText('⌂',hx,hy);mctx.font='7px -apple-system,sans-serif';mctx.fillText(`${Math.round(hd)}m`,hx,hy+11)}
+ mctx.restore();
 
  // tapped position marker
  if(miniPin&&performance.now()<miniPinUntil){
@@ -2894,7 +3044,7 @@ function drawMini(){
    if(miniVisible(q)){mctx.strokeStyle='#ffd36c';mctx.lineWidth=3;mctx.beginPath();mctx.arc(q.x,q.y,10,0,Math.PI*2);mctx.stroke();mctx.beginPath();mctx.moveTo(q.x-12,q.y);mctx.lineTo(q.x+12,q.y);mctx.moveTo(q.x,q.y-12);mctx.lineTo(q.x,q.y+12);mctx.stroke()}
  }else miniPin=null;
 
- $('miniRangeLabel').textContent=`내 위치 중심 · ±${range}m`;
+ $('miniRangeLabel').textContent=`3D 지형 동기화 · ±${range}m`;
  if(!miniPin)setMiniInfo(player.position.x,player.position.z,'●')
 }
 mini.addEventListener('pointerdown',e=>{
@@ -2984,7 +3134,10 @@ applyHud();
 // ---------- OBSERVER REGIONAL 3D MAPS ----------
 const regionViewGroup=new THREE.Group();regionViewGroup.visible=false;scene.add(regionViewGroup);
 let regionViewActive=false,regionViewName=null,regionHiddenState=[];
+let regionVisitCountry=null,regionVisitCityId=null,regionWalkPlane=null,regionMapTransform=null;
+let regionObserver=null,regionObserverTarget=null;
 function disposeRegionView(){
+ regionWalkPlane=null;regionMapTransform=null;regionObserver=null;regionObserverTarget=null;
  while(regionViewGroup.children.length){
    const o=regionViewGroup.children.pop();
    o.traverse?.(c=>{if(c.geometry)c.geometry.dispose?.();if(c.material){const ms=Array.isArray(c.material)?c.material:[c.material];ms.forEach(m=>{m.map?.dispose?.();m.dispose?.()})}})
@@ -3002,6 +3155,15 @@ function regionStyle(name){
   '루메라 부유제도':{ground:0x6d6681,water:0x416f89,kind:'islands'}
  }[name]||{ground:0x77875a,water:0x4d91a5,kind:'plain'}
 }
+
+function createRegionObserver(){
+ const g=new THREE.Group();
+ const art=makeArtBillboard(CHARACTER_ART.player,1.85,2.8,1.5);g.add(art);
+ const marker=makeFloatingNameSprite('▼ 나 · 관찰자');marker.position.set(0,3.25,0);marker.scale.set(2.8,.62,1);g.add(marker);
+ g.userData={observer:true,target:new THREE.Vector3(),moving:false};
+ return g
+}
+
 function regionLabel(text,x,z,scale=4){
  const s=makeFloatingNameSprite(text);s.position.set(x,3.2,z);s.scale.set(scale,scale*.25,1);regionViewGroup.add(s);return s
 }
@@ -3078,10 +3240,11 @@ function buildRegional3DMap(name){
  const xs=cities.map(c=>c.x),ys=cities.map(c=>c.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
  const sx=x=>(x-(minX+maxX)/2)/Math.max(1,maxX-minX)*170;
  const sz=y=>(y-(minY+maxY)/2)/Math.max(1,maxY-minY)*120;
+ regionMapTransform={sx,sz,cities,minX,maxX,minY,maxY};
 
  // Main terrain or sea.
  const planeMat=new THREE.MeshStandardMaterial({color:style.kind==='islands'||style.kind==='volcanic'?style.water:style.ground,roughness:1});
- const plane=new THREE.Mesh(new THREE.PlaneGeometry(210,155),planeMat);plane.rotation.x=-Math.PI/2;plane.receiveShadow=true;regionViewGroup.add(plane);
+ const plane=new THREE.Mesh(new THREE.PlaneGeometry(210,155),planeMat);plane.rotation.x=-Math.PI/2;plane.receiveShadow=true;regionViewGroup.add(plane);regionWalkPlane=plane;
 
  // Geography per region.
  if(style.kind==='plain'){
@@ -3114,24 +3277,88 @@ function buildRegional3DMap(name){
  populateRegionObservers(name,sx,sz);
  regionLabel(name,0,-70,5.3);
 }
-function enterRegionView(name){
- if(!name)return;regionViewActive=true;regionViewName=name;
+
+function nearestRegionCity(x,z){
+ if(!regionMapTransform)return null;
+ let best=null,bd=Infinity;
+ for(const c of regionMapTransform.cities){
+   const cx=regionMapTransform.sx(c.x),cz=regionMapTransform.sz(c.y),d=Math.hypot(x-cx,z-cz);
+   if(d<bd){bd=d;best=c}
+ }
+ return best
+}
+function observerSpawnFor(country,cityId){
+ if(!regionMapTransform)return new THREE.Vector3(0,0,0);
+ let city=cityId?WORLD_CITY_BY_ID.get(cityId):null;
+ if(!city||city.region!==regionViewName){
+   const cs=regionMapTransform.cities.filter(c=>!country||c.country===country);
+   city=cs[0]||regionMapTransform.cities[0]
+ }
+ if(!city)return new THREE.Vector3(0,0,0);
+ return new THREE.Vector3(regionMapTransform.sx(city.x)+2.5,0,regionMapTransform.sz(city.y)+2.5)
+}
+function spawnRegionObserver(country=null,cityId=null){
+ regionVisitCountry=country;regionVisitCityId=cityId;
+ regionObserver=createRegionObserver();regionViewGroup.add(regionObserver);
+ const p=observerSpawnFor(country,cityId);regionObserver.position.copy(p);regionObserverTarget=p.clone();
+ regionObserver.userData.target.copy(p);regionObserver.userData.moving=false;
+ const city=nearestRegionCity(p.x,p.z);
+ if(!regionVisitCountry)regionVisitCountry=city?.country||null;
+ updatePlayerLocationHud(true)
+}
+function moveRegionObserverTo(v){
+ if(!regionObserver)return;
+ const p=v.clone();p.x=clamp(p.x,-101,101);p.z=clamp(p.z,-74,74);p.y=0;
+ regionObserverTarget=p;regionObserver.userData.target.copy(p);regionObserver.userData.moving=true;
+ camMode='follow';autoFocus.copy(regionObserver.position)
+}
+function updateRegionObserver(dt,now){
+ if(!regionViewActive||!regionObserver)return;
+ let d=null;
+ if(manualMove.active){
+   const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;
+   if(forward.lengthSq()<.001)forward.set(0,0,-1);forward.normalize();
+   const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize();
+   d=forward.multiplyScalar(manualMove.y).add(right.multiplyScalar(manualMove.x));
+   if(d.length()>.04){d.normalize();regionObserver.userData.moving=false}
+ }else if(regionObserver.userData.moving){
+   d=regionObserver.userData.target.clone().sub(regionObserver.position);d.y=0;
+   if(d.length()<.35){regionObserver.userData.moving=false;d=null}else d.normalize()
+ }
+ if(d){
+   const sp=6.3;regionObserver.position.addScaledVector(d,sp*dt);
+   regionObserver.position.x=clamp(regionObserver.position.x,-101,101);regionObserver.position.z=clamp(regionObserver.position.z,-74,74);
+   regionObserver.rotation.y=Math.atan2(d.x,d.z);
+   camMode='follow'
+ }
+ updatePlayerLocationHud()
+}
+function enterCountryView(country,cityId=null){
+ const city=cityId?WORLD_CITY_BY_ID.get(cityId):countryCapital(country);
+ if(!city)return;
+ enterRegionView(city.region,{country,cityId:city.id,travel:true})
+}
+
+function enterRegionView(name,opts={}){
+ if(!name)return;regionViewActive=true;regionViewName=name;regionVisitCountry=opts.country||null;regionVisitCityId=opts.cityId||null;
  regionHiddenState=[];
  for(const child of scene.children){
    if(child===regionViewGroup||child.isLight)continue;
    regionHiddenState.push([child,child.visible]);child.visible=false
  }
- buildRegional3DMap(name);regionViewGroup.visible=true;
+ buildRegional3DMap(name);regionViewGroup.visible=true;spawnRegionObserver(regionVisitCountry,regionVisitCityId);
  $('worldMapOverlay').classList.add('hidden');$('regionViewHud').classList.remove('hidden');document.body.classList.add('region-view');
- $('regionViewTitle').textContent=name;refreshRegionObserverPanel();
+ const city=nearestRegionCity(regionObserver.position.x,regionObserver.position.z);
+ $('regionViewTitle').textContent=regionVisitCountry?`${regionVisitCountry} · ${name}`:name;refreshRegionObserverPanel();
  const meta=WORLD_DATA.regions.find(r=>r.name===name),count=WORLD_DATA.cities.filter(c=>c.region===name).length;
- $('regionViewSub').textContent=`${meta?.desc||'지역'} · 도시 ${count}개 · 드래그 이동 / 핀치 줌`;
- camMode='free';autoFocus.set(0,0,0);yaw=.72;pitch=.82;distance=95;resizeWorld(true)
+ $('regionViewSub').textContent=`${city?city.name+' · ':''}${meta?.desc||'지역'} · 관찰자 직접 이동 · 주민 접촉에는 영향 없음`;
+ camMode='follow';autoFocus.copy(regionObserver.position);yaw=.72;pitch=.70;distance=30;resizeWorld(true);updatePlayerLocationHud(true)
 }
 function exitRegionView(){
  if(!regionViewActive)return;regionViewActive=false;regionViewGroup.visible=false;
  for(const[child,visible]of regionHiddenState)child.visible=visible;regionHiddenState=[];
- document.body.classList.remove('region-view');$('regionViewHud').classList.add('hidden');$('observerRegionPanel').classList.add('hidden');resetPlayerCamera();resizeWorld(true)
+ document.body.classList.remove('region-view');$('regionViewHud').classList.add('hidden');$('observerRegionPanel').classList.add('hidden');
+ regionVisitCountry=null;regionVisitCityId=null;resetPlayerCamera();resizeWorld(true);updatePlayerLocationHud(true)
 }
 $('orpClose').onclick=()=>$('observerRegionPanel').classList.add('hidden');
 $('regionLaenBtn').onclick=()=>exitRegionView();
@@ -3140,11 +3367,25 @@ $('regionWorldMapBtn').onclick=()=>{exitRegionView();worldMapUI.open()};
 const worldMapUI=new CivitasWorldMap({
  overlay:$('worldMapOverlay'),canvas:$('worldMapCanvas'),detail:$('worldMapDetail'),
  legend:$('worldMapLegend'),status:$('worldMapStatus'),countryList:$('worldCountryList'),
- getState:()=>state,data:WORLD_DATA,onClose:()=>{},onOpenRegion:(name)=>enterRegionView(name)
+ getState:()=>state,data:WORLD_DATA,onClose:()=>{},
+ onOpenRegion:(name)=>enterRegionView(name),
+ onTravelCountry:(name)=>enterCountryView(name),
+ onTravelCity:(city)=>enterCountryView(city.country,city.id),
+ onTravelRegion:(name)=>enterRegionView(name,{travel:true})
 });
 $('worldMapBtn').onclick=()=>worldMapUI.open();
 $('mobileWorldMapBtn')?.addEventListener('click',()=>worldMapUI.open());
 $('homeGuideBtn')?.addEventListener('click',()=>setHomeWaypoint(true));
+
+$('locateMeBtn')?.addEventListener('click',()=>{
+ if(regionViewActive&&regionObserver){
+   camMode='follow';autoFocus.copy(regionObserver.position);updatePlayerLocationHud(true);
+   const c=nearestRegionCity(regionObserver.position.x,regionObserver.position.z);
+   showEvent(`📍 ${regionVisitCountry||regionViewName}${c?' · '+c.name:''}`);return
+ }
+ followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';setCameraMode('follow');updatePlayerLocationHud(true);
+ const d=Math.hypot(player.position.x,player.position.z);showEvent(`📍 ${mainPlaceName()} · 감나무뜰 ${Math.round(d)}m`)
+});
 $('navCancelBtn')?.addEventListener('click',()=>{navWaypoint=null;$('navHud')?.classList.add('hidden')});
 
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;uiDirty=true;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
@@ -3158,7 +3399,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v9.2 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v9.5 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
@@ -3182,8 +3423,10 @@ function loop(now){
  guarded('플레이어',()=>updatePlayer(dt,now));
  guarded('복실이',()=>updateBokshil(dt,now));
  guarded('지형스트리밍',()=>{if(now-lastStreamUpdate>450){streamTerrainAroundPlayer();lastStreamUpdate=now}});
+ guarded('현재위치',()=>updatePlayerLocationHud());
  guarded('일반동물',()=>updateAnimals(dt,now));
  guarded('지역관찰AI',()=>updateRegionCitizens(dt,now));
+ guarded('관찰자현지이동',()=>updateRegionObserver(dt,now));
  guarded('습격·전쟁',()=>updateConflictSystem(dt,now));
  guarded('몬스터',()=>updateMonsters(dt,now));
  guarded('불빛',()=>{flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3});

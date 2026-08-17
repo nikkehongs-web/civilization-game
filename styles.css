@@ -264,7 +264,7 @@ html,body{
     display:block;position:fixed;inset:0;z-index:34;pointer-events:none;
   }
   .move-joystick{
-    position:absolute;left:14px;bottom:max(15px,calc(env(safe-area-inset-bottom) + 12px));
+    position:absolute;left:14px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 70px));
     width:102px;height:102px;border-radius:50%;
     pointer-events:auto;touch-action:none;
     background:radial-gradient(circle,rgba(28,42,35,.25) 0 34%,rgba(12,22,18,.55) 35% 100%);
@@ -526,4 +526,55 @@ body.region-view .camera-panel{display:none!important}
 @media(max-width:560px){
  .open-world-hud{left:7px;top:181px;padding:4px 6px}
  .open-world-hud b{font-size:6px}.open-world-hud span{font-size:5px}
+}
+
+/* ===== v9.4 OBSERVER TRAVEL + LOCATION ===== */
+.player-location-hud{
+ position:fixed;z-index:38;left:50%;top:145px;transform:translateX(-50%);
+ width:min(520px,55vw);display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:7px 10px;border-radius:12px;background:rgba(7,17,15,.78);
+ border:1px solid rgba(239,215,153,.18);pointer-events:none;
+ backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)
+}
+.plh-main{min-width:0}.plh-main small{display:block;font-size:5.5px;color:#94aba3}
+.plh-main b{display:block;font-size:9px;color:#efd9a4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plh-main span{display:block;font-size:5.5px;color:#9fb2ab}
+.plh-data{display:grid;grid-template-columns:auto auto;gap:2px 8px;text-align:right}
+.plh-data span{font-size:5.3px;color:#c1ccc5;white-space:nowrap}
+.camera-quick .locate-me{font-size:15px;border-color:rgba(235,207,126,.34);background:rgba(192,153,58,.13)}
+.observer-travel-note{
+ display:block;margin-top:5px;padding:5px 6px;border-radius:7px;background:rgba(102,171,193,.08);
+ color:#9fc6cf;font-size:5.4px;line-height:1.45
+}
+.observer-travel-btn{
+ margin-top:6px;width:100%;height:34px;border-radius:9px;border:1px solid rgba(110,191,211,.34);
+ background:rgba(57,135,153,.17);color:#c8edf2;font-size:7px;font-weight:900
+}
+body.region-view .player-location-hud{display:flex!important;top:72px;left:12px;transform:none;width:min(420px,48vw)}
+body.region-view .player-location-hud .plh-main small{color:#78b8c6}
+@media(max-width:700px){
+ .player-location-hud{top:149px;left:183px;right:178px;transform:none;width:auto;padding:5px 7px}
+ .plh-main b{font-size:7px}.plh-main small,.plh-main span,.plh-data span{font-size:4.6px}
+ body.region-view .player-location-hud{top:66px;left:7px;right:7px;width:auto}
+}
+@media(max-width:560px){
+ .player-location-hud{
+   top:417px;left:184px;right:117px;transform:none;width:auto;display:block;padding:5px 6px;border-radius:9px
+ }
+ .plh-main{display:flex;align-items:center;gap:4px}.plh-main small{display:none}
+ .plh-main b{font-size:6.3px}.plh-main span{font-size:4.3px;white-space:nowrap}
+ .plh-data{margin-top:2px;grid-template-columns:1fr 1fr;text-align:left;gap:1px 4px}
+ .plh-data span{font-size:4.1px;overflow:hidden;text-overflow:ellipsis}
+ body.region-view .player-location-hud{top:68px;left:7px;right:7px;display:block!important}
+}
+
+/* ===== v9.5 MINIMAP SYNC + DIRECT WORLD MAP + JOYSTICK HEIGHT ===== */
+.world-map-direct-hint{
+ flex:0 0 auto;padding:5px 10px;text-align:center;
+ background:rgba(65,133,151,.10);border-bottom:1px solid rgba(255,255,255,.05);
+ color:#a9c8ce;font-size:6.3px
+}
+.world-map-direct-hint b{color:#f0d99d;font-size:6.3px}
+@media(max-width:390px){
+ .move-joystick{bottom:max(70px,calc(env(safe-area-inset-bottom) + 64px))!important}
 }

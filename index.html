@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=9.2">
+<link rel="stylesheet" href="./styles.css?v=9.5">
 
 </head>
 <body>
@@ -22,6 +22,20 @@
 <header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="worldMapBtn" class="icon world-map-btn" title="세계지도">🌍</button><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
 <section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들, 그리고 복실이가 라엔 분지의 첫 아침을 함께 맞았다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
 <section id="resources" class="resources"></section>
+
+<section id="playerLocationHud" class="player-location-hud glass">
+  <div class="plh-main">
+    <small>📍 현재 내가 서 있는 곳</small>
+    <b id="playerLocationName">감나무뜰 중심</b>
+    <span id="playerLocationBiome">라엔 분지 · 들판</span>
+  </div>
+  <div class="plh-data">
+    <span id="playerLocationCoord">X 0.0 · Z 0.0</span>
+    <span id="playerFacingText">시선 북쪽</span>
+    <span id="playerHomeText">⌂ 감나무뜰 안</span>
+    <span id="playerLandmarkText">◇ 중심 0m</span>
+  </div>
+</section>
 <section class="minimap-wrap glass">
   <div class="mini-head"><b>주변 미니맵</b><span id="miniRangeLabel">내 위치 중심 · ±60</span></div>
   <div class="mini-canvas-wrap"><canvas id="minimap" width="344" height="344"></canvas><div id="miniNorth" class="mini-north">N</div></div>
@@ -76,7 +90,7 @@
   </div>
   <div class="camera-quick">
     <button id="mobileWorldMapBtn" class="world-quick" aria-label="세계지도">🌍</button>
-    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button>
+    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button><button id="locateMeBtn" class="locate-me" aria-label="내 위치 확인">📍</button>
     <button id="dragModeBtn" aria-label="드래그 모드">✥</button>
     <button id="zoomInBtn" aria-label="확대">＋</button>
     <button id="cameraResetBtn" aria-label="카메라 초기화">◎</button>
@@ -96,8 +110,8 @@
 </section>
 
 <section id="regionViewHud" class="region-view-hud hidden">
-  <div><small>OBSERVER REGIONAL MAP</small><b id="regionViewTitle">아르케아 중앙대륙</b><span id="regionViewSub">지역 3D 관찰 지도</span></div>
-  <div class="region-view-actions"><button id="regionWorldMapBtn">🌍 세계지도</button><button id="regionLaenBtn">⌂ 라엔 복귀</button></div>
+  <div><small>OBSERVER TRAVEL</small><b id="regionViewTitle">아르케아 중앙대륙</b><span id="regionViewSub">관찰자 현지 이동</span></div>
+  <div class="region-view-actions"><button id="regionWorldMapBtn">🌍 세계지도</button><button id="regionLaenBtn">⌂ 감나무뜰 복귀</button></div>
 </section>
 
 <section id="worldMapOverlay" class="world-map-overlay hidden">
@@ -111,7 +125,8 @@
       <div class="map-mode"><button id="mapModeCurrent" class="active">관찰자 현재</button><button id="mapMode200">200년 기준</button></div>
       <div class="map-zoom"><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
     </div>
-    <div class="world-map-main">
+    <div class="world-map-direct-hint">👆 지도에서 <b>도시·권역을 한 번 터치</b>하면 해당 3D 현지로 바로 이동</div>
+<div class="world-map-main">
       <div class="world-map-canvas-wrap"><canvas id="worldMapCanvas"></canvas><div class="world-scale-bar"><i></i>약 10,000 km 축척 기준</div></div>
       <aside class="world-map-side">
         <div id="worldMapStatus" class="world-map-status"></div>
@@ -123,6 +138,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=9.2"></script>
+<script type="module" src="./game.js?v=9.5"></script>
 </body>
 </html>
