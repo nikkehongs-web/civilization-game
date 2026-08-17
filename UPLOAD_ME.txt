@@ -1,0 +1,14 @@
+아이폰 GitHub 업로드용 — 폴더 없는 버전
+
+아래 8개 파일을 GitHub 저장소 최상위에 모두 올리세요.
+index.html
+styles.css
+game.js
+state-machine.js
+combat-rules.js
+residents.json
+seed_residents.json
+monsters.json
+
+GitHub Pages: main / root
+폴더 생성 필요 없음. assets도 현재는 필요 없음.

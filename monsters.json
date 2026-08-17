@@ -1,0 +1,36 @@
+[
+  {
+    "id": "wild_fang",
+    "name": "황야 송곳니",
+    "bodyColor": 4544582,
+    "baseHp": 54,
+    "hpPerLevel": 17,
+    "speed": 1.55,
+    "scanRange": 11,
+    "attackRange": 2.15,
+    "leashRange": 22,
+    "attack": 7,
+    "attackPerLevel": 1.25,
+    "attackInterval": 1.35,
+    "expBase": 20,
+    "expPerLevel": 8,
+    "respawnMs": 6500
+  },
+  {
+    "id": "shadow_horn",
+    "name": "그늘뿔 짐승",
+    "bodyColor": 5850193,
+    "baseHp": 66,
+    "hpPerLevel": 20,
+    "speed": 1.34,
+    "scanRange": 10,
+    "attackRange": 2.3,
+    "leashRange": 20,
+    "attack": 9,
+    "attackPerLevel": 1.45,
+    "attackInterval": 1.55,
+    "expBase": 24,
+    "expPerLevel": 10,
+    "respawnMs": 7200
+  }
+]
