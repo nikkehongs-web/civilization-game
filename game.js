@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=8.1';
+import { CivitasWorldMap } from './world-map.js?v=8.2';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -13,7 +13,7 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=8.1')
+const WORLD_DATA = await fetch('./world.json?v=8.2')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -619,7 +619,7 @@ function createAnimalModel(species,{x=0,z=0,domestic=false,homeX=x,homeZ=z}={}){
    for(const x0 of[-.13,.13]){const horn=new THREE.Mesh(new THREE.ConeGeometry(.045,.35,5),light);horn.position.set(x0,1.18,.42);horn.rotation.x=-.25;g.add(horn)}
  }
  g.position.set(x,0,z);g.scale.setScalar(scale);
- g.userData={animal:true,species,domestic,home:new THREE.Vector3(homeX,0,homeZ),target:new THREE.Vector3(x,0,z),speed:species==='deer'?1.6:species==='wolf'?1.75:species==='boar'?1.3:species==='rabbit'?1.2:.8,nextWander:0,phase:rand(0,10),legs,raid:false,dead:false,hp:species==='boar'?76:species==='wolf'?58:35,maxHp:species==='boar'?76:species==='wolf'?58:35};
+ g.userData={animal:true,species,domestic,home:new THREE.Vector3(homeX,0,homeZ),target:new THREE.Vector3(x,0,z),speed:species==='deer'?1.95:species==='wolf'?1.85:species==='boar'?1.45:species==='rabbit'?1.55:species==='goat'?1.0:species==='chicken'?.82:.95,nextWander:0,phase:rand(0,10),legs,raid:false,dead:false,hp:species==='boar'?76:species==='wolf'?58:35,maxHp:species==='boar'?76:species==='wolf'?58:35};
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  animalGroup.add(g);animals.push(g);return g
 }
@@ -650,17 +650,29 @@ function updateAnimals(dt,now){
   const toPlayer=a.position.distanceTo(player.position);
   if(!ud.domestic&&toPlayer<5){
    const flee=a.position.clone().sub(player.position);flee.y=0;if(flee.lengthSq()<.01)flee.set(1,0,0);flee.normalize();
-   ud.target=a.position.clone().addScaledVector(flee,7)
-  }else if(now>ud.nextWander||a.position.distanceTo(ud.target)<.6){
-   ud.nextWander=now+rand(2400,6500);
-   const radius=ud.domestic?5:(ud.species==='deer'?18:10);
-   ud.target.set(clamp(ud.home.x+rand(-radius,radius),-b.x,b.x),0,clamp(ud.home.z+rand(-radius,radius),-b.z,b.z))
+   ud.target=a.position.clone().addScaledVector(flee,10);
+   ud.nextWander=now+rand(700,1500)
+  }else if(now>ud.nextWander||a.position.distanceTo(ud.target)<.35){
+   // Animals keep changing grazing/foraging points so the landscape feels alive.
+   ud.nextWander=now+rand(850,2600);
+   const radius=ud.domestic?7:(ud.species==='deer'?28:ud.species==='rabbit'?18:14);
+   let cx=ud.home.x,cz=ud.home.z;
+   // Wild animals occasionally cross near fields/forest/river without making every visit a raid.
+   if(!ud.domestic&&Math.random()<.22){
+     const spot=pick([LOC.field,LOC.forest,LOC.river,LOC.herbs]);
+     cx=spot.x+rand(-12,12);cz=spot.z+rand(-12,12)
+   }
+   ud.target.set(clamp(cx+rand(-radius,radius),-b.x,b.x),0,clamp(cz+rand(-radius,radius),-b.z,b.z))
   }
-  const d=ud.target.clone().sub(a.position);d.y=0,dist=d.length();
-  if(dist>.25){
-   d.normalize();const sp=ud.speed*(toPlayer<5&&!ud.domestic?2.2:1);a.position.addScaledVector(d,sp*dt);a.rotation.y=Math.atan2(d.x,d.z);
-   const swing=Math.sin(now*.009*sp+ud.phase)*.35;ud.legs.forEach((l,i)=>l.rotation.x=(i%2?swing:-swing))
-  }else ud.legs.forEach(l=>l.rotation.x=0)
+  const d=ud.target.clone().sub(a.position);d.y=0;const dist=d.length();
+  if(dist>.16){
+   d.normalize();const sp=ud.speed*(toPlayer<5&&!ud.domestic?2.25:1);a.position.addScaledVector(d,sp*dt);a.rotation.y=Math.atan2(d.x,d.z);
+   a.position.y=Math.sin(now*.006*sp+ud.phase)*.018;
+   const swing=Math.sin(now*.012*sp+ud.phase)*.46;ud.legs.forEach((l,i)=>l.rotation.x=(i%2?swing:-swing))
+  }else{
+   a.position.y=0;
+   ud.legs.forEach(l=>l.rotation.x=0)
+  }
  }
 }
 populateWildAnimals();
@@ -838,35 +850,92 @@ function createBokshilModel(){
  const name=makeFloatingNameSprite('복실이');name.position.set(0,1.65,0);g.add(name);
  g.position.set(state.companion.bokshil.x,0,state.companion.bokshil.z);
  g.scale.setScalar(1.08);
- g.userData={bokshil:true,legs,tailPivot,phase:rand(0,10),target:g.position.clone()};
+ g.userData={bokshil:true,legs,tailPivot,phase:rand(0,10),target:g.position.clone(),patrolId:null,nextPatrolAt:0,barkCooldown:0,status:'주민들 사이를 순찰 중'};
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  scene.add(g);return g
 }
 const bokshil=createBokshilModel();
+function bokshilResidentTarget(now){
+ const ud=bokshil.userData;
+ let p=ud.patrolId?personMap.get(ud.patrolId):null;
+ if(!p||now>ud.nextPatrolAt){
+   const candidates=people.filter(x=>x.visible!==false&&personMap.has(x.userData.id));
+   if(candidates.length){
+     // Prefer residents away from the center so Bokshil actually ranges through the village.
+     candidates.sort((a,b)=>b.position.lengthSq()-a.position.lengthSq());
+     const pool=candidates.slice(0,Math.max(3,Math.ceil(candidates.length*.55)));
+     p=pick(pool);
+     ud.patrolId=p.userData.id;
+     ud.nextPatrolAt=now+rand(4200,9000)
+   }else p=null
+ }
+ return p
+}
+function bokshilAnimalThreat(){
+ if(!activeConflict||activeConflict.type!=='animal')return null;
+ let best=null,bd=Infinity;
+ for(const h of conflictHostiles){
+   if(!h||!h.userData||h.userData.dead||!h.visible||h.userData.conflictType!=='animal')continue;
+   const d=bokshil.position.distanceTo(h.position);
+   if(d<bd){bd=d;best=h}
+ }
+ return best
+}
+function moveBokshilToward(desired,dt,now,speedBase=3.4){
+ const ud=bokshil.userData,d=desired.clone().sub(bokshil.position);d.y=0;const dist=d.length();
+ if(dist>18){bokshil.position.copy(desired);bokshil.position.y=0}
+ else if(dist>.28){
+   d.normalize();const speed=dist>7?Math.max(5.6,speedBase):dist>2.5?Math.max(4.0,speedBase):speedBase;
+   bokshil.position.addScaledVector(d,speed*dt);bokshil.rotation.y=Math.atan2(d.x,d.z);
+   const swing=Math.sin(now*.017*speed+ud.phase)*.58;
+   ud.legs[0].rotation.x=swing;ud.legs[1].rotation.x=-swing;ud.legs[2].rotation.x=-swing;ud.legs[3].rotation.x=swing
+ }else ud.legs.forEach(l=>l.rotation.x=0);
+ return dist
+}
 function updateBokshil(dt,now){
  if(!state.companion?.bokshil?.active){bokshil.visible=false;return}
  bokshil.visible=true;
- const behind=new THREE.Vector3(Math.sin(player.rotation.y)*-1.65,0,Math.cos(player.rotation.y)*-1.65);
- const side=new THREE.Vector3(Math.cos(player.rotation.y)*-1.0,0,-Math.sin(player.rotation.y)*-1.0);
- const desired=player.position.clone().add(behind).add(side);
- if(!player.userData.moving&&!manualMove.active&&!selectedMonster){
-  desired.x+=Math.sin(now*.00055+bokshil.userData.phase)*.55;
-  desired.z+=Math.cos(now*.00048+bokshil.userData.phase)*.45
- }
- const d=desired.clone().sub(bokshil.position);d.y=0;const dist=d.length();
- if(dist>14){bokshil.position.copy(desired);bokshil.position.y=0}
- else if(dist>.35){
-  d.normalize();const speed=dist>5?6.4:dist>2.2?4.2:2.4;
-  bokshil.position.addScaledVector(d,speed*dt);bokshil.rotation.y=Math.atan2(d.x,d.z);
-  const swing=Math.sin(now*.015*speed+bokshil.userData.phase)*.48;
-  bokshil.userData.legs[0].rotation.x=swing;bokshil.userData.legs[1].rotation.x=-swing;
-  bokshil.userData.legs[2].rotation.x=-swing;bokshil.userData.legs[3].rotation.x=swing;
+ const ud=bokshil.userData;
+ ud.barkCooldown=Math.max(0,(ud.barkCooldown||0)-dt);
+
+ // During an animal raid Bokshil leaves the residents and intercepts the closest animal first.
+ const threat=bokshilAnimalThreat();
+ if(threat){
+   ud.status=`${threat.userData.species==='wolf'?'늑대':threat.userData.species==='boar'?'멧돼지':'야생동물'}을 막는 중`;
+   const dist=moveBokshilToward(threat.position,dt,now,5.0);
+   if(dist<1.65&&ud.barkCooldown<=0){
+     ud.barkCooldown=.72;
+     threat.userData.bokshilFear=(threat.userData.bokshilFear||0)+11;
+     threat.userData.hp-=2.5;
+     // Barking and rushing physically drives the animal back from the settlement.
+     const push=threat.position.clone().sub(bokshil.position);push.y=0;
+     if(push.lengthSq()<.01)push.set(1,0,0);push.normalize();
+     threat.position.addScaledVector(push,1.6);
+     threat.userData.targetPoint?.addScaledVector?.(push,.35);
+     if(threat.userData.bokshilFear>=38||threat.userData.hp<=0){
+       killHostile(threat);
+       state.conflict.animalsRepelled=Math.max(state.conflict.animalsRepelled||0,0);
+     }
+   }
  }else{
-  bokshil.userData.legs.forEach(l=>l.rotation.x=0);
-  bokshil.rotation.y=THREE.MathUtils.lerp(bokshil.rotation.y,player.rotation.y,.04)
+   // Normal role: patrol between residents, never follow the observer/player.
+   const resident=bokshilResidentTarget(now);
+   if(resident){
+     const r=state.residents.find(x=>x.id===resident.userData.id);
+     ud.status=`${r?.name||'주민'} 곁을 순찰 중`;
+     const side=new THREE.Vector3(Math.cos(resident.rotation.y)*1.25,0,-Math.sin(resident.rotation.y)*1.25);
+     const behind=new THREE.Vector3(Math.sin(resident.rotation.y)*-.85,0,Math.cos(resident.rotation.y)*-.85);
+     const desired=resident.position.clone().add(side).add(behind);
+     desired.x+=Math.sin(now*.0008+ud.phase)*.35;desired.z+=Math.cos(now*.0007+ud.phase)*.35;
+     moveBokshilToward(desired,dt,now,3.15)
+   }else{
+     ud.status='마을 중심을 순찰 중';
+     const desired=LOC.center.clone();desired.x+=Math.sin(now*.0007)*4;desired.z+=Math.cos(now*.0006)*4;
+     moveBokshilToward(desired,dt,now,2.8)
+   }
  }
- bokshil.userData.tailPivot.rotation.y=Math.sin(now*.012+bokshil.userData.phase)*.58;
- bokshil.userData.tailPivot.rotation.x=.12+Math.sin(now*.008)*.1;
+ ud.tailPivot.rotation.y=Math.sin(now*.014+ud.phase)*.7;
+ ud.tailPivot.rotation.x=.12+Math.sin(now*.009)*.1;
  state.companion.bokshil.x=bokshil.position.x;state.companion.bokshil.z=bokshil.position.z
 }
 
@@ -1199,7 +1268,7 @@ function processMyeongjaLifecycle(){
 ensureMyeongjaGraveVisual();
 
 
-function refreshFollowSelect(){const current=followId||'PLAYER';$('followSelect').innerHTML=`<option value="PLAYER">⚔ 나 · 관찰자</option><option value="BOKSHIL">🐕 복실이 · 동행</option>`+state.residents.map(r=>`<option value="${r.id}">${r.name} · ${r.job}</option>`).join('');if(current==='PLAYER'||current==='BOKSHIL'||personMap.has(current))$('followSelect').value=current}
+function refreshFollowSelect(){const current=followId||'PLAYER';$('followSelect').innerHTML=`<option value="PLAYER">⚔ 나 · 관찰자</option><option value="BOKSHIL">🐕 복실이 · 마을 순찰</option>`+state.residents.map(r=>`<option value="${r.id}">${r.name} · ${r.job}</option>`).join('');if(current==='PLAYER'||current==='BOKSHIL'||personMap.has(current))$('followSelect').value=current}
 function spawnResidentVisual(r){if(personMap.has(r.id))return personMap.get(r.id);const p=humanModel(r);people.push(p);personMap.set(r.id,p);return p}
 
 function bodyScaleForAge(age){return age<3?.42:age<7?.54:age<12?.68:age<16?.84:1}
@@ -1607,7 +1676,7 @@ function handleTap(e){
    setMonsterTarget(o);followId='PLAYER';setCameraMode('follow');return;
  }
  const bhit=ray.intersectObject(bokshil,true)[0];
- if(bhit){followId='BOKSHIL';if($('followSelect'))$('followSelect').value='BOKSHIL';setCameraMode('follow');showEvent('복실이 · 처음부터 함께한 동료');return}
+ if(bhit){followId='BOKSHIL';if($('followSelect'))$('followSelect').value='BOKSHIL';setCameraMode('follow');showEvent('복실이 · 주민들을 순찰하고 야생동물을 막는 마을 개');return}
 
  const phit=ray.intersectObjects(people,true)[0];
  if(phit){
@@ -2083,7 +2152,7 @@ function renderPeopleList(){
 }
 function renderWorld(){
  const b=state.buildings,t=state.tech,children=state.residents.filter(r=>r.age<16).length,adults=state.residents.length-children;
- $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 관찰자 곁에 실제 3D 동료로 존재합니다. 전투 레벨은 없고 계속 따라다닙니다.</p><span class="tag">복실이 동행</span><span class="tag">이명자 ${state.flags.myeongjaDead?'3년 1일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장</h3><p>주민 접촉 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p><span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div><div class="card"><h3>관찰자 세계 인구</h3><p>관찰자는 주민의 탐사 여부와 관계없이 30개 국가·세력권의 실제 시뮬레이션 인구를 모두 볼 수 있습니다.</p>${Object.entries(state.world.countries).sort((a,b)=>b[1].population-a[1].population).slice(0,10).map(([n,c])=>`<span class="tag">${n} ${c.population}명</span>`).join('')}<p>전체 국가는 🌍 세계지도에서 확인.</p></div><div class="card"><h3>현재 역사 노선 · ${trajectorySummary().name}</h3><p>고정 시나리오가 아니라 주민이 반복한 행동으로 변합니다.</p>${trajectorySummary().pairs.slice(0,5).map(([k,v])=>`<span class="trajectory-tag">${TRAJECTORY_NAMES[k]||k} ${v.toFixed(1)}</span>`).join('')}</div><div class="card"><h3>생태·전쟁 기록</h3><p>동물 습격 ${state.conflict.animalRaids}회 · 전투 ${state.conflict.warBattles}회 · 부상 ${state.conflict.wounded}명 · 식량 손실 ${state.conflict.foodLost.toFixed(1)}</p><span class="tag">현재 전쟁 ${(state.world.wars||[]).filter(w=>w.active).length}</span><span class="tag">외부 국가간 전쟁 ${(state.world.externalWars||[]).filter(w=>w.active).length}</span></div>`
+ $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 마을 사람들 사이를 돌아다니는 동료입니다. 관찰자를 따라오지 않으며, 야생동물 습격 때 먼저 달려가 막습니다.</p><span class="tag">복실이 마을 순찰</span><span class="tag">이명자 ${state.flags.myeongjaDead?'3년 1일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장</h3><p>주민 접촉 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p><span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div><div class="card"><h3>관찰자 세계 인구</h3><p>관찰자는 주민의 탐사 여부와 관계없이 30개 국가·세력권의 실제 시뮬레이션 인구를 모두 볼 수 있습니다.</p>${Object.entries(state.world.countries).sort((a,b)=>b[1].population-a[1].population).slice(0,10).map(([n,c])=>`<span class="tag">${n} ${c.population}명</span>`).join('')}<p>전체 국가는 🌍 세계지도에서 확인.</p></div><div class="card"><h3>현재 역사 노선 · ${trajectorySummary().name}</h3><p>고정 시나리오가 아니라 주민이 반복한 행동으로 변합니다.</p>${trajectorySummary().pairs.slice(0,5).map(([k,v])=>`<span class="trajectory-tag">${TRAJECTORY_NAMES[k]||k} ${v.toFixed(1)}</span>`).join('')}</div><div class="card"><h3>생태·전쟁 기록</h3><p>동물 습격 ${state.conflict.animalRaids}회 · 전투 ${state.conflict.warBattles}회 · 부상 ${state.conflict.wounded}명 · 식량 손실 ${state.conflict.foodLost.toFixed(1)}</p><span class="tag">현재 전쟁 ${(state.world.wars||[]).filter(w=>w.active).length}</span><span class="tag">외부 국가간 전쟁 ${(state.world.externalWars||[]).filter(w=>w.active).length}</span></div>`
 }
 function renderHistory(){$('historyList').innerHTML=state.logs.slice(0,220).map(l=>`<div class="log-item ${l.type}"><b>${l.title}</b><p>${l.text}</p><time>세계력 ${l.time} · ${l.speaker||''}</time></div>`).join('')}
 function chronological(){return[...state.logs].sort((a,b)=>a.seq-b.seq)}function novelText(style='healing'){const L=chronological(),out=['문명: 감나무뜰의 창세기','CIVILIZATION: Genesis','',`원고 생성 시점: 세계력 ${stamp()}`,`현재 주민 ${state.residents.length}명 · 기록 사건 ${state.logs.length}개`,'','※ 아래 원고는 게임 안에서 실제 발생해 저장된 사건을 시간순으로 재구성한 것입니다.',''];if(style==='chronicle'){for(const l of L){out.push(`[세계력 ${l.time}] ${l.title}`,l.text,l.quote?`“${l.quote}” — ${l.speaker}`:'','')}return out.join('\n')}out.push('프롤로그 — 라엔 분지','',`아르케아 중앙대륙의 라엔 분지에는 아직 마을이라 부를 만한 것도 없었다. 흙과 물길, 낮은 둔덕, 그리고 오늘을 살아내야 하는 사람들이 있었을 뿐이었다.`,'',`말기 암을 앓는 이명자는 남은 시간을 모든 일을 혼자 해내는 데 쓰지 않았다. 대신 누가 흙을 읽고, 누가 도구를 만들고, 누가 기억을 기록으로 남기는지 바라보았다.`,'');let ch=0,lastYear=null;for(const l of L){const y=l.time.split('년')[0];if(y!==lastYear){lastYear=y;ch++;out.push(`제${ch}장 — 세계력 ${y}년`,'')}if(style==='webnovel'){out.push(l.type==='warn'?'그날, 평소와 다른 기척이 감나무뜰에 내려앉았다.':'작은 변화였다. 하지만 아무것도 없던 이곳에서는 작은 변화가 곧 역사였다.','',l.text,'',`“${storyQuoteFor(l)}”`,`${l.speaker||'이명자'}의 말이 오래 남았다.`,'')}else{out.push(l.text,'',`“${storyQuoteFor(l)}”`,`— ${l.speaker||'이명자'}`,`세계력 ${l.time}, 사람들은 그날을 ‘${l.title}’이라는 이름으로 기억했다.`,'')}}out.push('에필로그 — 계속되는 하루','',`현재 감나무뜰에는 ${state.residents.length}명의 주민이 살아간다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}. 숫자는 작지만 그 안에는 사람들의 하루가 들어 있다.`,'','=== 등장인물 현재 기록 ===',...state.residents.map(r=>`${r.name}(${r.id}) · ${r.age}세 · ${r.job} · 잠재력 ${r.potential} · 개화율 ${r.bloom.toFixed(1)}% · ${r.note}`));return out.join('\n')}
@@ -2097,7 +2166,7 @@ function renderNovel(){$('novelPreview').textContent=novelText($('novelStyle').v
  else if(selectedMonster&&!selectedMonster.userData.dead)status=`${selectedMonster.userData.name} 추적 · HP ${Math.max(0,Math.ceil(selectedMonster.userData.hp))}/${selectedMonster.userData.maxHp}`;
  else status=`EXP ${p.exp}/${p.nextExp} · 사냥 ${p.kills}회 · 사망 ${p.deaths||0}회${p.autoHunt?' · AUTO':''}`;
  $('playerStatus').textContent=status;
- if($('bokshilStatus'))$('bokshilStatus').textContent=state.player.dead?'곁에서 기다리는 중':selectedMonster?'전투에는 참여하지 않고 곁을 지키는 중':'내 곁을 따라다니는 중';
+ if($('bokshilStatus'))$('bokshilStatus').textContent=bokshil?.userData?.status||'주민들 사이를 순찰 중';
  $('playerHpBar').style.width=`${clamp(p.hp/p.maxHp*100,0,100)}%`;
  const b=$('autoHuntBtn');b.classList.toggle('locked',!aw);b.classList.toggle('active',!!p.autoHunt&&aw);b.textContent=aw?(p.autoHunt?'AUTO ON':'사냥 AUTO'):'55년 잠김';
 }
@@ -2153,7 +2222,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v8.2 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
