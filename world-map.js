@@ -104,10 +104,10 @@ function drawLake(ctx,screenFn,x,y,rx,ry){
 
 
 export class CivitasWorldMap{
- constructor({overlay,canvas,detail,legend,status,countryList,getState,data,onClose}){
+ constructor({overlay,canvas,detail,legend,status,countryList,getState,data,onClose,onOpenRegion}){
   this.overlay=overlay;this.canvas=canvas;this.ctx=canvas.getContext('2d');
-  this.detail=detail;this.legend=legend;this.status=status;this.countryList=countryList;this.getState=getState;this.data=data;this.onClose=onClose;
-  this.mode='current';this.scale=1;this.ox=0;this.oy=0;this.pointerMap=new Map();this.lastPair=null;this.lastSingle=null;this.moved=false;
+  this.detail=detail;this.legend=legend;this.status=status;this.countryList=countryList;this.getState=getState;this.data=data;this.onClose=onClose;this.onOpenRegion=onOpenRegion;
+  this.mode='current';this.scale=1;this.ox=0;this.oy=0;this.countryPage=0;this.selectedCountry=null;this.pointerMap=new Map();this.lastPair=null;this.lastSingle=null;this.moved=false;
   this.cityById=new Map(data.cities.map(c=>[c.id,c]));
   this.regionStats=this.buildRegionStats();
   this.regionPolygons=new Map();
@@ -211,17 +211,22 @@ export class CivitasWorldMap{
   this.legend.innerHTML=this.data.regions.map(r=>`<button data-region="${r.name}"><i style="background:${REGION_COLORS[r.name]}"></i><span>${r.name}</span><b>${r.cities}</b></button>`).join('');
   this.legend.querySelectorAll('[data-region]').forEach(b=>b.onclick=()=>this.showRegion(b.dataset.region))
  }
+ bindRegionOpen(name){
+  const b=this.detail.querySelector('[data-open-region]');
+  if(b)b.onclick=()=>{this.close();this.onOpenRegion?.(name)}
+ }
+
  showRegion(name){
   const r=this.regionStats.get(name),st=this.getState(),known=st.world.knownRegions.includes(name);
   const founded=this.data.cities.filter(c=>c.region===name&&st.world.foundedCities.includes(c.id)).length;
   const pop=Object.entries(st.world.countries||{}).filter(([n,c])=>c.region===name).reduce((s,[n,c])=>s+c.population,0);
   const start=this.cityById.get(this.data.meta.startCityId),center={x:r.centerX,y:r.centerY},km=Math.round(worldDistanceKm(start,center));
-  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 ${Math.ceil(km/30)}일+</em><em>관찰자 인구 ${pop}</em><em>${known?'주민 접촉 완료':'주민 미접촉'}</em><em>200년 도시 ${r.cities}</em><em>현재 거점 ${founded}</em></div>`
+  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 ${Math.ceil(km/30)}일+</em><em>관찰자 인구 ${pop}</em><em>${known?'주민 접촉 완료':'주민 미접촉'}</em><em>200년 도시 ${r.cities}</em><em>현재 거점 ${founded}</em></div><button class="region-map-open" data-open-region>🏔 ${name} 3D 지역지도 열기</button>`;this.bindRegionOpen(name)
  }
  showCity(city){
   const st=this.getState(),founded=st.world.foundedCities.includes(city.id),start=this.cityById.get(this.data.meta.startCityId);
   const km=Math.round(worldDistanceKm(start,city)),walk=Math.ceil(km/30),sail=Math.ceil(km/110);
-  this.detail.innerHTML=`<b>${city.name}</b><span>${city.country}</span><p>${city.region}</p><div><em>${city.id}</em><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 단순환산 ${walk}일</em><em>항해 단순환산 ${sail}일</em><em>${founded?'현재 세계에 형성됨':'세계력 200년 기준 좌표'}</em></div>`
+  this.detail.innerHTML=`<b>${city.name}</b><span>${city.country}</span><p>${city.region}</p><div><em>${city.id}</em><em>라엔 기준 약 ${km.toLocaleString()}km</em><em>도보 단순환산 ${walk}일</em><em>항해 단순환산 ${sail}일</em><em>${founded?'현재 세계에 형성됨':'세계력 200년 기준 좌표'}</em></div><button class="region-map-open" data-open-region>🗺 ${city.region} 3D 지역지도 열기</button>`;this.bindRegionOpen(city.region)
  }
  pickAt(x,y){
   const p=this.mapPoint(x,y),st=this.getState(),allowed=this.mode==='future'?this.data.cities:this.data.cities.filter(c=>st.world.foundedCities.includes(c.id));
@@ -362,20 +367,45 @@ export class CivitasWorldMap{
   }
   this.renderStatus()
  }
+ renderCountryDetail(name,page=0){
+  const st=this.getState(),c=st.world.countries[name];if(!c)return;
+  const people=(st.worldPeople||[]).filter(p=>p.alive!==0&&p.c===name).sort((a,b)=>b.a-a.a||a.n.localeCompare(b.n));
+  const per=20,pages=Math.max(1,Math.ceil(people.length/per));page=clamp(page,0,pages-1);this.countryPage=page;this.selectedCountry=name;
+  const rows=people.slice(page*per,page*per+per);
+  const hist=(c.history||[]).slice(-12),maxP=Math.max(1,...hist.map(h=>h[1]));
+  const bars=hist.length?`<div class="country-growth-bars">${hist.map(h=>`<i title="${h[0]}년 ${h[1]}명" style="height:${Math.max(8,h[1]/maxP*100)}%"></i>`).join('')}</div>`:'<small>아직 연간 성장 기록 없음</small>';
+  const delta=(c.population||0)-(c.lastPopulation||c.population||0),known=(c.knownCountries||[name]).length;
+  const events=(c.events||[]).slice(0,5).map(e=>`<li>${e.y}년 · ${e.t}</li>`).join('');
+  this.detail.innerHTML=`<b>${name}</b><span>${c.region} · ${c.stage||'소집단'}</span>
+   <p>👁 관찰자 현재 인구 <strong>${c.population}명</strong> · 전년 대비 ${delta>=0?'+':''}${delta} · 정착지 ${c.settlements||1}/${c.cities}</p>
+   <div><em>출생 ${c.births||0}</em><em>사망 ${c.deaths||0}</em><em>아이 ${c.children||0}</em><em>성인 ${c.adults||0}</em><em>노인 ${c.elders||0}</em><em>가구 ${c.households||0}</em></div>
+   <div><em>식량 ${Math.round(c.food||0)}</em><em>기술 ${Math.round(c.tech||0)}</em><em>기반 ${Math.round(c.infrastructure||0)}</em><em>군사 ${Math.round(c.military||0)}</em><em>안정 ${Math.round(c.stability||0)}</em><em>탐사 ${Math.round(c.exploration||0)}</em></div>
+   <p>이 나라가 알고 있는 다른 세력: ${known}/30 · 관찰자는 접촉 여부와 무관하게 전부 볼 수 있음.</p>
+   ${bars}
+   ${events?`<ul class="country-event-list">${events}</ul>`:''}
+   <div class="census-head"><b>실제 주민 명부 ${people.length}명</b><span>${page+1}/${pages}쪽</span></div>
+   <div class="country-census">${rows.map(p=>`<div><b>${p.n}</b><span>${p.g==='F'?'여':'남'} · ${p.a}세 · ${p.j}</span><small>${p.ct} · ${p.f}</small></div>`).join('')}</div>
+   <div class="census-page"><button data-census-prev ${page<=0?'disabled':''}>‹ 이전</button><button data-census-next ${page>=pages-1?'disabled':''}>다음 ›</button></div>
+   <button class="region-map-open" data-open-region>🗺 ${c.region} 3D 지역지도 열기</button>`;
+  this.detail.querySelector('[data-census-prev]')?.addEventListener('click',()=>this.renderCountryDetail(name,page-1));
+  this.detail.querySelector('[data-census-next]')?.addEventListener('click',()=>this.renderCountryDetail(name,page+1));
+  this.bindRegionOpen(c.region)
+ }
  renderCountries(){
   if(!this.countryList)return;const st=this.getState(),wars=st.world.wars||[],external=st.world.externalWars||[];
   this.countryList.innerHTML=Object.entries(st.world.countries||{}).sort((a,b)=>b[1].population-a[1].population).map(([n,c])=>{
    const contact=(st.world.contactedCountries||[]).includes(n),war=wars.some(w=>w.active&&w.country===n)||external.some(w=>w.active&&(w.a===n||w.b===n));
-   return `<button data-country="${n}"><b>${war?'⚔ ':''}${n}</b><span>${c.population}명</span><small>${c.region} · ${contact?'주민 접촉':'주민 미접촉'} · 연간 +${c.births||0}/-${c.deaths||0}</small></button>`
+   const delta=(c.population||0)-(c.lastPopulation||c.population||0),arrow=delta>0?'▲':delta<0?'▼':'─';
+   return `<button data-country="${n}"><b>${war?'⚔ ':''}${n}</b><span>${c.population}명 ${arrow}${Math.abs(delta)}</span><small>${c.stage||'소집단'} · 정착 ${c.settlements||1}/${c.cities} · 지식 ${(c.knownCountries||[n]).length}/30 · ${contact?'라엔 접촉':'라엔 미접촉'}</small></button>`
   }).join('');
-  this.countryList.querySelectorAll('[data-country]').forEach(b=>b.onclick=()=>{const n=b.dataset.country,c=st.world.countries[n],d=st.world.diplomacy?.[n];this.detail.innerHTML=`<b>${n}</b><span>${c.region}</span><p>관찰자 현재 인구 ${c.population}명 · 번영 ${c.prosperity} · 개방 ${c.openness} · 공격성 ${c.aggression}</p><div><em>${(st.world.contactedCountries||[]).includes(n)?'주민 실제 접촉':'주민 미접촉'}</em>${d?`<em>관계 ${Math.round(d.relation)} ${d.status}</em>`:''}</div>`})
+  this.countryList.querySelectorAll('[data-country]').forEach(b=>b.onclick=()=>this.renderCountryDetail(b.dataset.country,0))
  }
  renderStatus(){
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
   const active=(w.expeditions||[]).filter(e=>e.active);
   const ex=active.length?active.map(e=>`<span class="expedition-pill">${e.kind==='sea'?'⛵':'🚶'} ${e.region} · ${e.distanceKm.toLocaleString()}km · ${Math.max(0,e.arrivalAbsDay-(st.year*365+st.day))}일 남음</span>`).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
-  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 전체 국가 30 · 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length}/30 · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 아르케아 핵심 30 · 타 권역 270. 도보는 30km/일, 기승 48km/일, 항해 110km/일 기준이며 지형·준비 시간이 추가됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
+  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 실제 사람 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 국가/세력권 30 · 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length}/30 · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 아르케아 핵심 30 · 타 권역 270. 도보는 30km/일, 기승 48km/일, 항해 110km/일 기준이며 지형·준비 시간이 추가됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
   this.renderCountries()
  }
 }

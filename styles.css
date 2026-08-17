@@ -432,3 +432,49 @@ html,body{
  .world-map-head span{max-width:64vw}
  .world-map-canvas-wrap{min-height:70vh!important}
 }
+
+/* ===== v8.5 DYNAMIC MINIMAP + ACTUAL REGIONAL 3D MAPS ===== */
+.mini-canvas-wrap{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:9px}
+.mini-canvas-wrap #minimap{width:100%!important;height:100%!important}
+.mini-north{position:absolute;right:5px;top:4px;font-size:6px;font-weight:900;color:#f1e3bd;text-shadow:0 1px 3px #000;pointer-events:none}
+.mini-location-info{margin-top:4px;padding:4px 5px;border-radius:7px;background:rgba(5,13,10,.5);font-size:5.7px;color:#d6dfd7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.minimap-wrap canvas{cursor:crosshair}
+.region-view-hud{
+ position:fixed;z-index:72;left:12px;right:12px;top:max(8px,env(safe-area-inset-top));
+ display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;border-radius:13px;
+ background:rgba(7,16,18,.82);border:1px solid rgba(255,238,193,.15);
+ backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+.region-view-hud small{display:block;font-size:5.5px;letter-spacing:.13em;color:#87b7c0}.region-view-hud b{display:block;font-size:10px;color:#f2dfae}.region-view-hud span{display:block;font-size:5.5px;color:#9badaa;margin-top:1px}
+.region-view-actions{display:flex;gap:5px}.region-view-actions button{height:32px;padding:0 9px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);font-size:6.5px;color:#eee0bb}
+.region-map-open{margin-top:7px;width:100%;height:31px;border-radius:9px;border:1px solid rgba(118,185,202,.32);background:rgba(66,132,148,.13);color:#b9dbe2;font-size:7px;font-weight:800}
+body.region-view .topbar,
+body.region-view .resources,
+body.region-view .story,
+body.region-view .minimap-wrap,
+body.region-view .bottom-hud,
+body.region-view .player-hud,
+body.region-view .bokshil-hud,
+body.region-view .map-expansion-hud,
+body.region-view .mobile-game-controls,
+body.region-view .conflict-hud,
+body.region-view .camera-panel{display:none!important}
+@media(max-width:560px){
+ .mini-location-info{font-size:5px;padding:3px 4px;margin-top:2px}
+ .region-view-hud{left:7px;right:7px;padding:6px 7px}.region-view-hud b{font-size:8px}.region-view-actions button{height:29px;padding:0 7px;font-size:5.7px}
+}
+
+/* ===== v8.6 FULL WORLD POPULATION OBSERVER ===== */
+.country-growth-bars{height:54px;display:flex;align-items:flex-end;gap:2px;margin:7px 0;padding:5px;border-radius:8px;background:rgba(255,255,255,.025)}
+.country-growth-bars i{display:block;flex:1;min-width:3px;max-width:12px;border-radius:2px 2px 0 0;background:rgba(120,185,150,.68)}
+.country-event-list{margin:6px 0;padding-left:14px;color:#9eb0ad;font-size:5.7px;line-height:1.5}
+.census-head{display:flex!important;justify-content:space-between;align-items:center;margin-top:8px!important;padding-top:6px;border-top:1px solid rgba(255,255,255,.07)}
+.census-head b{font-size:7px!important}.census-head span{font-size:6px!important;color:#8ba0a1!important}
+.country-census{display:grid;gap:3px;max-height:240px;overflow:auto;margin-top:5px}
+.country-census>div{display:grid;grid-template-columns:1fr auto;gap:2px 5px;padding:5px 6px;border-radius:7px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.045)}
+.country-census b{font-size:6.5px;color:#e6ddc4}.country-census span{font-size:5.7px;color:#b4c3bf}.country-census small{grid-column:1/3;font-size:5px;color:#778e91}
+.census-page{display:flex!important;justify-content:space-between;gap:5px;margin-top:5px!important}
+.census-page button{flex:1;height:27px;border-radius:7px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.035);font-size:6px;color:#cfd9d6}
+.census-page button:disabled{opacity:.28}
+.world-country-list button span{white-space:nowrap}
+@media(max-width:700px){.country-census{max-height:135px}.country-growth-bars{height:38px}}
