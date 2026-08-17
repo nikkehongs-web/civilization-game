@@ -8,14 +8,14 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=4">
+<link rel="stylesheet" href="./styles.css?v=6">
 
 </head>
 <body>
 <div id="game"></div>
 <div id="loading" class="loading"><div><div class="spinner"></div><b>감나무뜰을 불러오는 중</b><p>3D 세계와 주민들의 하루를 준비하고 있습니다.</p></div></div>
-<header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
-<section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들이 라엔 분지의 흙을 살피기 시작했다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
+<header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="worldMapBtn" class="icon world-map-btn" title="세계지도">🌍</button><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
+<section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들, 그리고 복실이가 라엔 분지의 첫 아침을 함께 맞았다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
 <section id="resources" class="resources"></section>
 <section class="minimap-wrap glass"><div class="mini-head"><b>라엔 분지 미니맵</b><span>터치해 이동</span></div><canvas id="minimap" width="344" height="344"></canvas><div class="mini-legend"><span><i class="i-main"></i>핵심</span><span><i class="i-person"></i>주민</span><span><i class="i-event"></i>사건</span></div></section>
 <section class="camera-panel glass"><b>관찰 카메라</b><div class="camera-buttons"><button class="cam-btn active" data-camera="auto">자동</button><button class="cam-btn" data-camera="free">자유</button><button class="cam-btn" data-camera="follow">추적</button></div><select id="followSelect" class="follow-select"></select></section>
@@ -29,6 +29,11 @@
   <div id="brainAlt" class="brain-alt"></div>
   <div class="brain-memory"><small>최근 기억</small><div id="brainMemory">아직 특별한 기억이 없다.</div></div>
 </section>
+
+<section id="bokshilHud" class="bokshil-hud glass">
+  <b>🐕 복실이</b><span id="bokshilStatus">내 곁을 따라다니는 중</span>
+</section>
+
 <section id="playerHud" class="player-hud glass">
   <div id="playerFocusBtn" class="player-orb" title="내 캐릭터 추적">⚔️</div>
   <div class="player-copy"><b id="playerName">나 · 관찰자</b><span id="playerStatus">마을을 걷는 중 · 각성은 세계력 55년</span><div class="player-hp"><i id="playerHpBar"></i></div></div>
@@ -50,7 +55,29 @@
 
 <div class="bottom-hud"><section class="ticker glass"><small>최신 연대기</small><b id="tickerTitle">창세기 시작</b><p id="tickerText">아직 마을이라 부르기 어려운 터에서 첫 하루가 시작됐다.</p></section><section class="speed glass"><button data-speed="0">Ⅱ</button><button data-speed="1" class="active">×1</button><button data-speed="5">×5</button><button data-speed="20">×20</button></section></div>
 <div class="hint glass">드래그: 카메라 회전 · 핀치: 확대/축소 · 바닥 터치: 이동 · 더블탭: 내 캐릭터 추적</div>
+
+<section id="worldMapOverlay" class="world-map-overlay hidden">
+  <div class="world-map-shell">
+    <div class="world-map-head">
+      <div><small>CIVITAS WORLD DATA</small><b>세계 지도</b><span>현재 문명 ↔ 세계력 200년 기준 8권역·126도시</span></div>
+      <button id="closeWorldMap">×</button>
+    </div>
+    <div class="world-map-toolbar">
+      <div class="map-mode"><button id="mapModeCurrent" class="active">현재 세계</button><button id="mapMode200">200년 기준</button></div>
+      <div class="map-zoom"><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
+    </div>
+    <div class="world-map-main">
+      <div class="world-map-canvas-wrap"><canvas id="worldMapCanvas"></canvas></div>
+      <aside class="world-map-side">
+        <div id="worldMapStatus" class="world-map-status"></div>
+        <div id="worldMapDetail" class="world-map-detail"><b>라엔 분지(감나무뜰)</b><span>아르케아 중앙대륙</span><p>창세기 시작점. 현재 문명의 실제 탐사와 항해가 지도에 누적됩니다.</p></div>
+        <div id="worldMapLegend" class="world-map-legend"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=4"></script>
+<script type="module" src="./game.js?v=6"></script>
 </body>
 </html>

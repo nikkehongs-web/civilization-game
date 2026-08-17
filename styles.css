@@ -327,3 +327,40 @@ html,body{
   .minimap-wrap{width:84px}
   #minimap{width:76px;height:76px}
 }
+
+
+/* ===== CIVITAS WORLD MAP v5 ===== */
+.world-map-btn{font-size:16px!important}
+.world-map-overlay{position:fixed;z-index:85;inset:0;background:rgba(2,8,11,.88);padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));touch-action:none}
+.world-map-shell{width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(255,230,175,.18);border-radius:22px;background:linear-gradient(180deg,#0d1d24,#09141b);box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.world-map-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.world-map-head small{display:block;font-size:7px;color:#d4b870;letter-spacing:.18em}.world-map-head b{display:inline-block;font-size:17px;color:#f2e3bd;margin-right:8px}.world-map-head span{font-size:8px;color:#8fa5ab}.world-map-head>button{width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:22px}
+.world-map-toolbar{display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.06)}.map-mode,.map-zoom{display:flex;gap:5px}.world-map-toolbar button{height:32px;border-radius:9px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);padding:0 10px;font-size:8px}.world-map-toolbar button.active{background:rgba(222,192,116,.16);border-color:rgba(222,192,116,.45);color:#ffe2a0}
+.world-map-main{display:grid;grid-template-columns:minmax(0,1fr) 270px;gap:0;min-height:0;flex:1}.world-map-canvas-wrap{position:relative;min-width:0;min-height:0;overflow:hidden;background:#08131a}.world-map-canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+.world-map-side{padding:9px;overflow:auto;border-left:1px solid rgba(255,255,255,.07);background:rgba(4,12,16,.55)}
+.world-map-status,.world-map-detail{padding:9px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035);margin-bottom:7px}.world-map-status b,.world-map-detail b{display:block;font-size:10px;color:#f0dcaa}.world-map-status span,.world-map-detail span{display:block;font-size:7px;color:#a7b8bb;margin-top:3px}.world-map-status small{display:block;font-size:6px;color:#7f979e;line-height:1.5;margin-top:5px}.world-map-detail p{font-size:7px;line-height:1.5;color:#aab8b8}.world-map-detail div{display:flex;flex-wrap:wrap;gap:4px}.world-map-detail em{font-style:normal;font-size:6px;padding:3px 5px;border-radius:999px;background:rgba(255,255,255,.055);color:#d3dedc}
+.world-map-legend{display:grid;gap:4px}.world-map-legend button{display:grid;grid-template-columns:9px 1fr auto;gap:6px;align-items:center;width:100%;padding:6px;border-radius:9px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);text-align:left}.world-map-legend i{width:9px;height:9px;border-radius:50%}.world-map-legend span{font-size:7px;color:#c9d3d0}.world-map-legend b{font-size:7px;color:#e0c27d}
+@media(max-width:700px){
+ .world-map-overlay{padding:0}.world-map-shell{border-radius:0;border:0}.world-map-head{padding:8px 9px}.world-map-head b{font-size:14px}.world-map-head span{display:block;font-size:6px}.world-map-head>button{width:34px;height:34px}
+ .world-map-toolbar{padding:5px 7px}.world-map-toolbar button{height:30px;padding:0 8px;font-size:7px}
+ .world-map-main{display:flex;flex-direction:column}.world-map-canvas-wrap{flex:1;min-height:55vh}.world-map-side{flex:0 0 auto;max-height:35vh;border-left:0;border-top:1px solid rgba(255,255,255,.07);padding:6px}
+ .world-map-status,.world-map-detail{padding:6px;margin-bottom:5px}.world-map-legend{grid-template-columns:repeat(2,1fr);gap:3px}.world-map-legend button{padding:4px}.world-map-legend span{font-size:6px}
+}
+
+/* ===== BOKSHIL MAIN COMPANION + MYEONGJA MEMORIAL v6 ===== */
+.bokshil-hud{
+  position:fixed;z-index:33;left:50%;bottom:88px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;
+  background:rgba(15,24,19,.72);border:1px solid rgba(244,226,180,.14);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  pointer-events:none;white-space:nowrap;
+}
+.bokshil-hud b{font-size:8px;color:#f1dfb4}.bokshil-hud span{font-size:6px;color:#aebbb1}
+@media(max-width:560px){
+ .bokshil-hud{
+   bottom:max(58px,calc(env(safe-area-inset-bottom) + 55px));
+   padding:4px 7px;gap:4px;background:rgba(9,17,14,.70);box-shadow:none
+ }
+ .bokshil-hud b{font-size:7px}.bokshil-hud span{font-size:5px}
+ body.hud-off .bokshil-hud{display:flex!important}
+}
