@@ -1,0 +1,51 @@
+《문명》 v13.1 자잘한 오류 전수점검 수정 보고서
+
+이번 검수에서 v13에서 실제로 놓친 항목:
+1. 미니맵의 숲 색/나무 수/생성 규칙이 3D 스트리밍과 다시 달라져 있었음.
+2. 미니맵 집 위치가 실제 houseSpot()이 아니라 오래된 HOUSE_SPOTS를 사용했음.
+3. 강 위 오브젝트/연못 배제 규칙도 미니맵과 3D가 달랐음.
+4. 타지역 수림권은 여전히 구형 짙은 숲 색과 불투명 수관을 사용했음.
+5. 세계지도 현재 모드에서 미개척 미래 도시까지 정치 영토선으로 연결했음.
+6. 국가 상세의 영토 도시 수도 미개척 슬롯까지 포함했음.
+7. 현재 세계지도에서 126개 미래 도시를 눌러 이동할 수 있었음.
+8. 세계지도 '실제 사람' 표기가 실제 총인구가 아니라 상세추적 표본 수였음.
+9. 세계력 0년에도 위치 판정에 '사육장'이라는 지명이 존재했음.
+10. 주민 3D 모델 위에 저해상도 캐릭터 스프라이트가 겹쳐 있었음.
+11. 55년에 오크 조우와 동시에 다른 실험체 계통이 7마리까지 즉시 생성됐음.
+12. 55년 최초 오크 기록이 생명공학 연대와 몬스터 각성에서 중복 기록될 수 있었음.
+13. 에르단의 새 도시 분가는 숫자만 재분배했고 실제 가족/주민 homeCity는 이동하지 않았음.
+14. 해외 공동체의 첫 접촉은 실제 원정 없이 연간 수치로 즉시 성립했음.
+15. 감나무뜰 원정의 목적지가 미개척 미래 도시가 될 수 있었음.
+16. 타지역 3D 지도에 아직 생기지 않은 미래 도시 마커가 전부 표시됐음.
+17. 오래된 별도 frontier 정착지 시스템이 126개 도시 체계와 병존하고 있었음.
+18. 저장된 관찰 이동수단이 재접속 직후 버튼/모델에 반영되지 않았음.
+19. 타지역에서는 관찰 이동속도만 바뀌고 이동수단 외형이 보이지 않았음.
+
+수정 결과:
+- 미니맵/3D 공통 규칙 재동기화
+- 현재 세계는 형성된 도시만 지도/영토/직접 이동 대상
+- 주민 상세 표본과 실제 총인구 용어 분리
+- 감나무뜰 상세 가족이 실제 homeCity를 가지고 가족 단위 분가
+- 다른 7개 권역도 숫자 접촉이 아니라 실제 원정대 객체 생성 후 이동/귀환
+- 원정대 사람은 감나무뜰 주민 또는 해당 권역 worldPeople에서 실제 배정
+- 55년 오크 1개체부터 시작해 실험체 노출을 단계적으로 확대
+- 타지역 숲/주민 시야 개선
+- 인게임 주민 스프라이트 제거, 3D 인체만 사용
+- 구형 독립 frontier 정착지 제거
+- 이동수단 재접속/타지역 표시 수정
+
+정적 검수:
+- JS syntax 4 files PASS
+- JSON parse 7 files PASS
+- population 300 / local 30 / other 270 PASS
+- 8 regions / 126 city slots PASS
+- minimap-stream terrain sync assertions PASS
+- future-city current-map leak removed PASS
+- household split logic present PASS
+- foreign expedition tracking logic present PASS
+- year55 staged monster reveal PASS
+- resident in-world sprite overlay removed PASS
+- forest readability patch PASS
+- transport restore/region visual patch PASS
+
+주의: 이 환경에는 CDN의 Three.js를 인터넷으로 불러올 수 없어 실제 iPhone Safari 렌더 실행을 검증했다고 주장하지 않음. JS 문법/JSON/상호참조/정사 불일치 정적 검수 기준으로 수정함.

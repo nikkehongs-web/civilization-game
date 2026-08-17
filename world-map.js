@@ -175,6 +175,7 @@ export class CivitasWorldMap{
   const t=this.baseTransform(),dpr=this.canvas.width/Math.max(1,this.canvas.clientWidth),s=t.base*this.scale,mapCx=(t.minX+t.maxX)/2,mapCy=(t.minY+t.maxY)/2;
   this.ox=-(pos.x-mapCx)*s/dpr;this.oy=-(pos.y-mapCy)*s/dpr;this.draw()
  }
+ focusCity(cityId){const city=this.cityById.get(cityId);if(!city)return;this.scale=Math.max(this.scale,2.15);const t=this.baseTransform(),dpr=this.canvas.width/Math.max(1,this.canvas.clientWidth),s=t.base*this.scale,mapCx=(t.minX+t.maxX)/2,mapCy=(t.minY+t.maxY)/2;this.ox=-(city.x-mapCx)*s/dpr;this.oy=-(city.y-mapCy)*s/dpr;this.draw()}
  close(){this.overlay.classList.add('hidden');this.onClose?.()}
  resize(){
   const r=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
@@ -247,6 +248,7 @@ export class CivitasWorldMap{
 
  controllerOf(city){const st=this.getState();return st.world.cityControl?.[city.id]||city.country}
  controlledCities(name){return this.data.cities.filter(c=>this.controllerOf(c)===name)}
+ foundedControlledCities(name){const st=this.getState();return this.controlledCities(name).filter(c=>st.world.foundedCities.includes(c.id))}
  activeCountries(){const st=this.getState();return Object.entries(st.world.countries||{}).filter(([n,c])=>c&&c.active!==false)}
  personById(id){return (this.getState().worldPeople||[]).find(p=>p.id===id)||null}
  renderPersonGenealogy(id,returnCountry){
@@ -301,7 +303,7 @@ export class CivitasWorldMap{
 
   // Observer can use all 126 canonical city anchors regardless of resident contact.
   let best=null,bd=Infinity;
-  for(const c of this.data.cities){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=c}}
+  for(const c of (this.mode==='future'?this.data.cities:this.data.cities.filter(x=>this.getState().world.foundedCities.includes(x.id)))){const d=Math.hypot(c.x-p.x,c.y-p.y);if(d<bd){bd=d;best=c}}
   if(best&&bd<16/Math.max(.8,this.scale)){
    this.close();this.onTravelCity?.(best);return
   }
@@ -423,16 +425,16 @@ export class CivitasWorldMap{
    const a=this.cityById.get(exp.from),b=this.cityById.get(exp.to);if(!a||!b)continue;
    const A=this.screen(a.x,a.y),B=this.screen(b.x,b.y),p=clamp(exp.progress||0,0,1);
    const x=A.x+(B.x-A.x)*p,y=A.y+(B.y-A.y)*p;
-   const tracked=st.world.trackedExpeditionId===exp.id,personId=tracked?st.world.trackedExpeditionPersonId:null,person=(st.residents||[]).find(r=>r.id===personId),names=(exp.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);
+   const tracked=st.world.trackedExpeditionId===exp.id,personId=tracked?st.world.trackedExpeditionPersonId:null,person=(st.residents||[]).find(r=>r.id===personId)||(st.worldPeople||[]).find(r=>r.id===personId),names=(exp.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name||(st.worldPeople||[]).find(r=>r.id===id)?.n).filter(Boolean);
    ctx.save();ctx.fillStyle=exp.kind==='sea'?'#78d2e5':'#f0ce7b';ctx.strokeStyle=tracked?'#fff0a8':'rgba(0,0,0,.45)';ctx.lineWidth=tracked?4:2;
    ctx.beginPath();ctx.arc(x,y,tracked?9:6,0,Math.PI*2);ctx.fill();ctx.stroke();
    ctx.fillStyle='#f3e7c8';ctx.font=tracked?'bold 10px -apple-system,sans-serif':'9px -apple-system,sans-serif';ctx.textAlign='left';
-   ctx.fillText(tracked?`👁 ${person?.name||names.join('·')||'원정대'} · ${exp.phase==='return'?'귀환':'이동'} ${Math.round((exp.phase==='return'?1-p:p)*100)}%`:`${Math.round(p*100)}%`,x+12,y+3);ctx.restore()
+   ctx.fillText(tracked?`👁 ${person?.name||person?.n||names.join('·')||'원정대'} · ${exp.phase==='return'?'귀환':'이동'} ${Math.round((exp.phase==='return'?1-p:p)*100)}%`:`${Math.round(p*100)}%`,x+12,y+3);ctx.restore()
   }
 
   // Current political territory: connect each active polity's controlled city anchors.
   for(const [name,c] of this.activeCountries()){
-   const cs=this.controlledCities(name);if(cs.length<2)continue;const cap=this.cityById.get(c.capitalId)||cs[0],A=this.screen(cap.x,cap.y);ctx.save();ctx.strokeStyle=countryColor(name,.22);ctx.lineWidth=Math.max(1,1.3*this.scale);
+   const cs=this.mode==='future'?this.controlledCities(name):this.foundedControlledCities(name);if(cs.length<2)continue;const cap=this.cityById.get(c.capitalId)||cs[0],A=this.screen(cap.x,cap.y);ctx.save();ctx.strokeStyle=countryColor(name,.22);ctx.lineWidth=Math.max(1,1.3*this.scale);
    for(const city of cs){if(city.id===cap.id)continue;const B=this.screen(city.x,city.y);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke()}ctx.restore()
   }
   // city points
@@ -475,7 +477,7 @@ export class CivitasWorldMap{
   const rows=people.slice(page*per,page*per+per);
   const hist=(c.history||[]).slice(-12),maxP=Math.max(1,...hist.map(h=>h[1]));
   const bars=hist.length?`<div class="country-growth-bars">${hist.map(h=>`<i title="${h[0]}년 ${h[1]}명" style="height:${Math.max(8,h[1]/maxP*100)}%"></i>`).join('')}</div>`:'<small>아직 연간 성장 기록 없음</small>';
-  const delta=(c.population||0)-(c.lastPopulation||c.population||0),known=(c.knownCountries||[name]).length,leader=this.personById(c.politics?.leaderId),territory=this.controlledCities(name),families=new Set(people.map(p=>p.lineage||p.f)).size;
+  const delta=(c.population||0)-(c.lastPopulation||c.population||0),known=(c.knownCountries||[name]).length,leader=this.personById(c.politics?.leaderId),territory=this.foundedControlledCities(name),families=new Set(people.map(p=>p.lineage||p.f)).size;
   const events=(c.events||[]).slice(0,5).map(e=>`<li>${e.y}년 · ${e.t}</li>`).join('');
   this.detail.innerHTML=`<b>${name}</b><span>${c.region} · ${c.stage||'소집단'} · ${c.active===false?'미개척':'현존 공동체'}</span>
    <p>👁 관찰자 현재 인구 <strong>${c.population.toLocaleString()}명</strong> · 전년 대비 ${delta>=0?'+':''}${delta} · 영토 ${territory.length}도시 · 정착 ${c.settlements||0}</p>
@@ -502,7 +504,7 @@ export class CivitasWorldMap{
   this.countryList.innerHTML=this.activeCountries().sort((a,b)=>b[1].population-a[1].population).map(([n,c])=>{
    const contact=(st.world.contactedCountries||[]).includes(n),war=wars.some(w=>w.active&&w.country===n)||external.some(w=>w.active&&(w.a===n||w.b===n)),lead=this.personById(c.politics?.leaderId);
    const delta=(c.population||0)-(c.lastPopulation||c.population||0),arrow=delta>0?'▲':delta<0?'▼':'─';
-   return `<button data-country="${n}"><b>${war?'⚔ ':''}${n}</b><span>${c.population.toLocaleString()}명 ${arrow}${Math.abs(delta).toLocaleString()}</span><small>${c.politics?.form||'-'} · ${lead?.n||'공석'} · 영토 ${this.controlledCities(n).length} · 불안 ${Math.round(c.politics?.unrest||0)} · ${contact?'라엔 접촉':'라엔 미접촉'}</small></button>`
+   return `<button data-country="${n}"><b>${war?'⚔ ':''}${n}</b><span>${c.population.toLocaleString()}명 ${arrow}${Math.abs(delta).toLocaleString()}</span><small>${c.politics?.form||'-'} · ${lead?.n||'공석'} · 형성거점 ${this.foundedControlledCities(n).length} · 불안 ${Math.round(c.politics?.unrest||0)} · ${contact?'라엔 접촉':'라엔 미접촉'}</small></button>`
   }).join('');
   this.countryList.querySelectorAll('[data-country]').forEach(b=>b.onclick=()=>this.renderCountryDetail(b.dataset.country,0))
  }
@@ -510,9 +512,9 @@ export class CivitasWorldMap{
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
   const active=(w.expeditions||[]).filter(e=>e.active);
-  const ex=active.length?active.map(e=>{const ns=(e.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);const end=e.phase==='return'?e.returnArrivalAbsDay:e.arrivalAbsDay;return `<span class="expedition-pill">${e.kind==='sea'?'⛵':'🥾'} ${e.region} · ${e.phase==='return'?'귀환':'이동'} · ${Math.max(0,(end||0)-(st.year*365+st.day))}일 · ${ns.join('·')||'원정대'}</span>`}).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
+  const ex=active.length?active.map(e=>{const ns=(e.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name||(st.worldPeople||[]).find(r=>r.id===id)?.n).filter(Boolean);const end=e.phase==='return'?e.returnArrivalAbsDay:e.arrivalAbsDay;return `<span class="expedition-pill">${e.kind==='sea'?'⛵':'🥾'} ${e.region} · ${e.phase==='return'?'귀환':'이동'} · ${Math.max(0,(end||0)-(st.year*365+st.day))}일 · ${ns.join('·')||'원정대'}</span>`}).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
   const activeN=this.activeCountries().length,deadN=Object.values(w.countries||{}).filter(c=>c.active===false).length,seasonNow=st.climate?.season||'';
-  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${seasonNow} ${st.weather||''} · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 실제 사람 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 현존 공동체 ${activeN} · 미개척 세력슬롯 ${deadN} · 실제 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length} · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 감나무뜰 30명 + 멀리 떨어진 7개 권역 270명. 다른 도시 슬롯은 미개척이며 인구가 충분히 늘어난 뒤 분가로 형성됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
+  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${seasonNow} ${st.weather||''} · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 상세추적 표본 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 현존 공동체 ${activeN} · 후대 세력후보 ${deadN} · 실제 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length} · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 감나무뜰 30명 + 멀리 떨어진 7개 권역 270명. 다른 도시 슬롯은 미개척이며 인구가 충분히 늘어난 뒤 분가로 형성됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
   this.renderCountries()
  }
 }
