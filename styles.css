@@ -495,3 +495,24 @@ body.region-view .camera-panel{display:none!important}
 }
 
 .country-causal{display:grid;gap:3px;margin-top:6px}.country-causal div{padding:4px 5px;border-left:2px solid rgba(216,184,100,.45);background:rgba(216,184,100,.035);font-size:5.4px;color:#aeb7ad}.country-causal b{font-size:5.4px;color:#dcc38b}
+
+/* ===== v9.1 CHARACTER ART + RICH FRONTIER + WAYFINDING ===== */
+.player-orb{
+ background-image:url('./player_portrait.webp')!important;
+ background-size:cover!important;background-position:center 18%!important;
+ color:transparent!important
+}
+.brain-face,.face{background-size:cover!important;background-position:center 16%!important;background-repeat:no-repeat!important;color:transparent!important}
+.bokshil-hud::before{content:"";width:24px;height:24px;flex:0 0 24px;border-radius:8px;background:url('./bokshil_portrait.webp') center 18%/cover no-repeat;border:1px solid rgba(255,255,255,.12)}
+.nav-hud{
+ position:fixed;z-index:34;left:50%;top:82px;transform:translateX(-50%);
+ display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;pointer-events:auto
+}
+.nav-hud b{font-size:7px;color:#f2dc9e}.nav-hud span{font-size:6px;color:#c5d0c8}.nav-hud button{width:20px;height:20px;border:0;border-radius:50%;background:rgba(255,255,255,.06);font-size:10px}
+.nav-hud.hidden{display:none}
+.camera-quick .home-guide{color:#ffe1a3;border-color:rgba(229,193,110,.35);background:rgba(150,118,48,.18)}
+.landmark-label{pointer-events:none}
+@media(max-width:560px){
+ .bokshil-hud::before{width:18px;height:18px;flex-basis:18px;border-radius:6px}
+ .nav-hud{top:204px;max-width:70vw;padding:4px 6px}.nav-hud b{font-size:6px}.nav-hud span{font-size:5.5px}
+}

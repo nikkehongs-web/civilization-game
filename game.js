@@ -1,21 +1,55 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=9';
+import { CivitasWorldMap } from './world-map.js?v=9.1';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
 const JOB_SKILL={'생활경영자':'기록','농지운영자':'농업','씨앗선별자':'농업','수로구조사':'목공','공동부엌지기':'요리','동물돌봄이':'사육','도공':'도공','농부':'농업','목수':'목공','요리사':'요리','약초사':'약초','사육사':'사육','기록자':'기록','채집가':'채집'};
 const LOC={center:new THREE.Vector3(0,0,0),field:new THREE.Vector3(-18,0,12),river:new THREE.Vector3(30,0,12),forest:new THREE.Vector3(-35,0,-24),stone:new THREE.Vector3(33,0,-23),workshop:new THREE.Vector3(10,0,-13),herbs:new THREE.Vector3(-7,0,28),pen:new THREE.Vector3(20,0,25),meeting:new THREE.Vector3(0,0,-4)};
+
+const CHARACTER_ART={
+ player:'./player.webp',
+ residentMale:'./resident_male.webp',
+ residentFemale:'./resident_female.webp',
+ myeongja:'./myeongja.webp',
+ bokshil:'./bokshil.webp',
+ monster:'./monster.webp'
+};
+const CHARACTER_PORTRAIT={
+ player:'./player_portrait.webp',
+ residentMale:'./resident_male_portrait.webp',
+ residentFemale:'./resident_female_portrait.webp',
+ myeongja:'./myeongja_portrait.webp',
+ bokshil:'./bokshil_portrait.webp',
+ monster:'./monster_portrait.webp'
+};
+const artTextureLoader=new THREE.TextureLoader();
+const artTextureCache=new Map();
+function artTexture(url){
+ if(!artTextureCache.has(url)){
+   const t=artTextureLoader.load(url);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=1;artTextureCache.set(url,t)
+ }
+ return artTextureCache.get(url)
+}
+function makeArtBillboard(url,width,height,y=1.4){
+ const mat=new THREE.SpriteMaterial({map:artTexture(url),transparent:true,depthWrite:false,alphaTest:.04});
+ const s=new THREE.Sprite(mat);s.scale.set(width,height,1);s.position.set(0,y,.02);s.renderOrder=7;s.userData.characterArt=true;return s
+}
+function portraitForResident(r){
+ if(r.id==='C0001')return CHARACTER_PORTRAIT.myeongja;
+ return (r.gender==='여성'||r.gender==='F')?CHARACTER_PORTRAIT.residentFemale:CHARACTER_PORTRAIT.residentMale
+}
+
 const RESIDENT_SEED = await fetch('./seed_residents.json')
   .then(r=>{if(!r.ok)throw new Error(`seed_residents.json load failed: ${r.status}`);return r.json()});
 const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=9')
+const WORLD_DATA = await fetch('./world.json?v=9.1')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.1')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -401,27 +435,66 @@ const frontierGroup=new THREE.Group();scene.add(frontierGroup);
 const frontierTiles=[];
 const frontierDecor=[];
 function seededNoise(n){const x=Math.sin(n*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+const frontierShared={
+ trunkGeo:new THREE.CylinderGeometry(.12,.20,1.7,6),
+ crownGeo:new THREE.ConeGeometry(.86,2.15,7),
+ rockGeo:new THREE.DodecahedronGeometry(.55,0),
+ bushGeo:new THREE.IcosahedronGeometry(.48,0),
+ trunkMat:new THREE.MeshStandardMaterial({color:0x5c432e,roughness:1}),
+ crownMat:new THREE.MeshStandardMaterial({color:0x3d6844,roughness:1}),
+ rockMat:new THREE.MeshStandardMaterial({color:0x74746d,roughness:1}),
+ bushMat:new THREE.MeshStandardMaterial({color:0x55784b,roughness:1})
+};
 function createFrontierTile(x,z,w,h,level,index){
  const g=new THREE.Group();
- const palette=[0x748258,0x687957,0x78845f,0x657553];
+ const palette=[0x748258,0x687957,0x78845f,0x657553,0x7f895d,0x6f8059];
  const plane=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:palette[index%palette.length],roughness:1}));
  plane.rotation.x=-Math.PI/2;plane.receiveShadow=true;plane.position.y=-.015;g.add(plane);walkableSurfaces.push(plane);
- // light terrain details so expansion is visually obvious but remains mobile-friendly
- const detailCount=IS_MOBILE?Math.max(2,Math.floor(w*h/5200)):Math.max(4,Math.floor(w*h/2400));
- for(let i=0;i<detailCount;i++){
-  const rx=(seededNoise(index*100+i*3)-.5)*w*.86,rz=(seededNoise(index*100+i*3+1)-.5)*h*.86;
-  if(i%3===0){
-   const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(.35+seededNoise(i+index)*.6,0),new THREE.MeshStandardMaterial({color:0x76766e,roughness:1}));
-   rock.position.set(rx,.28,rz);rock.scale.y=.65;rock.castShadow=true;g.add(rock)
-  }else{
-   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.11,.18,1.5,6),new THREE.MeshStandardMaterial({color:0x5c432e,roughness:1}));
-   const crown=new THREE.Mesh(new THREE.ConeGeometry(.72,1.7,7),new THREE.MeshStandardMaterial({color:i%2?0x3b6241:0x466c48,roughness:1}));
-   trunk.position.set(rx,.75,rz);crown.position.set(rx,1.9,rz);g.add(trunk,crown)
-  }
+
+ // Dense but efficient frontier vegetation using instancing.
+ const area=w*h;
+ const treeCount=IS_MOBILE?clamp(Math.floor(area/900),10,34):clamp(Math.floor(area/620),16,52);
+ const rockCount=IS_MOBILE?clamp(Math.floor(area/3500),3,10):clamp(Math.floor(area/2500),4,14);
+ const bushCount=IS_MOBILE?clamp(Math.floor(area/1800),5,18):clamp(Math.floor(area/1250),8,25);
+ const trunks=new THREE.InstancedMesh(frontierShared.trunkGeo,frontierShared.trunkMat,treeCount);
+ const crowns=new THREE.InstancedMesh(frontierShared.crownGeo,frontierShared.crownMat,treeCount);
+ const rocks=new THREE.InstancedMesh(frontierShared.rockGeo,frontierShared.rockMat,rockCount);
+ const bushes=new THREE.InstancedMesh(frontierShared.bushGeo,frontierShared.bushMat,bushCount);
+ const m=new THREE.Matrix4(),pos=new THREE.Vector3(),sc=new THREE.Vector3(),q=new THREE.Quaternion(),e=new THREE.Euler();
+ for(let i=0;i<treeCount;i++){
+   const rx=(seededNoise(index*1000+i*7)-.5)*w*.90,rz=(seededNoise(index*1000+i*7+1)-.5)*h*.90;
+   // leave occasional natural clearings and a broad path around the tile middle
+   const s=.65+seededNoise(index*1000+i*7+2)*.75;
+   pos.set(rx,.85*s,rz);sc.set(s,s,s);e.set(0,seededNoise(i+index*9)*Math.PI*2,0);q.setFromEuler(e);m.compose(pos,q,sc);trunks.setMatrixAt(i,m);
+   pos.set(rx,2.35*s,rz);m.compose(pos,q,sc);crowns.setMatrixAt(i,m)
  }
- g.position.set(x,0,z);g.visible=false;frontierGroup.add(g);frontierTiles.push({g,level,plane});
+ for(let i=0;i<rockCount;i++){
+   const rx=(seededNoise(index*2000+i*5)-.5)*w*.90,rz=(seededNoise(index*2000+i*5+1)-.5)*h*.90,s=.55+seededNoise(index+i*17)*1.1;
+   pos.set(rx,.28*s,rz);sc.set(s,s*.65,s);q.identity();m.compose(pos,q,sc);rocks.setMatrixAt(i,m)
+ }
+ for(let i=0;i<bushCount;i++){
+   const rx=(seededNoise(index*3000+i*5)-.5)*w*.92,rz=(seededNoise(index*3000+i*5+1)-.5)*h*.92,s=.45+seededNoise(index+i*23)*.75;
+   pos.set(rx,.35*s,rz);sc.set(s,s*.75,s);q.identity();m.compose(pos,q,sc);bushes.setMatrixAt(i,m)
+ }
+ trunks.instanceMatrix.needsUpdate=crowns.instanceMatrix.needsUpdate=rocks.instanceMatrix.needsUpdate=bushes.instanceMatrix.needsUpdate=true;
+ [trunks,crowns,rocks,bushes].forEach(o=>{o.castShadow=!IS_MOBILE;o.receiveShadow=false;g.add(o)});
+
+ // Biome landmarks keep the far map from becoming an empty green sheet.
+ if([2,7,10].includes(index)){
+   const pond=new THREE.Mesh(new THREE.CylinderGeometry(Math.min(12,w*.16),Math.min(15,w*.19),.08,22),new THREE.MeshStandardMaterial({color:0x557f8e,roughness:.35}));
+   pond.scale.z=.58;pond.position.set((seededNoise(index*90)-.5)*w*.35,.03,(seededNoise(index*91)-.5)*h*.35);g.add(pond)
+ }
+ if([4,6,9,12].includes(index)){
+   for(let k=0;k<3;k++){
+     const hill=new THREE.Mesh(new THREE.SphereGeometry(1,10,6),new THREE.MeshStandardMaterial({color:0x697654,roughness:1}));
+     hill.scale.set(8+seededNoise(index*50+k)*8,1.8+seededNoise(index*60+k)*2.5,6+seededNoise(index*70+k)*8);
+     hill.position.set((seededNoise(index*80+k)-.5)*w*.65,-.55,(seededNoise(index*85+k)-.5)*h*.65);g.add(hill)
+   }
+ }
+ g.position.set(x,0,z);g.visible=false;frontierGroup.add(g);frontierTiles.push({g,level,plane,index});
  return g
 }
+
 // Level 1: cardinal expansion beyond original 220x180 ground
 createFrontierTile(0,-130,220,80,1,1);
 createFrontierTile(0,130,220,80,1,2);
@@ -437,6 +510,44 @@ createFrontierTile(0,-210,320,80,3,9);
 createFrontierTile(0,210,320,80,3,10);
 createFrontierTile(-260,0,100,340,3,11);
 createFrontierTile(260,0,100,340,3,12);
+
+const LOCAL_LANDMARKS=[
+ {name:'감나무뜰',icon:'⌂',p:LOC.center,color:0xf0cf80},
+ {name:'서쪽 큰숲',icon:'🌲',p:new THREE.Vector3(-145,0,-15),color:0x8fc58b,level:1},
+ {name:'북쪽 호수',icon:'💧',p:new THREE.Vector3(10,0,-145),color:0x7ec7d8,level:1},
+ {name:'동쪽 구릉',icon:'△',p:new THREE.Vector3(150,0,-35),color:0xcab985,level:1},
+ {name:'남쪽 초원',icon:'✿',p:new THREE.Vector3(-20,0,145),color:0xcad180,level:1},
+ {name:'북서 깊은숲',icon:'🌲',p:new THREE.Vector3(-175,0,-135),color:0x78b67a,level:2},
+ {name:'남동 습지',icon:'≋',p:new THREE.Vector3(170,0,135),color:0x7bb3a8,level:2},
+ {name:'북방 경계',icon:'◆',p:new THREE.Vector3(0,0,-215),color:0xe2bd78,level:3},
+ {name:'남방 경계',icon:'◆',p:new THREE.Vector3(0,0,215),color:0xe2bd78,level:3},
+ {name:'서방 경계',icon:'◆',p:new THREE.Vector3(-265,0,0),color:0xe2bd78,level:3},
+ {name:'동방 경계',icon:'◆',p:new THREE.Vector3(265,0,0),color:0xe2bd78,level:3}
+];
+const landmarkGroup=new THREE.Group();scene.add(landmarkGroup);
+const landmarkVisuals=[];
+function makeLandmarkVisual(l){
+ const g=new THREE.Group();
+ const pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.09,2.5,6),new THREE.MeshStandardMaterial({color:0x705139,roughness:1}));pole.position.y=1.25;g.add(pole);
+ const s=makeFloatingNameSprite(`${l.icon} ${l.name}`);s.position.set(0,3.05,0);s.scale.set(3.2,.7,1);g.add(s);
+ g.position.copy(l.p);g.visible=(l.level||0)<=state.localMap.level;landmarkGroup.add(g);landmarkVisuals.push({g,l});return g
+}
+LOCAL_LANDMARKS.forEach(makeLandmarkVisual);
+function updateLandmarkVisibility(){for(const x of landmarkVisuals)x.g.visible=(x.l.level||0)<=state.localMap.level}
+let navWaypoint=null;
+function setHomeWaypoint(autoWalk=false){
+ navWaypoint={name:'감나무뜰',p:LOC.center.clone()};
+ $('navHud')?.classList.remove('hidden');
+ if(autoWalk){movePlayerTo(LOC.center.clone());showEvent('감나무뜰로 이동 시작')}
+ else showEvent('감나무뜰 방향을 표시합니다.')
+}
+function updateNavHud(){
+ const el=$('navHud'),txt=$('navHudText');if(!el||!txt)return;
+ const d=player.position.distanceTo(LOC.center);
+ if(d<10&&!navWaypoint){el.classList.add('hidden');return}
+ el.classList.remove('hidden');txt.textContent=`중심까지 ${Math.round(d)}m · ${localPlaceName(player.position.x,player.position.z)}`
+}
+
 
 function desiredLocalMapLevel(){
  const p=state.world?.landProgress||0,y=state.year||0,c=state.civ?.level||0;
@@ -458,7 +569,7 @@ function updateLocalMapExpansion(announce=true){
    state.localMap.level=wanted;state.localMap.revealedRadius=[90,180,235,320][wanted];state.localMap.lastExpansionYear=state.year;
    if(announce)addLog('story',`라엔 분지 탐사 범위 ${wanted+1}단계`,`주민들의 반복 탐사로 정착지 주변에서 이동 가능한 지형이 더 넓게 기록되었다. 이제 카메라와 주민이 이전 경계 밖까지 움직일 수 있다.`,'기록','지도의 빈 부분이 실제 길과 숲으로 바뀌었다.')
  }
- for(const t of frontierTiles)t.g.visible=t.level<=state.localMap.level;
+ for(const t of frontierTiles)t.g.visible=t.level<=state.localMap.level;updateLandmarkVisibility?.();
  const b=localMapBounds();sun.shadow.camera.left=-Math.min(280,b.x);sun.shadow.camera.right=Math.min(280,b.x);sun.shadow.camera.top=Math.min(240,b.z);sun.shadow.camera.bottom=-Math.min(240,b.z);sun.shadow.camera.updateProjectionMatrix();
  if($('mapExpansionText'))$('mapExpansionText').textContent=`탐사 범위 ${state.localMap.level+1}/4 · ±${b.x}×${b.z}`;
 }
@@ -470,6 +581,15 @@ for(let i=0;i<125;i++){const a=Math.random()*Math.PI*2,r=45+Math.random()*55;tre
 const river=new THREE.Mesh(new THREE.PlaneGeometry(14,150),new THREE.MeshStandardMaterial({color:0x6b9aaa,roughness:.3,metalness:.05,transparent:true,opacity:.92}));river.rotation.x=-Math.PI/2;river.rotation.z=.07;river.position.set(38,.03,6);scene.add(river);
 // paths
 function path(a,b,w=2.8){const d=b.clone().sub(a),len=d.length(),m=new THREE.Mesh(new THREE.PlaneGeometry(w,len),new THREE.MeshStandardMaterial({color:0xa18a65,roughness:1}));m.rotation.x=-Math.PI/2;m.position.copy(a.clone().add(b).multiplyScalar(.5));m.position.y=.045;m.rotation.z=-Math.atan2(d.x,d.z);scene.add(m)};[LOC.field,LOC.river,LOC.forest,LOC.stone,LOC.workshop,LOC.herbs,LOC.pen].forEach(p=>path(LOC.center,p));
+
+// Long trails remain visible as natural navigation corridors after map expansion.
+[
+ [new THREE.Vector3(-5,0,-42),new THREE.Vector3(5,0,-225)],
+ [new THREE.Vector3(-15,0,42),new THREE.Vector3(-8,0,225)],
+ [new THREE.Vector3(-42,0,4),new THREE.Vector3(-270,0,-4)],
+ [new THREE.Vector3(42,0,-2),new THREE.Vector3(270,0,6)]
+].forEach(([a,b])=>path(a,b,2.2));
+
 // Dynamic settlement: civilization data is mirrored in the 3D world.
 const villageGroup=new THREE.Group();scene.add(villageGroup);
 const visualState={house:0,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0};
@@ -862,6 +982,7 @@ function createPlayerModel(){
  cape.position.set(0,1.55,-.27);cape.rotation.x=.08;g.add(cape);
  const ring=new THREE.Mesh(new THREE.RingGeometry(.58,.72,32),new THREE.MeshBasicMaterial({color:0xe8d07f,transparent:true,opacity:.75,side:THREE.DoubleSide}));
  ring.rotation.x=-Math.PI/2;ring.position.y=.03;g.add(ring);
+ const art=makeArtBillboard(CHARACTER_ART.player,2.05,3.08,1.55);g.add(art);
  g.position.set(state.player.x||3,0,state.player.z||3);
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  g.userData={limbs,parts:{torso,pelvis,head},sword,target:new THREE.Vector3(g.position.x,0,g.position.z),moving:false,attackCooldown:0,attackAnim:0,fsm:new StateMachine(PlayerStates.IDLE)};
@@ -898,6 +1019,7 @@ function createBokshilModel(){
  const tail=new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.68,7),fur);tail.position.set(0,.25,-.08);tail.rotation.x=.78;tailPivot.add(tail);
  const neck=new THREE.Mesh(new THREE.TorusGeometry(.29,.035,6,18),collar);neck.rotation.x=Math.PI/2;neck.position.set(0,.83,.42);g.add(neck);
  const name=makeFloatingNameSprite('복실이');name.position.set(0,1.65,0);g.add(name);
+ const art=makeArtBillboard(CHARACTER_ART.bokshil,.98,1.47,.75);g.add(art);
  g.position.set(state.companion.bokshil.x,0,state.companion.bokshil.z);
  g.scale.setScalar(1.08);
  g.userData={bokshil:true,legs,tailPivot,phase:rand(0,10),target:g.position.clone(),patrolId:null,nextPatrolAt:0,barkCooldown:0,status:'주민들 사이를 순찰 중'};
@@ -1015,6 +1137,7 @@ function createMonster(){
  for(const [x,z] of [[-.55,.5],[.55,.5],[-.55,-.55],[.55,-.55]]){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,.8,6),dark);leg.position.set(x,.48,z);g.add(leg)}
  const hornMat=new THREE.MeshStandardMaterial({color:0xb9aa89,roughness:.8});
  [-.22,.22].forEach(x=>{const h=new THREE.Mesh(new THREE.ConeGeometry(.09,.45,6),hornMat);h.position.set(x,1.72,1.12);h.rotation.x=-.45;g.add(h)});
+ const art=makeArtBillboard(CHARACTER_ART.monster,2.2,3.3,1.65);g.add(art);
  const spawn=randomMonsterSpawn();g.position.copy(spawn);
  const maxHp=(cfg.baseHp||50)+lvl*(cfg.hpPerLevel||18);
  g.userData={
@@ -1149,6 +1272,7 @@ function updatePlayer(dt,now){
  }
 
  state.player.x=player.position.x;state.player.z=player.position.z;
+ if(navWaypoint&&player.position.distanceTo(navWaypoint.p)<3){navWaypoint=null;$('navHud')?.classList.add('hidden');showEvent('감나무뜰에 도착했습니다.')}
  if(state.player.hp<state.player.maxHp&&!selectedMonster)state.player.hp=Math.min(state.player.maxHp,state.player.hp+dt*1.2)
 }
 function updateMonsters(dt,now){
@@ -1282,6 +1406,8 @@ function humanModel(r){
  limbs.ra.add(tool);
  tool.position.set(0,-.02,.02);
  const thoughtSprite=makeThoughtSprite();g.add(thoughtSprite);
+ const artUrl=r.id==='C0001'?CHARACTER_ART.myeongja:((r.gender==='여성'||r.gender==='F')?CHARACTER_ART.residentFemale:CHARACTER_ART.residentMale);
+ const art=makeArtBillboard(artUrl,1.72,2.58,1.33);g.add(art);
 
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  g.userData={
@@ -1806,6 +1932,7 @@ function updateJoystick(e){
  if(len>max){dx=dx/len*max;dy=dy/len*max}
  manualMove.x=clamp(dx/max,-1,1);manualMove.y=clamp(-dy/max,-1,1);
  manualMove.active=Math.hypot(manualMove.x,manualMove.y)>.08;
+ if(manualMove.active&&navWaypoint){navWaypoint=null;player.userData.moving=false;$('navHud')?.classList.add('hidden')}
  joyKnob.style.transform=`translate3d(${dx}px,${dy}px,0)`;
 }
 joystick?.addEventListener('pointerdown',e=>{
@@ -2017,6 +2144,12 @@ function assignWorldAdultJob(p){
  if(p.a<12){p.j='아이';return}
  if(p.a<16){p.j='견습';return}
  if(!p.j||['유아','아이','견습'].includes(p.j))p.j=pick(WORLD_REGION_JOBS[p.r]||WORLD_REGION_JOBS['아르케아 중앙대륙'])
+}
+
+function countryAtWar(name){
+ if(!name)return false;
+ if((state.world.wars||[]).some(w=>w.active&&w.country===name))return true;
+ return (state.world.externalWars||[]).some(w=>w.active&&(w.a===name||w.b===name))
 }
 
 function updateCountryEconomy(name,c){
@@ -2533,7 +2666,7 @@ function updatePeople(dt,now){
 }
 // ---------- MINIMAP / UI ----------
 const mini=$('minimap'),mctx=mini.getContext('2d');
-const MINI_RANGE_BY_LEVEL=[60,78,96,118];
+const MINI_RANGE_BY_LEVEL=[72,105,145,185];
 let miniPin=null,miniPinUntil=0;
 function miniRange(){return MINI_RANGE_BY_LEVEL[clamp(state.localMap?.level||0,0,3)]||60}
 function miniCenter(){return{x:player.position.x,z:player.position.z}}
@@ -2546,6 +2679,21 @@ function miniToWorld(px,py){
  return{x:c.x+(px-mini.width/2)/(mini.width*.48)*r,z:c.z+(py-mini.height/2)/(mini.height*.48)*r}
 }
 function miniVisible(q,pad=14){return q.x>=-pad&&q.x<=mini.width+pad&&q.y>=-pad&&q.y<=mini.height+pad}
+
+function drawMiniLandmarkPointer(l){
+ const q=worldToMini(l.p.x,l.p.z),w=mini.width,h=mini.height;
+ if(miniVisible(q,4)){
+   mctx.save();mctx.fillStyle=`#${(l.color||0xf0cf80).toString(16).padStart(6,'0')}`;mctx.font='bold 16px system-ui';mctx.textAlign='center';mctx.textBaseline='middle';mctx.fillText(l.icon,q.x,q.y);mctx.restore();return
+ }
+ const dx=q.x-w/2,dy=q.y-h/2,len=Math.hypot(dx,dy)||1;
+ const edge=Math.min((w*.46)/Math.abs(dx||.001),(h*.46)/Math.abs(dy||.001));
+ const x=w/2+dx*edge,y=h/2+dy*edge;
+ mctx.save();mctx.translate(x,y);mctx.rotate(Math.atan2(dy,dx)+Math.PI/2);
+ mctx.fillStyle=l.name==='감나무뜰'?'#ffe08a':'#c7d7a1';mctx.beginPath();mctx.moveTo(0,-9);mctx.lineTo(6,6);mctx.lineTo(-6,6);mctx.closePath();mctx.fill();mctx.restore();
+ mctx.save();mctx.fillStyle='rgba(20,26,22,.82)';mctx.font='bold 10px -apple-system,sans-serif';mctx.textAlign='center';
+ const dist=Math.round(Math.hypot(l.p.x-player.position.x,l.p.z-player.position.z));mctx.fillText(`${l.icon}${dist}m`,clamp(x,26,w-26),clamp(y+14,12,h-6));mctx.restore()
+}
+
 const MINI_PLACES=[
  ['감나무뜰 중심',LOC.center],['밭',LOC.field],['강가',LOC.river],['숲',LOC.forest],['채석지',LOC.stone],
  ['작업장',LOC.workshop],['약초지',LOC.herbs],['사육장',LOC.pen],['회의터',LOC.meeting]
@@ -2553,6 +2701,7 @@ const MINI_PLACES=[
 function localPlaceName(x,z){
  let best='분지 외곽',bd=Infinity;
  for(const[n,p]of MINI_PLACES){const d=Math.hypot(x-p.x,z-p.z);if(d<bd){bd=d;best=n}}
+ for(const l of LOCAL_LANDMARKS)if((l.level||0)<=state.localMap.level){const d=Math.hypot(x-l.p.x,z-l.p.z);if(d<bd){bd=d;best=l.name}}
  const dir=Math.abs(x)>Math.abs(z)?(x>=0?'동쪽':'서쪽'):(z>=0?'남쪽':'북쪽');
  return bd<12?best:`${best} ${dir} ${Math.round(bd)}m`
 }
@@ -2621,6 +2770,14 @@ function drawMini(){
  if(state.flags.myeongjaDead){const q=worldToMini(-9,10);if(miniVisible(q)){mctx.fillStyle='#73746f';mctx.fillRect(q.x-2,q.y-4,4,8)}}
  if(eventFocus){const q=worldToMini(eventFocus.x,eventFocus.z);if(miniVisible(q)){mctx.strokeStyle='#e66f65';mctx.lineWidth=3;mctx.beginPath();mctx.arc(q.x,q.y,9,0,Math.PI*2);mctx.stroke()}}
 
+ // landmarks: visible icons or edge arrows when far away
+ for(const l of LOCAL_LANDMARKS)if((l.level||0)<=state.localMap.level)drawMiniLandmarkPointer(l);
+ if(navWaypoint){
+   const nq=worldToMini(navWaypoint.p.x,navWaypoint.p.z);
+   mctx.save();mctx.strokeStyle='#ffe07f';mctx.setLineDash([5,4]);mctx.lineWidth=2;
+   mctx.beginPath();mctx.moveTo(w/2,h/2);mctx.lineTo(clamp(nq.x,0,w),clamp(nq.y,0,h));mctx.stroke();mctx.restore()
+ }
+
  // user is always centered; arrow shows actual facing direction
  const cx=w/2,cy=h/2,a=player.rotation.y;
  mctx.save();mctx.translate(cx,cy);mctx.rotate(-a);
@@ -2649,7 +2806,7 @@ function renderStory(){const l=currentStory();$('storyTitle').textContent=l.titl
 function renderBrainPanel(r){
  if(!r){$('brainPanel').classList.add('hidden');return}
  initResidentBrain(r);selectedBrainId=r.id;$('brainPanel').classList.remove('hidden');
- $('brainFace').textContent=r.name[0];$('brainName').textContent=`${r.name} · ${r.lifeStage||residentLifeStage(r.age)} · ${r.job} · ${r.age}세`;
+ $('brainFace').textContent='';$('brainFace').style.backgroundImage=`url('${portraitForResident(r)}')`;$('brainName').textContent=`${r.name} · ${r.lifeStage||residentLifeStage(r.age)} · ${r.job} · ${r.age}세`;
  $('brainAction').textContent=`현재 행동: ${ACTION_META[r.brain.action]?.label||r.brain.action}`;
  $('brainThought').textContent=`“${r.brain.thought}”`;$('brainGoal').textContent=r.brain.goal||goalLabel(r);$('brainReason').textContent=r.brain.reason;
  const N=[['🍚','hunger','배고픔'],['😴','fatigue','피로'],['💬','social','외로움'],['🛡','safety','불안'],['❓','curiosity','호기심'],['★','achievement','성취']];
@@ -2662,7 +2819,7 @@ $('brainClose').onclick=()=>{selectedBrainId=null;$('brainPanel').classList.add(
 function renderPeopleList(){
  $('peopleList').innerHTML=state.residents.map(r=>{
    const p=personMap.get(r.id),task=p?.userData.task||ACTION_META[r.brain?.action]?.label||'생활 중',best=Object.entries(r.skills).sort((a,b)=>b[1]-a[1])[0];
-   return`<div class="card resident-row"><div class="face">${r.name[0]}</div><div><b>${r.name} · ${r.job}</b><br><small>${r.id} · ${r.age}세 · ${task}</small><div class="bar"><i style="width:${r.bloom}%"></i></div><small>“${r.brain?.thought||'주변을 살피는 중'}”</small><br><small>${best[0]} ${Math.round(best[1])} · 개화 ${r.bloom.toFixed(1)}%</small></div><button class="focus-person" data-focus="${r.id}">보기</button></div>`
+   return`<div class="card resident-row"><div class="face" style="background-image:url('${portraitForResident(r)}')"></div><div><b>${r.name} · ${r.job}</b><br><small>${r.id} · ${r.age}세 · ${task}</small><div class="bar"><i style="width:${r.bloom}%"></i></div><small>“${r.brain?.thought||'주변을 살피는 중'}”</small><br><small>${best[0]} ${Math.round(best[1])} · 개화 ${r.bloom.toFixed(1)}%</small></div><button class="focus-person" data-focus="${r.id}">보기</button></div>`
  }).join('')+(state.deceased||[]).map(d=>`<div class="card resident-row deceased-row"><div class="face">†</div><div><b>${d.name} · 사망</b><br><small>세계력 ${d.year}년 ${d.day}일 · ${d.cause}</small><br><small>활동 주민 목록에서는 제외되며 기록과 묘역에 남습니다.</small></div></div>`).join('');
  document.querySelectorAll('[data-focus]').forEach(b=>b.onclick=()=>{followId=b.dataset.focus;$('followSelect').value=followId;setCameraMode('follow');renderBrainPanel(state.residents.find(r=>r.id===followId));$('sheet').classList.add('hidden')})
 }
@@ -2883,6 +3040,8 @@ const worldMapUI=new CivitasWorldMap({
 });
 $('worldMapBtn').onclick=()=>worldMapUI.open();
 $('mobileWorldMapBtn')?.addEventListener('click',()=>worldMapUI.open());
+$('homeGuideBtn')?.addEventListener('click',()=>setHomeWaypoint(true));
+$('navCancelBtn')?.addEventListener('click',()=>{navWaypoint=null;$('navHud')?.classList.add('hidden')});
 
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;uiDirty=true;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
 
@@ -2895,7 +3054,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v8.2 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v9.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
@@ -2924,6 +3083,7 @@ function loop(now){
  guarded('몬스터',()=>updateMonsters(dt,now));
  guarded('불빛',()=>{flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3});
  guarded('미니맵',()=>drawMini());
+ guarded('길찾기',()=>updateNavHud());
 
  if(now-viewportWatch>900){guarded('화면크기',()=>resizeWorld());viewportWatch=now}
  if(uiDirty&&now-lastUiRender>360){guarded('UI',()=>renderUI());lastUiRender=now}
