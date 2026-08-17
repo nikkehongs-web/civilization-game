@@ -609,3 +609,102 @@ body.region-view .player-location-hud .plh-main small{color:#78b8c6}
  .rpg-panel{padding:3px}.rpg-shell{max-height:99vh;border-radius:14px;padding:8px}.rpg-head b{font-size:11px}
  .rpg-summary{grid-template-columns:repeat(3,1fr);gap:3px}.rpg-columns,.rpg-columns.lower{grid-template-columns:1fr}.rpg-inventory{max-height:210px}
 }
+
+/* ===== v10.4 MOBILE UI COLLISION FIX ===== */
+@media(max-width:560px){
+  /* Archive occupies only the lower part of the game. Date/resources/minimap remain unobstructed. */
+  .sheet{
+    inset:auto 0 0 0!important;
+    top:205px!important;
+    height:calc(100dvh - 205px)!important;
+    padding:0!important;
+    align-items:flex-end!important;
+    justify-content:center!important;
+    background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,.24))!important;
+    pointer-events:none;
+  }
+  .sheet-card{
+    pointer-events:auto;
+    width:100%!important;
+    height:100%!important;
+    max-height:none!important;
+    border-radius:18px 18px 0 0!important;
+    padding:9px 10px max(10px,env(safe-area-inset-bottom))!important;
+    box-shadow:0 -12px 35px rgba(0,0,0,.24);
+  }
+  .sheet-top b{font-size:14px!important}
+  .sheet-top span{font-size:6px!important}
+  .sheet .close{width:34px;height:34px;border-radius:10px;font-size:18px}
+  .tabs{padding:6px 0 5px!important;gap:4px!important}
+  .tab{padding:5px 8px!important;font-size:7px!important}
+  .card{padding:7px!important;border-radius:11px!important}
+  .resident-row{grid-template-columns:34px 1fr auto!important;gap:6px!important}
+  .face{width:34px!important;height:34px!important;border-radius:9px!important}
+  .resident-row b{font-size:8px!important}
+  .resident-row small{font-size:6px!important}
+  .focus-person{padding:5px!important;font-size:6px!important}
+  .danger{margin-top:6px!important;padding:7px!important}
+}
+
+/* ===== v10.5 BOKSHIL GENEALOGY ===== */
+.bokshil-hud{pointer-events:auto!important}
+.bokshil-hud button{
+ border:1px solid rgba(235,205,137,.22);background:rgba(219,182,98,.10);
+ color:#f1ddb0;border-radius:999px;padding:4px 7px;font-size:5.5px;font-weight:900
+}
+.dog-lineage-panel{
+ position:fixed;z-index:84;inset:0;background:rgba(0,0,0,.62);
+ display:grid;place-items:center;padding:8px
+}
+.dog-lineage-panel.hidden{display:none}
+.dog-lineage-shell{
+ width:min(760px,100%);max-height:94vh;overflow:auto;padding:12px;border-radius:20px;
+ background:rgba(13,21,17,.98);border:1px solid rgba(240,215,151,.14);
+ box-shadow:0 24px 70px rgba(0,0,0,.48)
+}
+.dog-lineage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.dog-lineage-head small{display:block;font-size:6px;color:#9daea4;letter-spacing:.08em}
+.dog-lineage-head b{display:block;font-size:15px;color:#f1ddad;margin-top:2px}
+.dog-lineage-head span{display:block;font-size:6px;color:#9dafaa;margin-top:3px}
+.dog-lineage-head>button{
+ width:36px;height:36px;flex:0 0 auto;border-radius:11px;border:1px solid rgba(255,255,255,.1);
+ background:rgba(255,255,255,.05);font-size:19px
+}
+.dog-founder-card{
+ margin:10px 0 8px;padding:9px 10px;border-radius:13px;
+ border:1px solid rgba(225,190,105,.18);background:linear-gradient(135deg,rgba(173,127,54,.12),rgba(255,255,255,.025))
+}
+.dog-founder-card b{display:block;font-size:9px;color:#f2d99b}
+.dog-founder-card span{font-size:6px;color:#afbeb5;line-height:1.55}
+.dog-lineage-generation{margin-top:9px}
+.dog-lineage-generation>div:first-child{
+ display:flex;align-items:center;gap:7px;margin-bottom:5px
+}
+.dog-lineage-generation h3{font-size:8px;margin:0;color:#e3cb93}
+.dog-lineage-generation .gen-line{height:1px;flex:1;background:rgba(235,211,151,.10)}
+.dog-generation-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.dog-card{
+ position:relative;padding:8px;border-radius:11px;background:rgba(255,255,255,.035);
+ border:1px solid rgba(255,255,255,.07)
+}
+.dog-card.alive{border-left:3px solid rgba(113,194,128,.68)}
+.dog-card.dead{border-left:3px solid rgba(132,137,134,.42);opacity:.78}
+.dog-card.founder{background:rgba(199,156,71,.07)}
+.dog-card .dog-title{display:flex;align-items:center;justify-content:space-between;gap:5px}
+.dog-card b{font-size:7.5px;color:#e8e1c9}
+.dog-card em{font-style:normal;font-size:5px;padding:2px 5px;border-radius:99px;background:rgba(255,255,255,.05);color:#aebbb4}
+.dog-card p{font-size:5.5px;line-height:1.5;color:#9fb0a8;margin:4px 0 0}
+.dog-card .dog-rel{color:#d2bd89}
+.dog-lineage-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:7px;border-top:1px solid rgba(255,255,255,.06)}
+.dog-lineage-legend span{font-size:5px;color:#83978f}
+@media(max-width:560px){
+ .bokshil-hud button{padding:3px 6px;font-size:4.8px}
+ .dog-lineage-panel{padding:3px;align-items:end}
+ .dog-lineage-shell{
+   width:100%;max-height:82dvh;border-radius:18px 18px 0 0;padding:9px 8px max(10px,env(safe-area-inset-bottom))
+ }
+ .dog-lineage-head b{font-size:12px}.dog-lineage-head small,.dog-lineage-head span{font-size:5px}
+ .dog-generation-grid{grid-template-columns:1fr}
+ .dog-card{padding:7px}
+ .dog-card b{font-size:7px}.dog-card p{font-size:5.2px}
+}
