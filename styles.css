@@ -578,3 +578,12 @@ body.region-view .player-location-hud .plh-main small{color:#78b8c6}
 @media(max-width:390px){
  .move-joystick{bottom:max(70px,calc(env(safe-area-inset-bottom) + 64px))!important}
 }
+
+/* ===== v9.6 BOKSHIL LINEAGE + ULTRA TIME ===== */
+@media(max-width:560px){
+ .speed{grid-template-columns:repeat(4,32px)!important}
+}
+.speed button[data-speed="50"],
+.speed button[data-speed="100"],
+.speed button[data-speed="300"]{border-color:rgba(114,188,205,.18)}
+.speed button[data-speed="300"].active{background:rgba(93,164,183,.26);border-color:rgba(112,205,226,.55);color:#cceff7}
