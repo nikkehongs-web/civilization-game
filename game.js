@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=9.1';
+import { CivitasWorldMap } from './world-map.js?v=9.2';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -47,9 +47,9 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=9.1')
+const WORLD_DATA = await fetch('./world.json?v=9.2')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.1')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.2')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -557,11 +557,8 @@ function desiredLocalMapLevel(){
  return 0
 }
 function localMapBounds(){
- const lv=state.localMap?.level||0;
- if(lv===0)return{x:85,z:70};
- if(lv===1)return{x:190,z:155};
- if(lv===2)return{x:205,z:165};
- return{x:285,z:235}
+ // v9.2: no gameplay wall. This large value is only a safety range for UI math.
+ return{x:1000000,z:1000000}
 }
 function updateLocalMapExpansion(announce=true){
  const wanted=desiredLocalMapLevel(),old=state.localMap.level||0;
@@ -571,7 +568,7 @@ function updateLocalMapExpansion(announce=true){
  }
  for(const t of frontierTiles)t.g.visible=t.level<=state.localMap.level;updateLandmarkVisibility?.();
  const b=localMapBounds();sun.shadow.camera.left=-Math.min(280,b.x);sun.shadow.camera.right=Math.min(280,b.x);sun.shadow.camera.top=Math.min(240,b.z);sun.shadow.camera.bottom=-Math.min(240,b.z);sun.shadow.camera.updateProjectionMatrix();
- if($('mapExpansionText'))$('mapExpansionText').textContent=`탐사 범위 ${state.localMap.level+1}/4 · ±${b.x}×${b.z}`;
+ if($('mapExpansionText'))$('mapExpansionText').textContent=`정착권 ${state.localMap.level+1}/4 · 바깥은 연속 탐사`;
 }
 
 function hill(x,z,sx,sz,h,c=0x5f7952){const m=new THREE.Mesh(new THREE.SphereGeometry(1,24,12),new THREE.MeshStandardMaterial({color:c,roughness:1}));m.scale.set(sx,h,sz);m.position.set(x,-.8,z);m.receiveShadow=true;scene.add(m)}hill(-70,-42,38,30,8);hill(72,-46,46,32,10);hill(-82,58,55,37,8);hill(85,58,47,33,7);
@@ -589,6 +586,114 @@ function path(a,b,w=2.8){const d=b.clone().sub(a),len=d.length(),m=new THREE.Mes
  [new THREE.Vector3(-42,0,4),new THREE.Vector3(-270,0,-4)],
  [new THREE.Vector3(42,0,-2),new THREE.Vector3(270,0,6)]
 ].forEach(([a,b])=>path(a,b,2.2));
+
+
+// ---------- v9.2 CONTINUOUS LOCAL WORLD STREAMING ----------
+const STREAM_CHUNK=150,STREAM_RADIUS=2;
+const streamWorldGroup=new THREE.Group();scene.add(streamWorldGroup);
+const streamChunks=new Map();
+let lastStreamCX=999999,lastStreamCZ=999999,lastStreamUpdate=0;
+
+function chunkKey(cx,cz){return`${cx},${cz}`}
+function chunkSeed(cx,cz,i=0){
+ const n=(cx*73856093+cz*19349663+i*83492791)%1000003;
+ return seededNoise(n)
+}
+function chunkBiome(cx,cz){
+ const x=cx*STREAM_CHUNK,z=cz*STREAM_CHUNK,d=Math.hypot(x,z),a=Math.atan2(z,x);
+ if(d<240)return'meadow';
+ if(x<-220&&Math.abs(z)<520)return'forest';
+ if(z<-250&&Math.abs(x)<520)return'lakewood';
+ if(x>260&&Math.abs(z)<600)return'hills';
+ if(z>280&&Math.abs(x)<620)return'grassland';
+ const r=chunkSeed(cx,cz,91);
+ return r<.28?'forest':r<.48?'grassland':r<.66?'hills':r<.82?'wetland':'meadow'
+}
+function streamTree(parent,x,z,s=1){
+ const g=new THREE.Group();
+ const tr=new THREE.Mesh(new THREE.CylinderGeometry(.16*s,.25*s,2.3*s,6),new THREE.MeshStandardMaterial({color:0x58412d,roughness:1}));
+ const c1=new THREE.Mesh(new THREE.ConeGeometry(1.05*s,2.5*s,7),new THREE.MeshStandardMaterial({color:0x31563a,roughness:1}));
+ const c2=new THREE.Mesh(new THREE.ConeGeometry(.8*s,1.9*s,7),new THREE.MeshStandardMaterial({color:0x406a46,roughness:1}));
+ tr.position.y=1.15*s;c1.position.y=2.8*s;c2.position.y=3.75*s;g.add(tr,c1,c2);g.position.set(x,0,z);parent.add(g)
+}
+function streamRock(parent,x,z,s=1){
+ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.6*s,0),new THREE.MeshStandardMaterial({color:0x77786f,roughness:1}));
+ r.scale.y=.62;r.position.set(x,.38*s,z);parent.add(r)
+}
+function streamBush(parent,x,z,s=1){
+ const b=new THREE.Mesh(new THREE.SphereGeometry(.55*s,7,5),new THREE.MeshStandardMaterial({color:0x4b754b,roughness:1}));
+ b.scale.y=.68;b.position.set(x,.38*s,z);parent.add(b)
+}
+function buildStreamChunk(cx,cz){
+ const key=chunkKey(cx,cz),g=new THREE.Group(),biome=chunkBiome(cx,cz);
+ const colors={forest:0x617753,lakewood:0x667b59,hills:0x7c845f,grassland:0x87915e,wetland:0x667f68,meadow:0x899563};
+ const plane=new THREE.Mesh(new THREE.PlaneGeometry(STREAM_CHUNK+2,STREAM_CHUNK+2),new THREE.MeshStandardMaterial({color:colors[biome]||0x81905f,roughness:1}));
+ plane.rotation.x=-Math.PI/2;plane.position.y=-.04;plane.receiveShadow=true;g.add(plane);walkableSurfaces.push(plane);
+ const ox=cx*STREAM_CHUNK,oz=cz*STREAM_CHUNK;g.position.set(ox,0,oz);
+
+ // Natural decoration. Central village chunks stay lighter to avoid covering houses.
+ const central=Math.abs(cx)<=1&&Math.abs(cz)<=1;
+ const count=central?5:(IS_MOBILE?13:22);
+ for(let i=0;i<count;i++){
+   const x=(chunkSeed(cx,cz,i*4)-.5)*(STREAM_CHUNK-14);
+   const z=(chunkSeed(cx,cz,i*4+1)-.5)*(STREAM_CHUNK-14);
+   const r=chunkSeed(cx,cz,i*4+2),s=.6+chunkSeed(cx,cz,i*4+3)*.75;
+   if(biome==='forest'||biome==='lakewood'){
+     if(r<.72)streamTree(g,x,z,s);else if(r<.87)streamBush(g,x,z,s);else streamRock(g,x,z,s)
+   }else if(biome==='hills'){
+     if(r<.38)streamTree(g,x,z,s*.8);else if(r<.82)streamRock(g,x,z,s);else streamBush(g,x,z,s)
+   }else if(biome==='wetland'){
+     if(r<.35)streamTree(g,x,z,s*.72);else streamBush(g,x,z,s)
+   }else{
+     if(r<.34)streamTree(g,x,z,s*.76);else if(r<.68)streamBush(g,x,z,s);else streamRock(g,x,z,s*.8)
+   }
+ }
+
+ // Ponds/lakes on deterministic chunks.
+ const waterChance=chunkSeed(cx,cz,777);
+ if(!central&&((biome==='lakewood'&&waterChance<.52)||(biome==='wetland'&&waterChance<.42)||(waterChance<.055))){
+   const pond=new THREE.Mesh(new THREE.CircleGeometry(11+chunkSeed(cx,cz,778)*14,24),new THREE.MeshStandardMaterial({color:0x6697a5,roughness:.35,transparent:true,opacity:.9}));
+   pond.rotation.x=-Math.PI/2;pond.position.set((chunkSeed(cx,cz,779)-.5)*55,.02,(chunkSeed(cx,cz,780)-.5)*55);pond.scale.y=.68;g.add(pond)
+ }
+
+ // Low hills give distant terrain shape.
+ if(!central&&(biome==='hills'||chunkSeed(cx,cz,880)<.13)){
+   const h=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),new THREE.MeshStandardMaterial({color:biome==='hills'?0x677557:0x6d7c59,roughness:1}));
+   h.scale.set(16+chunkSeed(cx,cz,881)*18,3+chunkSeed(cx,cz,882)*4,12+chunkSeed(cx,cz,883)*14);
+   h.position.set((chunkSeed(cx,cz,884)-.5)*70,-2.2,(chunkSeed(cx,cz,885)-.5)*70);g.add(h)
+ }
+
+ // Explorer cairn occasionally gives a named visual reference.
+ if(!central&&chunkSeed(cx,cz,991)<.075){
+   const cairn=new THREE.Group();
+   for(let i=0;i<3;i++){const s=.65-i*.12,r=new THREE.Mesh(new THREE.DodecahedronGeometry(s,0),new THREE.MeshStandardMaterial({color:0x8d887a,roughness:1}));r.position.y=.4+i*.6;cairn.add(r)}
+   const label=makeFloatingNameSprite(`◇ 탐사표지 ${cx}:${cz}`);label.position.set(0,2.8,0);label.scale.set(2.8,.62,1);cairn.add(label);
+   cairn.position.set((chunkSeed(cx,cz,992)-.5)*52,0,(chunkSeed(cx,cz,993)-.5)*52);g.add(cairn)
+ }
+
+ streamWorldGroup.add(g);streamChunks.set(key,{g,plane,cx,cz,biome});return g
+}
+function removeStreamChunk(key){
+ const c=streamChunks.get(key);if(!c)return;
+ const wi=walkableSurfaces.indexOf(c.plane);if(wi>=0)walkableSurfaces.splice(wi,1);
+ streamWorldGroup.remove(c.g);
+ c.g.traverse(o=>{if(o.geometry)o.geometry.dispose?.();if(o.material){const ms=Array.isArray(o.material)?o.material:[o.material];for(const m of ms)m.dispose?.()}});
+ streamChunks.delete(key)
+}
+function streamTerrainAroundPlayer(force=false){
+ const cx=Math.floor((player?.position.x||0)/STREAM_CHUNK),cz=Math.floor((player?.position.z||0)/STREAM_CHUNK);
+ if(!force&&cx===lastStreamCX&&cz===lastStreamCZ)return;
+ lastStreamCX=cx;lastStreamCZ=cz;
+ const needed=new Set();
+ for(let dz=-STREAM_RADIUS;dz<=STREAM_RADIUS;dz++)for(let dx=-STREAM_RADIUS;dx<=STREAM_RADIUS;dx++){
+   const x=cx+dx,z=cz+dz,key=chunkKey(x,z);needed.add(key);if(!streamChunks.has(key))buildStreamChunk(x,z)
+ }
+ for(const key of [...streamChunks.keys()])if(!needed.has(key))removeStreamChunk(key);
+ if($('openWorldPos')){
+   const d=Math.round(Math.hypot(player.position.x,player.position.z));
+   $('openWorldPos').textContent=d<20?'감나무뜰 중심':`${localPlaceName(player.position.x,player.position.z)} · 중심 ${d}m`;
+ }
+}
 
 // Dynamic settlement: civilization data is mirrored in the 3D world.
 const villageGroup=new THREE.Group();scene.add(villageGroup);
@@ -849,8 +954,9 @@ populateWildAnimals();
 
 const conflictHostiles=[];let activeConflict=null,hostileSeq=0;
 function edgeSpawn(){
- const b=localMapBounds(),side=Math.floor(Math.random()*4);
- return side===0?new THREE.Vector3(-b.x+4,0,rand(-b.z*.75,b.z*.75)):side===1?new THREE.Vector3(b.x-4,0,rand(-b.z*.75,b.z*.75)):side===2?new THREE.Vector3(rand(-b.x*.75,b.x*.75),0,-b.z+4):new THREE.Vector3(rand(-b.x*.75,b.x*.75),0,b.z-4)
+ // Raids enter the settlement perimeter, not the edge of the infinite exploration map.
+ const bx=92,bz=76,side=Math.floor(Math.random()*4);
+ return side===0?new THREE.Vector3(-bx,0,rand(-bz*.8,bz*.8)):side===1?new THREE.Vector3(bx,0,rand(-bz*.8,bz*.8)):side===2?new THREE.Vector3(rand(-bx*.8,bx*.8),0,-bz):new THREE.Vector3(rand(-bx*.8,bx*.8),0,bz)
 }
 function addConflictHostile(g,type,target,attack){
  Object.assign(g.userData,{conflict:true,conflictId:`H${++hostileSeq}`,conflictType:type,targetPoint:target.clone(),attackPower:attack,attackCooldown:rand(.2,.9),loot:0,dead:false});
@@ -989,6 +1095,7 @@ function createPlayerModel(){
  scene.add(g);return g
 }
 const player=createPlayerModel();
+streamTerrainAroundPlayer(true);
 
 function makeFloatingNameSprite(text){
  const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');
@@ -1200,7 +1307,7 @@ function nearestMonster(){
 }
 function movePlayerTo(v){
  if(state.player.dead)return;
- const bounds=localMapBounds();v=v.clone();v.x=clamp(v.x,-bounds.x,bounds.x);v.z=clamp(v.z,-bounds.z,bounds.z);
+ v=v.clone();
  player.userData.target.copy(v);player.userData.target.y=0;player.userData.moving=true;selectedMonster=null;
  followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';if(camMode!=='follow')setCameraMode('follow');
  player.userData.fsm.set(PlayerStates.MOVING)
@@ -1232,7 +1339,6 @@ function updatePlayer(dt,now){
    if(mag>.04){
      d.normalize();ud.fsm.set(PlayerStates.MOVING);
      player.position.addScaledVector(d,CombatRules.playerMoveSpeed*(.55+.45*mag)*scale*dt);
-     const bounds=localMapBounds();player.position.x=clamp(player.position.x,-bounds.x,bounds.x);player.position.z=clamp(player.position.z,-bounds.z,bounds.z);
      player.rotation.y=Math.atan2(d.x,d.z);
      const swing=Math.sin(now*.014*4*scale)*.62*mag;
      ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing*.65;
@@ -1809,8 +1915,6 @@ function panCamera(dx,dy){
  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
  autoFocus.addScaledVector(right,-dx*factor);
  autoFocus.addScaledVector(forward,-dy*factor);
- const bounds=localMapBounds();
- autoFocus.x=clamp(autoFocus.x,-bounds.x,bounds.x);autoFocus.z=clamp(autoFocus.z,-bounds.z,bounds.z);
 }
 renderer.domElement.addEventListener('pointerdown',e=>{
  e.preventDefault();
@@ -2796,7 +2900,7 @@ function drawMini(){
 mini.addEventListener('pointerdown',e=>{
  e.preventDefault();e.stopPropagation();
  const r=mini.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*mini.width,py=(e.clientY-r.top)/r.height*mini.height;
- const w=miniToWorld(px,py),b=localMapBounds();w.x=clamp(w.x,-b.x,b.x);w.z=clamp(w.z,-b.z,b.z);
+ const w=miniToWorld(px,py);
  miniPin={x:w.x,z:w.z};miniPinUntil=performance.now()+6000;setMiniInfo(w.x,w.z,'📍');
  autoFocus.set(w.x,0,w.z);setCameraMode('free')
 },{passive:false});
@@ -3054,7 +3158,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v9.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v9.2 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
@@ -3077,6 +3181,7 @@ function loop(now){
  guarded('주민AI',()=>updatePeople(dt,now));
  guarded('플레이어',()=>updatePlayer(dt,now));
  guarded('복실이',()=>updateBokshil(dt,now));
+ guarded('지형스트리밍',()=>{if(now-lastStreamUpdate>450){streamTerrainAroundPlayer();lastStreamUpdate=now}});
  guarded('일반동물',()=>updateAnimals(dt,now));
  guarded('지역관찰AI',()=>updateRegionCitizens(dt,now));
  guarded('습격·전쟁',()=>updateConflictSystem(dt,now));

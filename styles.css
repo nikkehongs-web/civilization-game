@@ -516,3 +516,14 @@ body.region-view .camera-panel{display:none!important}
  .bokshil-hud::before{width:18px;height:18px;flex-basis:18px;border-radius:6px}
  .nav-hud{top:204px;max-width:70vw;padding:4px 6px}.nav-hud b{font-size:6px}.nav-hud span{font-size:5.5px}
 }
+
+/* ===== v9.2 OPEN WORLD STREAMING ===== */
+.open-world-hud{
+ position:fixed;z-index:31;left:8px;top:205px;display:flex;gap:5px;align-items:center;
+ padding:5px 7px;border-radius:9px;background:rgba(8,17,14,.62);pointer-events:none
+}
+.open-world-hud b{font-size:6.5px;color:#edd79f}.open-world-hud span{font-size:5.5px;color:#9eb3aa}
+@media(max-width:560px){
+ .open-world-hud{left:7px;top:181px;padding:4px 6px}
+ .open-world-hud b{font-size:6px}.open-world-hud span{font-size:5px}
+}
