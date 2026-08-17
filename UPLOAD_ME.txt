@@ -1,46 +1,36 @@
-v10.5 복실이 후손 계보 UI
+v10.5.1 동물 스케일 초기화 오류 수정
 
-추가:
-- 화면 하단 복실이 HUD에 '계보' 버튼
-- 버튼을 누르면 복실이 전체 가계도 패널 열림
+발생 오류:
+Cannot access 'ANIMAL_WORLD_SCALE' before initialization.
 
-계보에서 확인:
-- 0세대 복실이/외부 합류 개체
-- 1세대 자녀
-- 2세대 손자
-- 3세대 이후 모든 후손
-- 최고 세대 수
-- 총 계보 개체 수
-- 현재 생존 수
-- 사망 수
-- 전체 후손 수
+정확한 원인:
+- createAnimalModel()이 game.js 앞부분에서 정의됨
+- populateWildAnimals()가 그 직후 즉시 실행됨
+- createAnimalModel() 안에서 ANIMAL_WORLD_SCALE 사용
+- 그런데 ANIMAL_WORLD_SCALE const 선언은 그보다 훨씬 아래에 있었음
+- JavaScript const TDZ(Temporal Dead Zone) 때문에 Safari에서 시작 즉시 ReferenceError 발생
 
-각 개체 정보:
-- 이름
-- 세대
-- 수컷/암컷
-- 생존/사망
-- 현재 나이 또는 사망 나이
-- 부모
-- 짝
-- 자녀 이름과 자녀 수
-- 마을 경비 역할
-- ★ 복실이 = 계보 창시자
-- ◇ 외부 합류 개체
+수정:
+- HUMAN_WORLD_SCALE
+- REGION_HUMAN_SCALE
+- ANIMAL_WORLD_SCALE
+- DOG_WORLD_SCALE
+4개 스케일 상수를 동물 시스템보다 먼저 초기화하도록 이동
+- 늦은 위치의 기존 선언 제거
+- 중복 선언 없음
+- 동물 생성 전에 ANIMAL_WORLD_SCALE이 반드시 초기화되는 순서를 정적 검사
 
-중요:
-- 죽은 복실이/후손도 계보에서 사라지지 않음
-- 시간이 지나 새끼가 태어나거나 죽으면 열린 계보 화면도 자동 갱신
-- 기존 v10.4 세이브의 dogLineage 데이터를 그대로 사용하므로 초기화 불필요
-
-기존 유지:
-- 사람 52% / 동물·복실이 72% 스케일
-- 주거/농경 구역 분리
-- 모바일 Archive 겹침 수정
-- 30만 세계인구 / 세대교체 / 개척
+기존 v10.5 기능 유지:
+- 사람 52%
+- 일반 동물/복실이 계열 72%
+- 밭/주거구역 분리
+- 모바일 WORLD ARCHIVE 수정
+- 복실이 후손 계보 UI
+- 세계 인구/세대교체/개척도시
 - 전쟁 완화
-- 실험체 RPG / x300
+- 실험체 RPG
+- x300 배속
 
 GitHub 최상위에 ZIP 안 파일 전부 덮어쓰기.
 테스트:
-https://nikkehongs-web.github.io/civilization-game/?v=10.5
+https://nikkehongs-web.github.io/civilization-game/?v=10.5.1

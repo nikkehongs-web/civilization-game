@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=10.5';
+import { CivitasWorldMap } from './world-map.js?v=10.5.1';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -49,9 +49,9 @@ const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
 const ITEM_CATALOG = await fetch('./items.json?v=10.2')
   .then(r=>{if(!r.ok)throw new Error(`items.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=10.5')
+const WORLD_DATA = await fetch('./world.json?v=10.5.1')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=10.5')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=10.5.1')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -1123,6 +1123,12 @@ for(let i=0;i<8;i++){
 }
 
 
+// v10.5.1 WORLD SCALE — MUST BE INITIALIZED BEFORE ANY ANIMAL IS CREATED
+const HUMAN_WORLD_SCALE=0.52;
+const REGION_HUMAN_SCALE=0.52;
+const ANIMAL_WORLD_SCALE=0.72;
+const DOG_WORLD_SCALE=0.72;
+
 // ---------- NORMAL FAUNA / LIVESTOCK (not monsters) ----------
 const animalGroup=new THREE.Group();scene.add(animalGroup);
 const animals=[];
@@ -1316,13 +1322,6 @@ function renderConflictHud(){
 
 // central fire
 const fire=new THREE.Group();for(let i=0;i<6;i++){const l=new THREE.Mesh(new THREE.CylinderGeometry(.1,.13,1.8,6),new THREE.MeshStandardMaterial({color:0x493220}));l.rotation.z=Math.PI/2;l.rotation.y=i;fire.add(l)}const flame=new THREE.Mesh(new THREE.ConeGeometry(.42,1.25,9),new THREE.MeshStandardMaterial({color:0xff9a42,emissive:0xff6818,emissiveIntensity:2.2}));flame.position.y=.8;fire.add(flame);fire.position.set(0,0,-1);scene.add(fire);const fireLight=new THREE.PointLight(0xff8b3d,16,14,2);fireLight.position.set(0,2,-1);scene.add(fireLight);
-
-// v10.1 WORLD SCALE
-// Humans were visually too large compared with trees, animals and buildings.
-const HUMAN_WORLD_SCALE=0.52;
-const REGION_HUMAN_SCALE=0.52;
-const ANIMAL_WORLD_SCALE=0.72;
-const DOG_WORLD_SCALE=0.72;
 
 // Player character: always exists. Level/EXP awaken when monsters appear in world year 55.
 function createPlayerModel(){
@@ -4188,7 +4187,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v10.5 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v10.5.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
