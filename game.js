@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=13.1';
+import { CivitasWorldMap } from './world-map.js?v=13.1.1';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_canon_v13_1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -50,11 +50,11 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const ITEM_CATALOG = await fetch('./items.json?v=13.1')
+const ITEM_CATALOG = await fetch('./items.json?v=13.1.1')
   .then(r=>{if(!r.ok)throw new Error(`items.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=13.1')
+const WORLD_DATA = await fetch('./world.json?v=13.1.1')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=13.1')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=13.1.1')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -189,6 +189,14 @@ const INITIAL_REGION_COMMUNITIES=[
 ];
 const INITIAL_COMMUNITY_BY_COUNTRY=new Map(INITIAL_REGION_COMMUNITIES.map(x=>[x.country,x]));
 const INITIAL_COMMUNITY_CITY_IDS=new Set(INITIAL_REGION_COMMUNITIES.map(x=>x.cityId));
+
+// v13.1.1 BOOT ORDER:
+// initialCountryState() runs while the initial save state is being constructed.
+// Therefore this table MUST exist before initialCountryState() is ever called.
+const REGION_KNOWLEDGE_FOCUS={
+ '아르케아 중앙대륙':'농업·기계·생활공학','실바리온 수림권':'생명과학·의학','카르딘 산맥권':'금속·재료공학','세라칸 대초원':'동력·운반기계',
+ '네레이아 해권':'항해·의학·저장','솔라크 사막권':'화학·수자원','드라바스 화산군도':'고온재료·제련','루메라 부유제도':'수학·천문·풍력'
+};
 
 
 function countryPopulationWeight(name){
@@ -2944,10 +2952,6 @@ function maybeShiftTrajectory(){
  };
  addLog('story',`${old}에서 ${top.name} 쪽으로`,texts[top.name]||'주민들의 반복 행동이 문명의 방향을 바꾸기 시작했다.','기록','역사는 계획표보다 사람들이 반복한 행동을 더 오래 기억했다.')
 }
-const REGION_KNOWLEDGE_FOCUS={
- '아르케아 중앙대륙':'농업·기계·생활공학','실바리온 수림권':'생명과학·의학','카르딘 산맥권':'금속·재료공학','세라칸 대초원':'동력·운반기계',
- '네레이아 해권':'항해·의학·저장','솔라크 사막권':'화학·수자원','드라바스 화산군도':'고온재료·제련','루메라 부유제도':'수학·천문·풍력'
-};
 const WORLD_REGION_JOBS={
  '아르케아 중앙대륙':['농부','목수','요리사','기록자','수로일꾼','채집가','생명관찰자','경비'],
  '실바리온 수림권':['수림채집가','약초사','목공인','생명관찰자','식생연구자','기록자'],
@@ -4306,7 +4310,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v13.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v13.1.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
