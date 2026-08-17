@@ -25,12 +25,114 @@
 .hint{position:fixed;z-index:24;left:50%;transform:translateX(-50%);bottom:82px;padding:7px 10px;border-radius:999px;font-size:7px;color:#aeb9af;pointer-events:none}
 @media(max-width:800px){.minimap-wrap{width:142px;top:84px}.mini-head span{display:none}#minimap{width:124px;height:124px}.camera-panel{top:236px;width:142px}.story{width:calc(100vw - 174px)}.resources{top:274px;width:calc(100vw - 174px);grid-template-columns:repeat(5,1fr)}.res{padding:6px 2px}.res span{font-size:12px}.res b{font-size:8px}.bottom-hud{grid-template-columns:1fr}.speed{justify-content:center}.hint{display:none}}
 @media(max-width:560px){.topbar{left:8px;right:8px}.story{left:8px;top:80px;width:calc(100vw - 158px);padding:10px}.story h2{font-size:13px}.story p{font-size:8px}.quote{font-size:8px}.story-meta{display:none}.minimap-wrap{right:8px;top:80px;width:136px;padding:6px}#minimap{width:122px;height:122px}.camera-panel{right:8px;top:226px;width:136px}.resources{left:8px;top:249px;width:calc(100vw - 158px);grid-template-columns:repeat(3,1fr)}.resources .res:nth-child(4),.resources .res:nth-child(5){margin-top:0}.bottom-hud{left:8px;right:8px}.ticker{min-height:52px}.ticker p{display:none}.grid{grid-template-columns:1fr}.sheet{padding:4px}.sheet-card{border-radius:18px}.icon{min-width:36px;height:36px;padding:0 8px;font-size:9px}.date b{font-size:12px}.eyebrow{font-size:7px}}
+
+/* ===== MOBILE OBSERVER HUD v2 ===== */
+.desktop-only{display:inline-flex}
+@media(max-width:560px){
+  /* 3D 세계가 주인공: HUD는 최대한 작게 */
+  .topbar{
+    left:6px;right:6px;top:max(6px,env(safe-area-inset-top));
+    height:50px;border-radius:15px;padding:6px 8px 6px 10px;
+  }
+  .eyebrow{display:none}
+  .date b{font-size:12px;line-height:1.1}
+  .date span{font-size:7px;margin-top:3px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-actions{gap:4px}
+  .icon{min-width:34px;height:34px;padding:0 7px;border-radius:10px;font-size:8px}
+  .desktop-only{display:none!important}
+
+  /* 오늘의 이야기는 작은 알림 카드로 */
+  .story{
+    left:7px;top:62px;width:calc(100vw - 128px);
+    min-height:0;border-radius:13px;padding:7px 9px;
+    background:linear-gradient(180deg,rgba(20,31,25,.78),rgba(12,21,17,.68));
+  }
+  .story-kicker{font-size:6px}
+  .story h2{font-size:10px;margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .story p,.story .quote,.story-meta{display:none}
+
+  /* 미니맵은 작은 레이더 */
+  .minimap-wrap{
+    right:7px;top:62px;width:108px;padding:4px;border-radius:13px;
+    background:linear-gradient(180deg,rgba(20,31,25,.78),rgba(12,21,17,.68));
+  }
+  .mini-head{display:none}
+  #minimap{width:98px;height:98px;border-radius:10px}
+  .mini-legend{display:none}
+
+  /* 자원은 5개 작은 칩 한 줄 */
+  .resources{
+    left:7px;right:7px;top:171px;width:auto;
+    display:flex;gap:4px;pointer-events:none;
+  }
+  .res{
+    flex:1;min-width:0;padding:5px 2px;border-radius:10px;
+    background:rgba(16,26,21,.70);box-shadow:none;
+  }
+  .res span{display:inline;font-size:10px;margin-right:2px}
+  .res b{display:inline;font-size:8px;margin:0}
+  .res small{display:none}
+
+  /* 카메라 조작 패널은 메뉴/상단 AUTO로 대체 */
+  .camera-panel{display:none!important}
+
+  /* 하단은 배속 버튼만 작게 띄움 */
+  .bottom-hud{
+    left:50%;right:auto;bottom:max(8px,env(safe-area-inset-bottom));
+    transform:translateX(-50%);display:block;width:auto;
+  }
+  .ticker{display:none!important}
+  .speed{
+    padding:4px;border-radius:13px;gap:3px;
+    background:rgba(14,24,19,.72);
+  }
+  .speed button{padding:7px 9px;border-radius:9px;font-size:8px;min-width:38px}
+  .hint{display:none!important}
+
+  /* 사건 팝업도 작게 */
+  .event-pop{
+    top:60px;max-width:calc(100vw - 140px);
+    padding:6px 8px;font-size:7px;border-radius:10px;
+  }
+
+  /* 전체 메뉴는 아래에서 올라오는 모바일 시트 */
+  .sheet{
+    align-items:flex-end;justify-content:center;padding:0;
+    background:rgba(0,0,0,.46);
+  }
+  .sheet-card{
+    width:100%;height:min(76vh,720px);border-radius:22px 22px 0 0;
+    padding:12px;padding-bottom:max(14px,env(safe-area-inset-bottom));
+  }
+
+  /* HUD OFF: 3D + 상단 최소 버튼 + 배속만 */
+  body.hud-off .story,
+  body.hud-off .resources,
+  body.hud-off .minimap-wrap,
+  body.hud-off .event-pop{display:none!important}
+  body.hud-off .topbar{
+    width:auto;right:6px;left:auto;
+    background:rgba(10,18,14,.52);
+    border-color:rgba(255,255,255,.08);
+  }
+  body.hud-off .topbar>div:first-child{display:none}
+  body.hud-off #autoDirectorBtn{display:none}
+}
+
+/* 작은 세로 화면에서는 자원바를 더 위로 압축 */
+@media(max-width:390px){
+  .story{width:calc(100vw - 116px)}
+  .minimap-wrap{width:98px}
+  #minimap{width:88px;height:88px}
+  .resources{top:161px}
+}
+
 </style>
 </head>
 <body>
 <div id="game"></div>
 <div id="loading" class="loading"><div><div class="spinner"></div><b>감나무뜰을 불러오는 중</b><p>3D 세계와 주민들의 하루를 준비하고 있습니다.</p></div></div>
-<header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="novelBtn" class="icon">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
+<header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
 <section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들이 라엔 분지의 흙을 살피기 시작했다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
 <section id="resources" class="resources"></section>
 <section class="minimap-wrap glass"><div class="mini-head"><b>라엔 분지 미니맵</b><span>터치해 이동</span></div><canvas id="minimap" width="344" height="344"></canvas><div class="mini-legend"><span><i class="i-main"></i>핵심</span><span><i class="i-person"></i>주민</span><span><i class="i-event"></i>사건</span></div></section>
@@ -56,9 +158,9 @@ const RESIDENT_SEED=[
 {id:'C0008',name:'하루',age:18,job:'약초사',potential:90,bloom:6,color:0x776b49,skills:{농업:33,목공:20,요리:22,약초:61,사육:17,기록:29,채집:57},note:'호기심이 많고 작은 변화를 놓치지 않는다.'},
 {id:'C0009',name:'가람',age:34,job:'채집가',potential:79,bloom:13,color:0x4f6d70,skills:{농업:30,목공:37,요리:21,약초:26,사육:24,기록:18,채집:63},note:'물길과 돌의 위치를 잘 기억한다.'}
 ];
-function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false}},residents:JSON.parse(JSON.stringify(RESIDENT_SEED)),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살피기 시작했다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false},currentStorySeq:1,worldPopulation:300}};
+function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false}},residents:JSON.parse(JSON.stringify(RESIDENT_SEED)),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살피기 시작했다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false},currentStorySeq:1,worldPopulation:300}};
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
-function migrate(){state.speed??=1;state.running??=true;state.seq??=state.logs?.length||1;state.currentStorySeq??=state.logs?.[0]?.seq||1;state.logs??=[];state.residents??=JSON.parse(JSON.stringify(RESIDENT_SEED));state.buildings??={field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0};state.tech??={};for(const k of ['기록습관','공동취사','건조저장','목공기초','약초분류','사육기초'])state.tech[k]??={p:0,open:false};}migrate();
+function migrate(){state.speed??=1;state.running??=true;state.seq??=state.logs?.length||1;state.currentStorySeq??=state.logs?.[0]?.seq||1;state.logs??=[];state.residents??=JSON.parse(JSON.stringify(RESIDENT_SEED));state.buildings??={house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0};state.buildings.house??=2;state.tech??={};for(const k of ['기록습관','공동취사','건조저장','목공기초','약초분류','사육기초'])state.tech[k]??={p:0,open:false};}migrate();
 const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 function stamp(){return `${state.year}년 ${state.day}일`}function season(){return state.day<92?'봄':state.day<183?'여름':state.day<274?'가을':'겨울'}
 function addLog(type,title,text,speaker='이명자',quote=''){state.seq++;const l={seq:state.seq,type,time:stamp(),title,text,speaker,quote};state.logs.unshift(l);state.logs=state.logs.slice(0,1000);state.currentStorySeq=l.seq;showEvent(title);save();return l}
@@ -80,9 +182,127 @@ for(let i=0;i<125;i++){const a=Math.random()*Math.PI*2,r=45+Math.random()*55;tre
 const river=new THREE.Mesh(new THREE.PlaneGeometry(14,150),new THREE.MeshStandardMaterial({color:0x6b9aaa,roughness:.3,metalness:.05,transparent:true,opacity:.92}));river.rotation.x=-Math.PI/2;river.rotation.z=.07;river.position.set(38,.03,6);scene.add(river);
 // paths
 function path(a,b,w=2.8){const d=b.clone().sub(a),len=d.length(),m=new THREE.Mesh(new THREE.PlaneGeometry(w,len),new THREE.MeshStandardMaterial({color:0xa18a65,roughness:1}));m.rotation.x=-Math.PI/2;m.position.copy(a.clone().add(b).multiplyScalar(.5));m.position.y=.045;m.rotation.z=-Math.atan2(d.x,d.z);scene.add(m)};[LOC.field,LOC.river,LOC.forest,LOC.stone,LOC.workshop,LOC.herbs,LOC.pen].forEach(p=>path(LOC.center,p));
-function hut(x,z,rot=0,scale=1){const g=new THREE.Group(),w=new THREE.Mesh(new THREE.BoxGeometry(5.4,2.8,4.5),new THREE.MeshStandardMaterial({color:0x9b7550,roughness:1})),roof=new THREE.Mesh(new THREE.ConeGeometry(4.2,2.4,4),new THREE.MeshStandardMaterial({color:0x4f3a29,roughness:1}));w.position.y=1.4;roof.position.y=3.7;roof.rotation.y=Math.PI/4;roof.scale.z=.78;w.castShadow=roof.castShadow=true;g.add(w,roof);g.position.set(x,0,z);g.rotation.y=rot;g.scale.setScalar(scale);scene.add(g);return g}hut(-7,-6,.25);hut(7,-6,-.2);hut(-11,4,-.25);hut(10,5,.3);hut(10,-13,.1,.85);
-// field grid
-const fieldGroup=new THREE.Group();fieldGroup.position.copy(LOC.field);scene.add(fieldGroup);for(let i=0;i<8;i++){const row=new THREE.Mesh(new THREE.BoxGeometry(1.3,.12,13),new THREE.MeshStandardMaterial({color:i%2?0x7b5d3a:0x8c6a40,roughness:1}));row.position.set((i-3.5)*1.6,.06,0);fieldGroup.add(row)}
+// Dynamic settlement: civilization data is mirrored in the 3D world.
+const villageGroup=new THREE.Group();scene.add(villageGroup);
+const visualState={house:0,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0};
+const visualByKey=new Map();
+
+const HOUSE_SPOTS=[
+ [-7,-6,.25],[7,-6,-.2],[-11,4,-.25],[10,5,.3],[-15,-12,.4],[16,-10,-.35],
+ [-18,7,.15],[17,10,-.2],[-5,-17,.08],[6,16,-.12],[20,-1,.2],[-21,-2,-.18]
+];
+
+function buildRise(g,animate=true){
+ if(!animate){g.scale.y=1;return}
+ g.scale.y=.03;
+ const started=performance.now(),duration=1700;
+ function tick(now){
+   const t=Math.min(1,(now-started)/duration);
+   const ease=1-Math.pow(1-t,3);
+   g.scale.y=.03+.97*ease;
+   if(t<1)requestAnimationFrame(tick);
+ }
+ requestAnimationFrame(tick);
+}
+
+function createHouse(index,animate=true){
+ const spot=HOUSE_SPOTS[index%HOUSE_SPOTS.length],g=new THREE.Group();
+ const foundation=new THREE.Mesh(new THREE.BoxGeometry(5.8,.24,4.9),new THREE.MeshStandardMaterial({color:0x76634c,roughness:1}));
+ foundation.position.y=.12;
+ const wall=new THREE.Mesh(new THREE.BoxGeometry(5.2,2.65,4.25),new THREE.MeshStandardMaterial({color:index%2?0x987451:0xa17d57,roughness:1}));
+ wall.position.y=1.5;
+ const roof=new THREE.Mesh(new THREE.ConeGeometry(4.05,2.25,4),new THREE.MeshStandardMaterial({color:index%3?0x503b2a:0x5d402a,roughness:1}));
+ roof.position.y=3.65;roof.rotation.y=Math.PI/4;roof.scale.z=.78;
+ const door=new THREE.Mesh(new THREE.BoxGeometry(.8,1.6,.12),new THREE.MeshStandardMaterial({color:0x503723,roughness:1}));
+ door.position.set(0,.9,2.19);
+ const windowMat=new THREE.MeshStandardMaterial({color:0x9bb7a6,emissive:0x394a42,emissiveIntensity:.35,roughness:.25});
+ [-1.45,1.45].forEach(x=>{const w=new THREE.Mesh(new THREE.BoxGeometry(.7,.65,.1),windowMat);w.position.set(x,1.65,2.2);g.add(w)});
+ const chimney=new THREE.Mesh(new THREE.BoxGeometry(.42,1.15,.42),new THREE.MeshStandardMaterial({color:0x62564c,roughness:1}));
+ chimney.position.set(1.25,4.15,0);
+ [foundation,wall,roof,door,chimney].forEach(m=>{m.castShadow=true;m.receiveShadow=true;g.add(m)});
+ g.position.set(spot[0],0,spot[1]);g.rotation.y=spot[2];
+ villageGroup.add(g);visualByKey.set(`house:${index}`,g);buildRise(g,animate);
+ return g;
+}
+
+function createFieldPatch(index,animate=true){
+ const g=new THREE.Group(),offsets=[[0,0],[-1,15],[-1,-15],[14,0]];
+ const o=offsets[index%offsets.length];g.position.set(LOC.field.x+o[0],0,LOC.field.z+o[1]);
+ for(let i=0;i<8;i++){
+   const row=new THREE.Mesh(new THREE.BoxGeometry(1.25,.12,12),new THREE.MeshStandardMaterial({color:i%2?0x765735:0x89663b,roughness:1}));
+   row.position.set((i-3.5)*1.5,.06,0);row.receiveShadow=true;g.add(row);
+   for(let j=0;j<5;j++){
+     const sprout=new THREE.Mesh(new THREE.ConeGeometry(.10,.32,5),new THREE.MeshStandardMaterial({color:0x52783f,roughness:1}));
+     sprout.position.set((i-3.5)*1.5,.22,-4.5+j*2.2);g.add(sprout)
+   }
+ }
+ villageGroup.add(g);visualByKey.set(`field:${index}`,g);buildRise(g,animate);return g;
+}
+
+function createStorage(animate=true){
+ const g=new THREE.Group();
+ const postsMat=new THREE.MeshStandardMaterial({color:0x60482f,roughness:1});
+ const wallMat=new THREE.MeshStandardMaterial({color:0x99724a,roughness:1});
+ [-2.4,2.4].forEach(x=>[-1.7,1.7].forEach(z=>{const p=new THREE.Mesh(new THREE.BoxGeometry(.25,1.2,.25),postsMat);p.position.set(x,.6,z);g.add(p)}));
+ const floor=new THREE.Mesh(new THREE.BoxGeometry(5.5,.3,4.2),postsMat);floor.position.y=1.15;g.add(floor);
+ const body=new THREE.Mesh(new THREE.BoxGeometry(5.1,2.5,3.8),wallMat);body.position.y=2.55;g.add(body);
+ const roof=new THREE.Mesh(new THREE.ConeGeometry(4.2,2.2,4),new THREE.MeshStandardMaterial({color:0x443326,roughness:1}));roof.position.y=4.65;roof.rotation.y=Math.PI/4;roof.scale.z=.75;g.add(roof);
+ for(let i=0;i<3;i++){const crate=new THREE.Mesh(new THREE.BoxGeometry(.8,.7,.8),postsMat);crate.position.set(-1.2+i*1.2,1.55,2.3);g.add(crate)}
+ g.position.set(9,0,-14);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});villageGroup.add(g);visualByKey.set('storage',g);buildRise(g,animate);return g;
+}
+
+function createWorkshop(animate=true){
+ const g=new THREE.Group(),wood=new THREE.MeshStandardMaterial({color:0x745336,roughness:1}),roofMat=new THREE.MeshStandardMaterial({color:0x4b3828,roughness:1});
+ [-3,3].forEach(x=>[-2,2].forEach(z=>{const p=new THREE.Mesh(new THREE.BoxGeometry(.3,3.1,.3),wood);p.position.set(x,1.55,z);g.add(p)}));
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(7,0.28,5.3),roofMat);roof.position.y=3.25;roof.rotation.z=-.08;g.add(roof);
+ const bench=new THREE.Mesh(new THREE.BoxGeometry(3.4,.25,1.15),wood);bench.position.set(0,1.05,0);g.add(bench);
+ for(const x of [-1.4,1.4]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.22,1,.22),wood);leg.position.set(x,.55,0);g.add(leg)}
+ const stump=new THREE.Mesh(new THREE.CylinderGeometry(.55,.65,.7,10),wood);stump.position.set(2.2,.35,1.2);g.add(stump);
+ g.position.copy(LOC.workshop);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});villageGroup.add(g);visualByKey.set('workshop',g);buildRise(g,animate);return g;
+}
+
+function createHerbRack(animate=true){
+ const g=new THREE.Group(),wood=new THREE.MeshStandardMaterial({color:0x725136,roughness:1}),leaf=new THREE.MeshStandardMaterial({color:0x67824e,roughness:1});
+ for(const x of [-2,2]){const p=new THREE.Mesh(new THREE.BoxGeometry(.22,2.6,.22),wood);p.position.set(x,1.3,0);g.add(p)}
+ for(let y=.7;y<2.4;y+=.55){const bar=new THREE.Mesh(new THREE.BoxGeometry(4.4,.12,.12),wood);bar.position.y=y;g.add(bar);for(let x=-1.7;x<=1.7;x+=.85){const bundle=new THREE.Mesh(new THREE.SphereGeometry(.16,6,5),leaf);bundle.position.set(x,y-.18,.05);g.add(bundle)}}
+ g.position.copy(LOC.herbs).add(new THREE.Vector3(4,0,-2));villageGroup.add(g);visualByKey.set('herb',g);buildRise(g,animate);return g;
+}
+
+function createPen(animate=true){
+ const g=new THREE.Group(),wood=new THREE.MeshStandardMaterial({color:0x705033,roughness:1});
+ const size=7;
+ for(let i=-3;i<=3;i++){
+   for(const [x,z] of [[i*2,-size],[i*2,size],[-size,i*2],[size,i*2]]){
+     const p=new THREE.Mesh(new THREE.BoxGeometry(.18,1.1,.18),wood);p.position.set(x,.55,z);g.add(p)
+   }
+ }
+ for(const [rot,x,z] of [[0,0,-size],[0,0,size],[Math.PI/2,-size,0],[Math.PI/2,size,0]]){
+   for(const y of [.45,.9]){const rail=new THREE.Mesh(new THREE.BoxGeometry(13,.13,.13),wood);rail.rotation.y=rot;rail.position.set(x,y,z);g.add(rail)}
+ }
+ g.position.copy(LOC.pen);villageGroup.add(g);visualByKey.set('pen',g);buildRise(g,animate);return g;
+}
+
+function createMeeting(animate=true){
+ const g=new THREE.Group(),wood=new THREE.MeshStandardMaterial({color:0x89643e,roughness:1});
+ const floor=new THREE.Mesh(new THREE.CylinderGeometry(5.3,5.3,.28,12),wood);floor.position.y=.14;g.add(floor);
+ for(let i=0;i<8;i++){
+   const a=i/8*Math.PI*2;
+   const seat=new THREE.Mesh(new THREE.BoxGeometry(1.6,.35,.65),wood);seat.position.set(Math.cos(a)*3.6,.4,Math.sin(a)*3.6);seat.rotation.y=-a+Math.PI/2;g.add(seat)
+ }
+ g.position.copy(LOC.meeting);villageGroup.add(g);visualByKey.set('meeting',g);buildRise(g,animate);return g;
+}
+
+function syncVillageVisuals(animate=false){
+ const b=state.buildings;
+ while(visualState.house<(b.house||0)){createHouse(visualState.house,animate);visualState.house++}
+ while(visualState.field<(b.field||0)){createFieldPatch(visualState.field,animate);visualState.field++}
+ if(b.storage>0&&!visualState.storage){createStorage(animate);visualState.storage=1}
+ if(b.workshop>0&&!visualState.workshop){createWorkshop(animate);visualState.workshop=1}
+ if(b.herb>0&&!visualState.herb){createHerbRack(animate);visualState.herb=1}
+ if(b.pen>0&&!visualState.pen){createPen(animate);visualState.pen=1}
+ if(b.meeting>0&&!visualState.meeting){createMeeting(animate);visualState.meeting=1}
+}
+syncVillageVisuals(false);
 // stones
 for(let i=0;i<17;i++){const s=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.3,.8),0),new THREE.MeshStandardMaterial({color:0x77756d,roughness:1}));s.position.set(LOC.stone.x+rand(-6,6),rand(.2,.5),LOC.stone.z+rand(-5,5));s.scale.y=.65;s.castShadow=true;scene.add(s)}
 // herbs
@@ -91,14 +311,155 @@ for(let i=0;i<25;i++){const h=new THREE.Mesh(new THREE.SphereGeometry(.18,6,5),n
 const fire=new THREE.Group();for(let i=0;i<6;i++){const l=new THREE.Mesh(new THREE.CylinderGeometry(.1,.13,1.8,6),new THREE.MeshStandardMaterial({color:0x493220}));l.rotation.z=Math.PI/2;l.rotation.y=i;fire.add(l)}const flame=new THREE.Mesh(new THREE.ConeGeometry(.42,1.25,9),new THREE.MeshStandardMaterial({color:0xff9a42,emissive:0xff6818,emissiveIntensity:2.2}));flame.position.y=.8;fire.add(flame);fire.position.set(0,0,-1);scene.add(fire);const fireLight=new THREE.PointLight(0xff8b3d,16,14,2);fireLight.position.set(0,2,-1);scene.add(fireLight);
 
 // Detailed stylized humanoids (no player character)
-function humanModel(r){const g=new THREE.Group();const skin=new THREE.MeshStandardMaterial({color:0xd4a47f,roughness:.92}),cloth=new THREE.MeshStandardMaterial({color:r.color,roughness:.95}),dark=new THREE.MeshStandardMaterial({color:0x44372f,roughness:1}),hairMat=new THREE.MeshStandardMaterial({color:r.id==='C0001'?0x6b655e:0x3c3029,roughness:1});
- const pelvis=new THREE.Mesh(new THREE.BoxGeometry(.58,.35,.34),cloth);pelvis.position.y=1.05;g.add(pelvis);const torso=new THREE.Mesh(new THREE.CylinderGeometry(.34,.43,.92,8),cloth);torso.position.y=1.63;g.add(torso);const neck=new THREE.Mesh(new THREE.CylinderGeometry(.1,.11,.16,8),skin);neck.position.y=2.16;g.add(neck);const head=new THREE.Mesh(new THREE.SphereGeometry(.29,16,12),skin);head.position.y=2.48;head.scale.y=1.1;g.add(head);const hair=new THREE.Mesh(new THREE.SphereGeometry(.305,12,8,0,Math.PI*2,0,Math.PI*.52),hairMat);hair.position.set(0,2.57,-.01);g.add(hair);
- const nose=new THREE.Mesh(new THREE.ConeGeometry(.045,.13,6),skin);nose.rotation.x=Math.PI/2;nose.position.set(0,2.47,.285);g.add(nose);const eyeMat=new THREE.MeshBasicMaterial({color:0x211b18});[-.09,.09].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),eyeMat);e.position.set(x,2.53,.275);g.add(e)});
- const limbs={};function limb(name,x,y,mat,geo){const pivot=new THREE.Group();pivot.position.set(x,y,0);const mesh=new THREE.Mesh(geo,mat);mesh.position.y=-geo.parameters.height/2;pivot.add(mesh);g.add(pivot);limbs[name]=pivot;return pivot}
- const armGeo=new THREE.CylinderGeometry(.09,.08,.75,7),legGeo=new THREE.CylinderGeometry(.12,.10,.9,7);limb('la',-.43,1.95,skin,armGeo);limb('ra',.43,1.95,skin,armGeo);limb('ll',-.2,1.0,dark,legGeo);limb('rl',.2,1.0,dark,legGeo);const footG=new THREE.BoxGeometry(.21,.13,.38);['lf','rf'].forEach((n,i)=>{const f=new THREE.Mesh(footG,dark);f.position.set(i? .2:-.2,.08,.09);g.add(f)});g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});g.userData={...r,limbs,home:new THREE.Vector3(rand(-8,8),0,rand(-2,9)),task:'대기',target:new THREE.Vector3(),speed:rand(1.5,2.1),phase:rand(0,10),workTimer:0};g.position.copy(g.userData.home);scene.add(g);return g}
+function makeWorkTool(job){
+ const tool=new THREE.Group(); tool.visible=false;
+ const wood=new THREE.MeshStandardMaterial({color:0x684a30,roughness:1});
+ const metal=new THREE.MeshStandardMaterial({color:0x777c78,roughness:.65,metalness:.15});
+ const basketMat=new THREE.MeshStandardMaterial({color:0xa47a49,roughness:1});
+ const paper=new THREE.MeshStandardMaterial({color:0xd8c79c,roughness:1,side:THREE.DoubleSide});
+ if(job==='목수'){
+   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.72,6),wood);handle.position.y=-.36;
+   const blade=new THREE.Mesh(new THREE.BoxGeometry(.34,.18,.07),metal);blade.position.set(.13,-.68,0);blade.rotation.z=.2;
+   tool.add(handle,blade);
+ }else if(job==='농부'){
+   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,.82,6),wood);handle.position.y=-.42;
+   const blade=new THREE.Mesh(new THREE.BoxGeometry(.32,.08,.18),metal);blade.position.set(0,-.81,.09);blade.rotation.x=.45;
+   tool.add(handle,blade);
+ }else if(job==='요리사'){
+   const handle=new THREE.Mesh(new THREE.CylinderGeometry(.018,.022,.62,6),wood);handle.position.y=-.32;
+   const bowl=new THREE.Mesh(new THREE.SphereGeometry(.10,8,5,0,Math.PI*2,0,Math.PI/2),metal);bowl.position.y=-.63;bowl.rotation.x=Math.PI;
+   tool.add(handle,bowl);
+ }else if(job==='기록자'){
+   const sheet=new THREE.Mesh(new THREE.PlaneGeometry(.38,.46),paper);sheet.position.set(0,-.58,.05);sheet.rotation.x=-.25;
+   const stick=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.36,5),wood);stick.position.set(.22,-.52,.02);stick.rotation.z=.25;
+   tool.add(sheet,stick);
+ }else if(job==='사육사'){
+   const bucket=new THREE.Mesh(new THREE.CylinderGeometry(.18,.14,.28,10,1,true),metal);bucket.position.y=-.64;
+   const handle=new THREE.Mesh(new THREE.TorusGeometry(.17,.015,5,12,Math.PI),metal);handle.position.y=-.5;handle.rotation.x=Math.PI/2;
+   tool.add(bucket,handle);
+ }else{
+   const basket=new THREE.Mesh(new THREE.CylinderGeometry(.22,.17,.25,10,1,true),basketMat);basket.position.y=-.66;
+   const rim=new THREE.Mesh(new THREE.TorusGeometry(.21,.025,6,12),basketMat);rim.position.y=-.52;rim.rotation.x=Math.PI/2;
+   tool.add(basket,rim);
+ }
+ tool.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ return tool;
+}
+
+function humanModel(r){
+ const g=new THREE.Group();
+ const skin=new THREE.MeshStandardMaterial({color:0xd4a47f,roughness:.92}),
+       cloth=new THREE.MeshStandardMaterial({color:r.color,roughness:.95}),
+       dark=new THREE.MeshStandardMaterial({color:0x44372f,roughness:1}),
+       hairMat=new THREE.MeshStandardMaterial({color:r.id==='C0001'?0x6b655e:0x3c3029,roughness:1});
+
+ const pelvis=new THREE.Mesh(new THREE.BoxGeometry(.58,.35,.34),cloth);pelvis.position.y=1.05;g.add(pelvis);
+ const torso=new THREE.Mesh(new THREE.CylinderGeometry(.34,.43,.92,8),cloth);torso.position.y=1.63;g.add(torso);
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(.1,.11,.16,8),skin);neck.position.y=2.16;g.add(neck);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.29,16,12),skin);head.position.y=2.48;head.scale.y=1.1;g.add(head);
+ const hair=new THREE.Mesh(new THREE.SphereGeometry(.305,12,8,0,Math.PI*2,0,Math.PI*.52),hairMat);hair.position.set(0,2.57,-.01);g.add(hair);
+ const nose=new THREE.Mesh(new THREE.ConeGeometry(.045,.13,6),skin);nose.rotation.x=Math.PI/2;nose.position.set(0,2.47,.285);g.add(nose);
+ const eyeMat=new THREE.MeshBasicMaterial({color:0x211b18});
+ [-.09,.09].forEach(x=>{const e=new THREE.Mesh(new THREE.SphereGeometry(.018,6,5),eyeMat);e.position.set(x,2.53,.275);g.add(e)});
+
+ const limbs={};
+ function limb(name,x,y,mat,geo){
+   const pivot=new THREE.Group();pivot.position.set(x,y,0);
+   const mesh=new THREE.Mesh(geo,mat);mesh.position.y=-geo.parameters.height/2;
+   pivot.add(mesh);g.add(pivot);limbs[name]=pivot;return pivot
+ }
+ const armGeo=new THREE.CylinderGeometry(.09,.08,.75,7),legGeo=new THREE.CylinderGeometry(.12,.10,.9,7);
+ limb('la',-.43,1.95,skin,armGeo);limb('ra',.43,1.95,skin,armGeo);
+ limb('ll',-.2,1.0,dark,legGeo);limb('rl',.2,1.0,dark,legGeo);
+ const footG=new THREE.BoxGeometry(.21,.13,.38);
+ ['lf','rf'].forEach((n,i)=>{const f=new THREE.Mesh(footG,dark);f.position.set(i?.2:-.2,.08,.09);g.add(f)});
+
+ const tool=makeWorkTool(r.job);
+ limbs.ra.add(tool);
+ tool.position.set(0,-.02,.02);
+
+ g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
+ g.userData={
+   ...r,limbs,parts:{pelvis,torso,head,neck},tool,
+   home:new THREE.Vector3(rand(-8,8),0,rand(-2,9)),
+   task:'대기',target:new THREE.Vector3(),speed:rand(1.5,2.1),
+   phase:rand(0,10),mode:'walking',nextMode:'working',workTimer:0,workPulse:0
+ };
+ g.position.copy(g.userData.home);scene.add(g);return g
+}
 const people=state.residents.map(humanModel);const personMap=new Map(people.map(p=>[p.userData.id,p]));
-function taskLocation(job){return job==='농부'?LOC.field:job==='목수'?LOC.forest:job==='요리사'?LOC.center:job==='약초사'?LOC.herbs:job==='사육사'?LOC.pen:job==='기록자'?LOC.meeting:LOC.river}
-function assignTask(p,force=false){if(!force&&p.userData.workTimer>0)return;const job=p.userData.job;let target=taskLocation(job).clone();target.x+=rand(-3,3);target.z+=rand(-3,3);if(Math.random()<.22)target=p.userData.home.clone().add(new THREE.Vector3(rand(-3,3),0,rand(-3,3)));p.userData.target=target;p.userData.task=target.distanceTo(p.userData.home)<5?'쉬는 중':job==='농부'?'밭 돌보기':job==='목수'?'목재 살피기':job==='요리사'?'공동 취사':job==='약초사'?'약초 채집':job==='사육사'?'가축 돌보기':job==='기록자'?'기록 정리':'물·돌 채집';p.userData.workTimer=rand(5,13)}people.forEach(p=>assignTask(p,true));
+
+function taskLocation(job){
+ return job==='농부'?LOC.field:job==='목수'?LOC.forest:job==='요리사'?LOC.center:
+ job==='약초사'?LOC.herbs:job==='사육사'?LOC.pen:job==='기록자'?LOC.meeting:LOC.river
+}
+function workTaskName(job){
+ return job==='농부'?'밭 고르는 중':job==='목수'?'도끼질 중':job==='요리사'?'공동 취사 중':
+ job==='약초사'?'약초 채집 중':job==='사육사'?'먹이 주는 중':job==='기록자'?'기록 작성 중':'채집 중'
+}
+function assignTask(p,force=false){
+ const ud=p.userData;if(!force&&ud.mode==='walking')return;
+ const rest=Math.random()<.18;
+ let target;
+ if(rest){
+   target=ud.home.clone().add(new THREE.Vector3(rand(-2.2,2.2),0,rand(-2.2,2.2)));
+   ud.nextMode='resting';ud.task='쉬러 가는 중';
+ }else{
+   target=taskLocation(ud.job).clone();target.x+=rand(-3,3);target.z+=rand(-3,3);
+   ud.nextMode='working';ud.task=ud.job==='농부'?'밭으로 이동':ud.job==='목수'?'숲으로 이동':ud.job==='요리사'?'취사장으로 이동':
+     ud.job==='약초사'?'약초터로 이동':ud.job==='사육사'?'우리로 이동':ud.job==='기록자'?'기록 장소로 이동':'채집지로 이동';
+ }
+ ud.target=target;ud.mode='walking';ud.workTimer=0;ud.tool.visible=false;
+}
+people.forEach(p=>assignTask(p,true));
+
+function resetPose(ud){
+ const {limbs,parts}=ud;
+ limbs.la.rotation.set(0,0,0);limbs.ra.rotation.set(0,0,0);
+ limbs.ll.rotation.set(0,0,0);limbs.rl.rotation.set(0,0,0);
+ parts.torso.rotation.set(0,0,0);parts.pelvis.rotation.set(0,0,0);parts.head.rotation.set(0,0,0);
+ parts.torso.position.y=1.63;parts.pelvis.position.y=1.05;parts.head.position.y=2.48;
+}
+function animateWorking(p,now){
+ const ud=p.userData,{limbs,parts}=ud;
+ const t=now*.006+ud.phase;
+ ud.tool.visible=true;
+
+ if(ud.job==='농부'){
+   const chop=(Math.sin(t*2.2)+1)/2;
+   limbs.la.rotation.x=-.6-chop*1.0;limbs.ra.rotation.x=-.75-chop*1.15;
+   parts.torso.rotation.x=.18+.18*chop;parts.head.rotation.x=-.08;
+ }else if(ud.job==='목수'){
+   const hit=Math.sin(t*2.8);
+   limbs.la.rotation.x=-1.05+hit*.85;limbs.ra.rotation.x=-1.3+hit*.95;
+   limbs.la.rotation.z=.18;limbs.ra.rotation.z=-.12;parts.torso.rotation.x=.10-Math.max(0,hit)*.10;
+ }else if(ud.job==='요리사'){
+   limbs.la.rotation.x=-.75;limbs.ra.rotation.x=-.9+.18*Math.sin(t*2.4);
+   limbs.ra.rotation.z=.32*Math.sin(t*2.4);parts.torso.rotation.x=.07;
+ }else if(ud.job==='약초사'||ud.job==='채집가'){
+   const reach=.18*Math.sin(t*2);
+   parts.torso.rotation.x=.48;parts.torso.position.y=1.48;parts.pelvis.position.y=.92;
+   limbs.ll.rotation.x=-.55;limbs.rl.rotation.x=-.55;
+   limbs.la.rotation.x=-1.0+reach;limbs.ra.rotation.x=-.85-reach;
+   parts.head.rotation.x=.22;
+ }else if(ud.job==='기록자'){
+   limbs.la.rotation.x=-1.2;limbs.ra.rotation.x=-1.05;
+   limbs.la.rotation.z=-.18;limbs.ra.rotation.z=.22+.08*Math.sin(t*3);
+   parts.head.rotation.x=.18;parts.torso.rotation.x=.08;
+ }else if(ud.job==='사육사'){
+   const toss=(Math.sin(t*2.1)+1)/2;
+   limbs.la.rotation.x=-.75;limbs.ra.rotation.x=-.55-toss*.75;
+   parts.torso.rotation.x=.14;
+ }else{
+   parts.torso.rotation.x=.38;limbs.la.rotation.x=-.95;limbs.ra.rotation.x=-.8;
+ }
+}
+function animateResting(ud,now){
+ ud.tool.visible=false;
+ const breathe=Math.sin(now*.003+ud.phase)*.025;
+ ud.parts.torso.position.y=1.63+breathe;
+ ud.parts.head.rotation.y=Math.sin(now*.0015+ud.phase)*.18;
+}
 
 // Camera / interaction
 let camMode='auto',followId='C0001',yaw=.55,pitch=.48,distance=45,drag=false,lastX=0,lastY=0,pinchDist=0,autoFocus=new THREE.Vector3(0,0,0),eventFocus=null,eventFocusUntil=0,hovered=null;
@@ -114,24 +475,165 @@ function updateCamera(now){const target=focusForCamera(now);if(camMode==='free')
 // ---------- SIMULATION ----------
 function workOutcome(job){const e=residentEff(job);if(job==='농부')gain({food:Math.round(1.8*e)});if(job==='목수')gain({wood:Math.round(1.3*e)});if(job==='채집가')gain(Math.random()<.55?{water:Math.round(1.5*e)}:{stone:Math.max(1,Math.round(.7*e))});if(job==='약초사'&&Math.random()<.25)gain({food:1});if(job==='요리사'&&state.resources.food>5&&state.resources.water>4){state.resources.food-=.3;state.resources.water-=.2;gain({labor:.8*e})}improve(job,.12)}
 function chooseDailyStory(){const options=[];if(state.resources.water<12)options.push(()=>addLog('warn','물통이 가벼워진 날','가람과 나래가 평소보다 일찍 물가로 향했다. 생활용수를 먼저 확보하기로 했다.','가람','오늘 물길이 조금 낮아요. 아침에 먼저 채워두는 게 좋겠어요.'));if(state.resources.food<15)options.push(()=>addLog('warn','식량을 먼저 생각하다','온새가 남은 식량을 세어 보고 오늘 수확분의 일부를 저장하기로 했다.','온새','오늘 다 먹으면 내일 씨앗이 없어져요. 조금은 남겨야 해요.'));if(state.buildings.field>0)options.push(()=>addLog('good','밭에서 달라진 흙','가람이 전날보다 부드러워진 고랑을 살피다가 물이 오래 머무는 자리를 발견했다.','가람','여기는 물이 조금 더 오래 남아요. 물길을 이쪽으로 잡아보죠.'));options.push(()=>{const r=pick(state.residents.filter(x=>x.id!=='C0001'));addLog('good',`${r.name}의 작은 발견`,`${r.name}이 ${r.job} 일을 반복하던 중 이전보다 덜 힘들고 빠른 순서를 찾아냈다.`,r.name)});pick(options)()}
-function tryMilestones(){if(!state.flags.firstField&&state.resources.wood>=8&&state.resources.stone>=4&&state.resources.labor>=12){spend({wood:8,stone:4,labor:12});state.buildings.field=1;state.flags.firstField=true;addLog('story','첫 밭이 생기다','주민들이 돌을 골라내고 흙을 뒤집어 감나무뜰의 첫 경작지를 완성했다.','이명자','밭이라고 부르기엔 작아도 괜찮아. 오늘 우리가 직접 만든 첫 땅이니까.');eventFocus=LOC.field.clone();eventFocusUntil=performance.now()+9000}if(state.flags.firstField&&!state.flags.firstHarvest&&state.resources.food>=38){state.flags.firstHarvest=true;addLog('story','첫 수확을 나누다','수확물을 오늘 먹을 것과 다음에 심을 씨앗으로 나누는 첫 분배가 이루어졌다.','이명자','오늘 먹고 끝나는 게 아니라, 다음 씨앗을 남겨야 해.')}if(state.flags.firstField&&!state.flags.storage&&state.resources.wood>=18&&state.resources.stone>=10&&state.resources.labor>=16){spend({wood:18,stone:10,labor:16});state.buildings.storage=1;state.flags.storage=true;state.caps.food+=70;state.caps.wood+=50;addLog('story','공동 저장고 완성','마루가 중심이 되어 바닥을 높인 작은 공동 저장고를 완성했다.','마루','바닥만 띄워도 습기가 훨씬 덜 올라와. 다음엔 더 잘 만들 수 있겠어.')}if(!state.tech.기록습관.open&&state.day>20){state.tech.기록습관.p+=rand(2,5)*residentEff('기록자');if(state.tech.기록습관.p>=100){state.tech.기록습관.open=true;addLog('story','기록이 습관이 되다','날씨와 작업 결과를 짧게 남기는 일이 공동 규칙으로 자리 잡기 시작했다.','이명자','기억은 사람과 함께 사라지지만 기록은 다음 사람에게 건너갈 수 있어.')}}if(!state.flags.illness&&state.year===0&&state.day>=120){state.flags.illness=true;addLog('warn','이명자가 오래 앉아 있던 오후','이명자는 작업이 끝난 뒤 한동안 일어나지 못했다. 주민들은 그의 몫까지 자연스럽게 나누어 맡기 시작했다.','이명자','내가 다 해야 하는 건 아니야. 오히려 그래서는 안 돼.')}}
-function advanceDay(){state.day++;if(state.day>365){state.day=1;state.year++;state.residents.forEach(r=>r.age++);addLog('story',`세계력 ${state.year}년의 첫날`,`감나무뜰이 또 한 해를 맞았다. 어제의 아이와 어른은 조금씩 다른 사람이 되어 있었다.`,'이명자')}const n=state.residents.length;state.resources.food=Math.max(0,state.resources.food-n*.08);state.resources.water=Math.max(0,state.resources.water-n*.11);gain({labor:1.2+n*.22});state.residents.forEach(r=>workOutcome(r.job));if(Math.random()<.08){state.weather=pick(['맑음','흐림','약한 비','바람']);if(state.weather==='약한 비')gain({water:5})}if(Math.random()<.14)chooseDailyStory();tryMilestones();if(state.day%30===0)addLog('good',`${state.year}년 ${Math.ceil(state.day/30)}번째 달의 기록`,`주민 ${state.residents.length}명이 각자의 일을 이어갔다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}.`,'이명자');save();renderUI()}
+function tryMilestones(){
+ const b=state.buildings;
+
+ // 첫 경작지: 데이터가 바뀌는 순간 3D 밭도 실제로 생긴다.
+ if(!state.flags.firstField&&state.resources.wood>=8&&state.resources.stone>=4&&state.resources.labor>=12){
+   spend({wood:8,stone:4,labor:12});b.field=1;state.flags.firstField=true;
+   syncVillageVisuals(true);
+   addLog('story','첫 밭이 생기다','주민들이 돌을 골라내고 흙을 뒤집어 감나무뜰의 첫 경작지를 완성했다.','이명자','밭이라고 부르기엔 작아도 괜찮아. 오늘 우리가 직접 만든 첫 땅이니까.');
+   eventFocus=LOC.field.clone();eventFocusUntil=performance.now()+9000;
+ }
+
+ // 주거 수요: 한 집에 약 3명. 부족하면 주민들이 스스로 새 집을 짓는다.
+ const neededHouses=Math.max(2,Math.ceil(state.residents.length/3));
+ if(state.flags.firstField&&(b.house||0)<neededHouses&&state.resources.wood>=12&&state.resources.stone>=4&&state.resources.labor>=10){
+   spend({wood:12,stone:4,labor:10});b.house=(b.house||0)+1;
+   syncVillageVisuals(true);
+   const spot=HOUSE_SPOTS[(b.house-1)%HOUSE_SPOTS.length];
+   eventFocus=new THREE.Vector3(spot[0],0,spot[1]);eventFocusUntil=performance.now()+8500;
+   addLog('story',`새 주택 ${b.house}호 완성`,`잠자리를 나눠 쓰던 주민들이 목재와 돌을 모아 새로운 주거지를 세웠다. 마을의 지붕이 하나 더 늘었다.`,'마루','사람이 늘면 잘 곳도 늘어야지. 집이 생겨야 마을이 커지는 거야.');
+ }
+
+ if(state.flags.firstField&&!state.flags.firstHarvest&&state.resources.food>=38){
+   state.flags.firstHarvest=true;
+   addLog('story','첫 수확을 나누다','수확물을 오늘 먹을 것과 다음에 심을 씨앗으로 나누는 첫 분배가 이루어졌다.','이명자','오늘 먹고 끝나는 게 아니라, 다음 씨앗을 남겨야 해.');
+ }
+
+ if(state.flags.firstField&&!state.flags.storage&&state.resources.wood>=18&&state.resources.stone>=10&&state.resources.labor>=16){
+   spend({wood:18,stone:10,labor:16});b.storage=1;state.flags.storage=true;state.caps.food+=70;state.caps.wood+=50;
+   syncVillageVisuals(true);eventFocus=new THREE.Vector3(9,0,-14);eventFocusUntil=performance.now()+9000;
+   addLog('story','공동 저장고 완성','마루가 중심이 되어 바닥을 높인 공동 저장고를 완성했다. 이제 수확물을 실제 저장 건물에 모아둘 수 있게 됐다.','마루','바닥만 띄워도 습기가 훨씬 덜 올라와. 다음엔 더 잘 만들 수 있겠어.');
+ }
+
+ if(!state.tech.기록습관.open&&state.day>20){
+   state.tech.기록습관.p+=rand(2,5)*residentEff('기록자');
+   if(state.tech.기록습관.p>=100){
+     state.tech.기록습관.open=true;
+     addLog('story','기록이 습관이 되다','날씨와 작업 결과를 짧게 남기는 일이 공동 규칙으로 자리 잡기 시작했다.','이명자','기억은 사람과 함께 사라지지만 기록은 다음 사람에게 건너갈 수 있어.');
+   }
+ }
+
+ // 작업장: 저장과 기록이 생긴 뒤 도구 제작 공간이 독립한다.
+ if(b.storage>0&&state.tech.기록습관.open&&!b.workshop&&state.resources.wood>=24&&state.resources.stone>=10&&state.resources.labor>=18){
+   spend({wood:24,stone:10,labor:18});b.workshop=1;syncVillageVisuals(true);
+   eventFocus=LOC.workshop.clone();eventFocusUntil=performance.now()+9000;
+   addLog('story','작업장이 세워지다','마루와 주민들이 지붕이 있는 작업장을 세웠다. 이제 도구 수리와 제작이 생활 공간과 분리되었다.','마루','이제 비가 와도 여기선 손을 멈출 필요가 없겠어.');
+ }
+
+ // 밭 확장: 수확 경험이 쌓이면 실제 경작지가 하나씩 늘어난다.
+ if(state.flags.firstHarvest&&b.field<3&&state.day>45+b.field*35&&state.resources.wood>=5&&state.resources.stone>=3&&state.resources.labor>=10){
+   spend({wood:5,stone:3,labor:10});b.field++;
+   syncVillageVisuals(true);eventFocus=LOC.field.clone();eventFocusUntil=performance.now()+8000;
+   addLog('good',`경작지 ${b.field}구역으로 확장`,`첫 밭에서 얻은 경험을 바탕으로 새로운 고랑을 만들었다. 감나무뜰의 농지가 눈에 보이게 넓어졌다.`,'이명자','한 번 해본 일은 두 번째부터 조금 덜 어렵지.');
+ }
+
+ if(b.workshop>0&&!b.herb&&state.residents.some(r=>r.job==='약초사')&&state.resources.wood>=12&&state.resources.labor>=8){
+   spend({wood:12,labor:8});b.herb=1;syncVillageVisuals(true);
+   eventFocus=LOC.herbs.clone();eventFocusUntil=performance.now()+7000;
+   addLog('good','약초 건조대 완성','약초를 그냥 쌓아두지 않고 말리고 분류할 수 있는 건조대를 세웠다.','하루','이제 어떤 풀이 언제 채집됐는지 구분할 수 있어요.');
+ }
+
+ if(b.workshop>0&&!b.pen&&state.residents.some(r=>r.job==='사육사')&&state.day>70&&state.resources.wood>=18&&state.resources.stone>=4&&state.resources.labor>=12){
+   spend({wood:18,stone:4,labor:12});b.pen=1;syncVillageVisuals(true);
+   eventFocus=LOC.pen.clone();eventFocusUntil=performance.now()+8000;
+   addLog('good','첫 사육 울타리','해온이 동물이 머물 수 있는 안전한 울타리를 만들었다. 생산 공간이 농지 밖으로도 확장되기 시작했다.','해온','울타리가 있으면 사람도 동물도 서로 덜 놀라요.');
+ }
+
+ if(b.workshop>0&&!b.meeting&&b.house>=3&&state.day>90&&state.resources.wood>=22&&state.resources.stone>=8&&state.resources.labor>=18){
+   spend({wood:22,stone:8,labor:18});b.meeting=1;syncVillageVisuals(true);
+   eventFocus=LOC.meeting.clone();eventFocusUntil=performance.now()+8000;
+   addLog('story','공동 마루가 생기다','주민들이 한곳에 모여 일을 의논할 수 있는 공동 마루를 만들었다. 개인의 판단이 마을의 합의로 이어지는 공간이 처음 생겼다.','이명자','집이 사람을 쉬게 한다면, 이런 자리는 사람들이 함께 생각하게 하지.');
+ }
+
+ if(!state.flags.illness&&state.year===0&&state.day>=120){
+   state.flags.illness=true;
+   addLog('warn','이명자가 오래 앉아 있던 오후','이명자는 작업이 끝난 뒤 한동안 일어나지 못했다. 주민들은 그의 몫까지 자연스럽게 나누어 맡기 시작했다.','이명자','내가 다 해야 하는 건 아니야. 오히려 그래서는 안 돼.');
+ }
+}
+function advanceDay(){state.day++;if(state.day>365){state.day=1;state.year++;state.residents.forEach(r=>r.age++);addLog('story',`세계력 ${state.year}년의 첫날`,`감나무뜰이 또 한 해를 맞았다. 어제의 아이와 어른은 조금씩 다른 사람이 되어 있었다.`,'이명자')}const n=state.residents.length;state.resources.food=Math.max(0,state.resources.food-n*.08);state.resources.water=Math.max(0,state.resources.water-n*.11);gain({labor:1.2+n*.22});state.residents.forEach(r=>workOutcome(r.job));if(Math.random()<.08){state.weather=pick(['맑음','흐림','약한 비','바람']);if(state.weather==='약한 비')gain({water:5})}if(Math.random()<.14)chooseDailyStory();tryMilestones();syncVillageVisuals(false);if(state.day%30===0)addLog('good',`${state.year}년 ${Math.ceil(state.day/30)}번째 달의 기록`,`주민 ${state.residents.length}명이 각자의 일을 이어갔다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}.`,'이명자');save();renderUI()}
 let dayTimer=0;function daysPerSecond(){return state.speed===20?2.5:state.speed===5?.75:state.speed===1?.22:0}
 function updateSim(dt){if(!state.running||state.speed===0)return;dayTimer+=dt*daysPerSecond();while(dayTimer>=1){dayTimer-=1;advanceDay()}}
-function updatePeople(dt,now){people.forEach(p=>{const ud=p.userData;ud.workTimer-=dt*(state.speed?Math.min(3,1+state.speed*.08):.2);const d=ud.target.clone().sub(p.position);d.y=0;const dist=d.length();let moving=false;if(dist>.35){moving=true;d.normalize();const sp=ud.speed*(state.speed===20?3:state.speed===5?1.8:1);p.position.addScaledVector(d,sp*dt);p.rotation.y=Math.atan2(d.x,d.z)}else if(ud.workTimer<=0)assignTask(p,true);const swing=moving?Math.sin(now*.009*ud.speed)*(state.speed===20?.9:.55):0;ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing;ud.limbs.ll.rotation.x=-swing*.75;ud.limbs.rl.rotation.x=swing*.75;if(!moving){ud.limbs.la.rotation.x*=.9;ud.limbs.ra.rotation.x*=.9;ud.limbs.ll.rotation.x*=.9;ud.limbs.rl.rotation.x*=.9}})}
+function updatePeople(dt,now){
+ const timeScale=state.speed===20?3.2:state.speed===5?1.9:state.speed===1?1:0.25;
+ people.forEach(p=>{
+   const ud=p.userData;
+   resetPose(ud);
+
+   if(ud.mode==='walking'){
+     ud.tool.visible=false;
+     const d=ud.target.clone().sub(p.position);d.y=0;const dist=d.length();
+     if(dist>.32){
+       d.normalize();p.position.addScaledVector(d,ud.speed*timeScale*dt);p.rotation.y=Math.atan2(d.x,d.z);
+       const swing=Math.sin(now*.009*ud.speed*timeScale)*.55;
+       ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing;
+       ud.limbs.ll.rotation.x=-swing*.78;ud.limbs.rl.rotation.x=swing*.78;
+     }else{
+       ud.mode=ud.nextMode;
+       ud.workTimer=ud.mode==='working'?rand(4.5,8):rand(3,6);
+       ud.task=ud.mode==='working'?workTaskName(ud.job):'쉬는 중';
+       ud.workPulse=0;
+     }
+     return;
+   }
+
+   ud.workTimer-=dt*timeScale;
+
+   if(ud.mode==='working'){
+     animateWorking(p,now);
+     // 작업 현장에 머무르는 동안 실제로 "일하는 시간"이 보이게 함.
+     ud.workPulse+=dt*timeScale;
+     if(ud.workPulse>2.2){
+       ud.workPulse=0;
+       // 작은 개화 성장: 화면에서 한 노동과 주민 성장 연결.
+       improve(ud.job,.025);
+     }
+   }else{
+     animateResting(ud,now);
+   }
+
+   if(ud.workTimer<=0)assignTask(p,true);
+ })
+}
 
 // ---------- MINIMAP / UI ----------
-const mini=$('minimap'),mctx=mini.getContext('2d');function worldToMini(x,z){return{x:(x+70)/140*mini.width,y:(z+55)/110*mini.height}}function drawMini(){const w=mini.width,h=mini.height;mctx.clearRect(0,0,w,h);mctx.fillStyle='#70885d';mctx.fillRect(0,0,w,h);mctx.fillStyle='#6d9baa';mctx.fillRect(w*.75,0,w*.08,h);mctx.fillStyle='#8d724f';for(const [a,b]of [[LOC.center,LOC.field],[LOC.center,LOC.river],[LOC.center,LOC.forest],[LOC.center,LOC.stone]]){const p=worldToMini(a.x,a.z),q=worldToMini(b.x,b.z);mctx.strokeStyle='#ad936b';mctx.lineWidth=5;mctx.beginPath();mctx.moveTo(p.x,p.y);mctx.lineTo(q.x,q.y);mctx.stroke()}const f=worldToMini(LOC.field.x,LOC.field.z);mctx.fillStyle='#82643e';mctx.fillRect(f.x-18,f.y-14,36,28);people.forEach(p=>{const q=worldToMini(p.position.x,p.position.z);mctx.fillStyle=p.userData.id==='C0001'?'#f2b665':'#f5e3b5';mctx.beginPath();mctx.arc(q.x,q.y,p.userData.id==='C0001'?7:5,0,Math.PI*2);mctx.fill()});if(eventFocus){const e=worldToMini(eventFocus.x,eventFocus.z);mctx.strokeStyle='#e66f65';mctx.lineWidth=4;mctx.beginPath();mctx.arc(e.x,e.y,12,0,Math.PI*2);mctx.stroke()}}
+const mini=$('minimap'),mctx=mini.getContext('2d');function worldToMini(x,z){return{x:(x+70)/140*mini.width,y:(z+55)/110*mini.height}}function drawMini(){const w=mini.width,h=mini.height;mctx.clearRect(0,0,w,h);mctx.fillStyle='#70885d';mctx.fillRect(0,0,w,h);mctx.fillStyle='#6d9baa';mctx.fillRect(w*.75,0,w*.08,h);mctx.fillStyle='#8d724f';for(const [a,b]of [[LOC.center,LOC.field],[LOC.center,LOC.river],[LOC.center,LOC.forest],[LOC.center,LOC.stone]]){const p=worldToMini(a.x,a.z),q=worldToMini(b.x,b.z);mctx.strokeStyle='#ad936b';mctx.lineWidth=5;mctx.beginPath();mctx.moveTo(p.x,p.y);mctx.lineTo(q.x,q.y);mctx.stroke()}const f=worldToMini(LOC.field.x,LOC.field.z);mctx.fillStyle='#82643e';mctx.fillRect(f.x-18,f.y-14,36,28);// buildings
+for(let i=0;i<(state.buildings.house||0);i++){const s=HOUSE_SPOTS[i%HOUSE_SPOTS.length],q=worldToMini(s[0],s[1]);mctx.fillStyle='#d6b17b';mctx.fillRect(q.x-3,q.y-3,6,6)}
+if(state.buildings.storage){const q=worldToMini(9,-14);mctx.fillStyle='#8a5d35';mctx.fillRect(q.x-5,q.y-5,10,10)}
+if(state.buildings.workshop){const q=worldToMini(LOC.workshop.x,LOC.workshop.z);mctx.fillStyle='#6b4c32';mctx.fillRect(q.x-4,q.y-4,8,8)}
+if(state.buildings.herb){const q=worldToMini(LOC.herbs.x+4,LOC.herbs.z-2);mctx.fillStyle='#7ca465';mctx.fillRect(q.x-3,q.y-3,6,6)}
+if(state.buildings.pen){const q=worldToMini(LOC.pen.x,LOC.pen.z);mctx.strokeStyle='#c3a574';mctx.strokeRect(q.x-5,q.y-5,10,10)}
+people.forEach(p=>{const q=worldToMini(p.position.x,p.position.z);mctx.fillStyle=p.userData.id==='C0001'?'#f2b665':'#f5e3b5';mctx.beginPath();mctx.arc(q.x,q.y,p.userData.id==='C0001'?7:5,0,Math.PI*2);mctx.fill()});if(eventFocus){const e=worldToMini(eventFocus.x,eventFocus.z);mctx.strokeStyle='#e66f65';mctx.lineWidth=4;mctx.beginPath();mctx.arc(e.x,e.y,12,0,Math.PI*2);mctx.stroke()}}
 mini.addEventListener('pointerdown',e=>{const r=mini.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*140-70,z=(e.clientY-r.top)/r.height*110-55;autoFocus.set(x,0,z);setCameraMode('free')});
 function renderResources(){$('resources').innerHTML=Object.entries(RESOURCE_META).map(([k,[n,i]])=>`<div class="res glass"><span>${i}</span><b>${Math.floor(state.resources[k])}</b><small>${n}</small></div>`).join('')}
 function renderStory(){const l=currentStory();$('storyTitle').textContent=l.title;$('storyText').textContent=l.text;$('storyQuote').textContent=`“${storyQuoteFor(l)}”`;$('storySpeaker').textContent=`— ${l.speaker||'이명자'}`;$('storyTime').textContent=`세계력 ${l.time}`;$('tickerTitle').textContent=l.title;$('tickerText').textContent=l.text}
 function renderPeopleList(){$('peopleList').innerHTML=state.residents.map(r=>{const p=personMap.get(r.id),task=p?.userData.task||'생활 중',best=Object.entries(r.skills).sort((a,b)=>b[1]-a[1])[0];return`<div class="card resident-row"><div class="face">${r.name[0]}</div><div><b>${r.name} · ${r.job}</b><br><small>${r.id} · ${r.age}세 · 현재 ${task}</small><div class="bar"><i style="width:${r.bloom}%"></i></div><small>잠재력 ${r.potential} · 개화율 ${r.bloom.toFixed(1)}% · ${best[0]} ${Math.round(best[1])}</small></div><button class="focus-person" data-focus="${r.id}">추적</button></div>`}).join('');document.querySelectorAll('[data-focus]').forEach(b=>b.onclick=()=>{followId=b.dataset.focus;$('followSelect').value=followId;setCameraMode('follow');$('sheet').classList.add('hidden')})}
-function renderWorld(){const b=state.buildings,t=state.tech;$('worldCards').innerHTML=`<div class="card"><h3>마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 · 세계 인구 ${state.worldPopulation}명</p><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">약초 건조대 ${b.herb}</span></div><div class="card"><h3>기술 발전</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>현재 원칙</h3><p>몬스터는 초반에 등장하지 않습니다. 생존, 농지 개간, 생산 직업 분화, 기록과 기술 축적에 집중합니다.</p></div><div class="card"><h3>관찰 모드</h3><p>플레이어 캐릭터는 없습니다. 주민들이 스스로 움직이고 당신은 카메라와 시간만 조절합니다.</p></div>`}
+function renderWorld(){const b=state.buildings,t=state.tech;$('worldCards').innerHTML=`<div class="card"><h3>마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house||0}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">약초 건조대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동 마루 ${b.meeting}</span></div><div class="card"><h3>기술 발전</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>현재 원칙</h3><p>몬스터는 초반에 등장하지 않습니다. 생존, 농지 개간, 생산 직업 분화, 기록과 기술 축적에 집중합니다.</p></div><div class="card"><h3>관찰 모드</h3><p>플레이어 캐릭터는 없습니다. 주민들이 스스로 움직이고 당신은 카메라와 시간만 조절합니다.</p></div>`}
 function renderHistory(){$('historyList').innerHTML=state.logs.map(l=>`<div class="log-item ${l.type}"><b>${l.title}</b><p>${l.text}</p><time>세계력 ${l.time} · ${l.speaker||''}</time></div>`).join('')}
 function chronological(){return[...state.logs].sort((a,b)=>a.seq-b.seq)}function novelText(style='healing'){const L=chronological(),out=['문명: 감나무뜰의 창세기','CIVILIZATION: Genesis','',`원고 생성 시점: 세계력 ${stamp()}`,`현재 주민 ${state.residents.length}명 · 기록 사건 ${state.logs.length}개`,'','※ 아래 원고는 게임 안에서 실제 발생해 저장된 사건을 시간순으로 재구성한 것입니다.',''];if(style==='chronicle'){for(const l of L){out.push(`[세계력 ${l.time}] ${l.title}`,l.text,l.quote?`“${l.quote}” — ${l.speaker}`:'','')}return out.join('\n')}out.push('프롤로그 — 라엔 분지','',`아르케아 중앙대륙의 라엔 분지에는 아직 마을이라 부를 만한 것도 없었다. 흙과 물길, 낮은 둔덕, 그리고 오늘을 살아내야 하는 사람들이 있었을 뿐이었다.`,'',`말기 암을 앓는 이명자는 남은 시간을 모든 일을 혼자 해내는 데 쓰지 않았다. 대신 누가 흙을 읽고, 누가 도구를 만들고, 누가 기억을 기록으로 남기는지 바라보았다.`,'');let ch=0,lastYear=null;for(const l of L){const y=l.time.split('년')[0];if(y!==lastYear){lastYear=y;ch++;out.push(`제${ch}장 — 세계력 ${y}년`,'')}if(style==='webnovel'){out.push(l.type==='warn'?'그날, 평소와 다른 기척이 감나무뜰에 내려앉았다.':'작은 변화였다. 하지만 아무것도 없던 이곳에서는 작은 변화가 곧 역사였다.','',l.text,'',`“${storyQuoteFor(l)}”`,`${l.speaker||'이명자'}의 말이 오래 남았다.`,'')}else{out.push(l.text,'',`“${storyQuoteFor(l)}”`,`— ${l.speaker||'이명자'}`,`세계력 ${l.time}, 사람들은 그날을 ‘${l.title}’이라는 이름으로 기억했다.`,'')}}out.push('에필로그 — 계속되는 하루','',`현재 감나무뜰에는 ${state.residents.length}명의 주민이 살아간다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}. 숫자는 작지만 그 안에는 사람들의 하루가 들어 있다.`,'','=== 등장인물 현재 기록 ===',...state.residents.map(r=>`${r.name}(${r.id}) · ${r.age}세 · ${r.job} · 잠재력 ${r.potential} · 개화율 ${r.bloom.toFixed(1)}% · ${r.note}`));return out.join('\n')}
 function chronicleText(){return ['문명: 감나무뜰의 창세기 — 원본 연대기','',...chronological().flatMap(l=>[`[세계력 ${l.time}] ${l.title}`,l.text,l.quote?`“${l.quote}” — ${l.speaker}`:'',''])].join('\n')}function download(name,text){const blob=new Blob(['\ufeff'+text],{type:'text/plain;charset=utf-8'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 function renderNovel(){$('novelPreview').textContent=novelText($('novelStyle').value)}function renderUI(){$('worldDate').textContent=`세계력 ${stamp()}`;$('worldSub').textContent=`${season()} · ${state.weather} · 주민 ${state.residents.length}명`;renderResources();renderStory();renderPeopleList();renderWorld();renderHistory();renderNovel();document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===state.speed));}
 function showEvent(t){const e=$('eventPop');e.textContent='● '+t;e.classList.add('show');clearTimeout(showEvent.t);showEvent.t=setTimeout(()=>e.classList.remove('show'),2600)}
+
+
+// Mobile HUD visibility
+let hudHidden = localStorage.getItem('civilization_hud_hidden') === '1';
+function applyHud(){
+  document.body.classList.toggle('hud-off',hudHidden);
+  const b=$('hudToggleBtn');
+  if(b){
+    b.textContent=hudHidden?'▣':'◱';
+    b.title=hudHidden?'HUD 보이기':'HUD 숨기기';
+    b.classList.toggle('active',hudHidden);
+  }
+}
+$('hudToggleBtn').onclick=()=>{
+  hudHidden=!hudHidden;
+  localStorage.setItem('civilization_hud_hidden',hudHidden?'1':'0');
+  applyHud();
+};
+applyHud();
 
 // menu/events
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
