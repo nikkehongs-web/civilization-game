@@ -12,9 +12,9 @@ const REGION_COLORS={
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 export class CivitasWorldMap{
- constructor({overlay,canvas,detail,legend,status,getState,data,onClose}){
+ constructor({overlay,canvas,detail,legend,status,countryList,getState,data,onClose}){
   this.overlay=overlay;this.canvas=canvas;this.ctx=canvas.getContext('2d');
-  this.detail=detail;this.legend=legend;this.status=status;this.getState=getState;this.data=data;this.onClose=onClose;
+  this.detail=detail;this.legend=legend;this.status=status;this.countryList=countryList;this.getState=getState;this.data=data;this.onClose=onClose;
   this.mode='current';this.scale=1;this.ox=0;this.oy=0;this.pointerMap=new Map();this.lastPair=null;this.lastSingle=null;this.moved=false;
   this.cityById=new Map(data.cities.map(c=>[c.id,c]));
   this.regionStats=this.buildRegionStats();
@@ -117,7 +117,8 @@ export class CivitasWorldMap{
  showRegion(name){
   const r=this.regionStats.get(name),st=this.getState(),known=st.world.knownRegions.includes(name);
   const founded=this.data.cities.filter(c=>c.region===name&&st.world.foundedCities.includes(c.id)).length;
-  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>${known?'관측됨':'미탐사'}</em><em>200년 도시 ${r.cities}</em><em>현재 확인 거점 ${founded}</em></div>`
+  const pop=Object.entries(st.world.countries||{}).filter(([n,c])=>c.region===name).reduce((s,[n,c])=>s+c.population,0);
+  this.detail.innerHTML=`<b>${name}</b><span>${r.desc}</span><p>${r.issue}</p><div><em>관찰자 인구 ${pop}</em><em>${known?'주민 접촉 완료':'주민 미접촉'}</em><em>200년 도시 ${r.cities}</em><em>현재 거점 ${founded}</em></div>`
  }
  showCity(city){
   const st=this.getState(),founded=st.world.foundedCities.includes(city.id);
@@ -142,11 +143,11 @@ export class CivitasWorldMap{
   for(const r of this.regionStats.values()){
    const known=st.world.knownRegions.includes(r.name),future=this.mode==='future';
    const c=this.screen(r.centerX,r.centerY),rx=Math.max(36,(r.maxX-r.minX)*c.s*.68),ry=Math.max(28,(r.maxY-r.minY)*c.s*.72);
-   ctx.save();ctx.globalAlpha=future?(known?.88:.72):(known?.88:.14);ctx.fillStyle=REGION_COLORS[r.name]||'#667';
+   ctx.save();ctx.globalAlpha=future?.78:.72;ctx.fillStyle=REGION_COLORS[r.name]||'#667';
    ctx.beginPath();ctx.ellipse(c.x,c.y,rx,ry,0,0,Math.PI*2);ctx.fill();
    ctx.strokeStyle=known?'rgba(255,235,180,.42)':'rgba(255,255,255,.08)';ctx.lineWidth=known?2:1;ctx.stroke();ctx.restore();
-   if((future||known)&&this.scale>.82){
-    ctx.fillStyle=known?'rgba(255,246,220,.86)':'rgba(225,230,230,.48)';ctx.font=`${Math.max(9,11*this.scale)}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.fillText(r.name,c.x,c.y-ry-7)
+   if(this.scale>.82){
+    ctx.fillStyle=known?'rgba(255,246,220,.9)':'rgba(205,219,221,.68)';ctx.font=`${Math.max(9,11*this.scale)}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.fillText(r.name,c.x,c.y-ry-7)
    }
   }
 
@@ -154,6 +155,17 @@ export class CivitasWorldMap{
   for(const route of st.world.routes||[]){
    const a=this.cityById.get(route.from),b=this.cityById.get(route.to);if(!a||!b)continue;
    const A=this.screen(a.x,a.y),B=this.screen(b.x,b.y);ctx.save();ctx.strokeStyle=route.kind==='sea'?'#77c7de':'#e8c788';ctx.lineWidth=2.5;ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore()
+  }
+
+  // Observer-visible war fronts
+  for(const war of (st.world.wars||[]).filter(w=>w.active)){
+   const cs=this.data.cities.filter(c=>c.country===war.country),start=this.cityById.get(this.data.meta.startCityId);if(!cs.length||!start)continue;
+   const target=cs[Math.floor(cs.length/2)],A=this.screen(start.x,start.y),B=this.screen(target.x,target.y);
+   ctx.save();ctx.strokeStyle='rgba(229,77,63,.9)';ctx.lineWidth=4;ctx.setLineDash([10,6]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore()
+  }
+  for(const war of (st.world.externalWars||[]).filter(w=>w.active)){
+   const ac=this.data.cities.filter(c=>c.country===war.a),bc=this.data.cities.filter(c=>c.country===war.b);if(!ac.length||!bc.length)continue;
+   const A=this.screen(ac[0].x,ac[0].y),B=this.screen(bc[0].x,bc[0].y);ctx.save();ctx.strokeStyle='rgba(213,98,80,.62)';ctx.lineWidth=2.5;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();ctx.restore()
   }
 
   // city points
@@ -165,13 +177,7 @@ export class CivitasWorldMap{
    if((start||this.scale>2.0)&&this.mode==='future'){ctx.fillStyle='#f5ebd5';ctx.font=`${Math.max(8,9*this.scale)}px -apple-system,sans-serif`;ctx.textAlign='left';ctx.fillText(start?'라엔 분지':cty.name,p.x+8,p.y-5)}
   }
 
-  // locked/unknown regions in current mode
-  if(this.mode==='current'){
-   for(const r of this.regionStats.values()){
-    if(st.world.knownRegions.includes(r.name))continue;const p=this.screen(r.centerX,r.centerY);
-    ctx.fillStyle='rgba(255,255,255,.22)';ctx.font=`bold ${Math.max(14,18*this.scale)}px -apple-system,sans-serif`;ctx.textAlign='center';ctx.fillText('?',p.x,p.y+6)
-   }
-  }
+  // Observer mode: no information fog. Contact status remains separate from visibility.
 
   if(st.year>=55){
    ctx.save();ctx.strokeStyle='rgba(213,78,70,.32)';ctx.lineWidth=4;
@@ -180,9 +186,18 @@ export class CivitasWorldMap{
   }
   this.renderStatus()
  }
+ renderCountries(){
+  if(!this.countryList)return;const st=this.getState(),wars=st.world.wars||[],external=st.world.externalWars||[];
+  this.countryList.innerHTML=Object.entries(st.world.countries||{}).sort((a,b)=>b[1].population-a[1].population).map(([n,c])=>{
+   const contact=st.world.knownRegions.includes(c.region),war=wars.some(w=>w.active&&w.country===n)||external.some(w=>w.active&&(w.a===n||w.b===n));
+   return `<button data-country="${n}"><b>${war?'⚔ ':''}${n}</b><span>${c.population}명</span><small>${c.region} · ${contact?'주민 접촉':'주민 미접촉'} · 연간 +${c.births||0}/-${c.deaths||0}</small></button>`
+  }).join('');
+  this.countryList.querySelectorAll('[data-country]').forEach(b=>b.onclick=()=>{const n=b.dataset.country,c=st.world.countries[n],d=st.world.diplomacy?.[n];this.detail.innerHTML=`<b>${n}</b><span>${c.region}</span><p>관찰자 현재 인구 ${c.population}명 · 번영 ${c.prosperity} · 개방 ${c.openness} · 공격성 ${c.aggression}</p><div><em>${st.world.knownRegions.includes(c.region)?'주민 접촉권':'주민 미접촉'}</em>${d?`<em>관계 ${Math.round(d.relation)} ${d.status}</em>`:''}</div>`})
+ }
  renderStatus(){
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
-  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'현재 관측 지도'}</b><span>LIVE · 세계 인구 ${st.worldPopulation} · 관측 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 분포: 아르케아 핵심 30 · 타 권역 270(세부 분포 미확인)<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>`
+  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>👁 전체 국가 30 · 세계 인구 ${st.worldPopulation} · 주민 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 아르케아 핵심 30 · 타 권역 270. 이후 각 국가 인구는 독립적으로 출생·사망·전쟁 영향을 받습니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>`;
+  this.renderCountries()
  }
 }

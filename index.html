@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=7">
+<link rel="stylesheet" href="./styles.css?v=8">
 
 </head>
 <body>
@@ -28,6 +28,13 @@
   <div id="brainNeeds" class="need-row"></div>
   <div id="brainAlt" class="brain-alt"></div>
   <div class="brain-memory"><small>최근 기억</small><div id="brainMemory">아직 특별한 기억이 없다.</div></div>
+</section>
+
+
+<section id="conflictHud" class="conflict-hud hidden">
+  <div class="conflict-head"><small id="conflictType">위험</small><b id="conflictTitle">습격</b></div>
+  <span id="conflictStatus">상황 확인 중</span>
+  <div class="conflict-bar"><i id="conflictBar"></i></div>
 </section>
 
 <section id="mapExpansionHud" class="map-expansion-hud glass"><b id="mapExpansionTitle">라엔 분지</b><span id="mapExpansionText">탐사 범위 1단계</span></section>
@@ -66,7 +73,7 @@
       <button id="closeWorldMap">×</button>
     </div>
     <div class="world-map-toolbar">
-      <div class="map-mode"><button id="mapModeCurrent" class="active">현재 세계</button><button id="mapMode200">200년 기준</button></div>
+      <div class="map-mode"><button id="mapModeCurrent" class="active">관찰자 현재</button><button id="mapMode200">200년 기준</button></div>
       <div class="map-zoom"><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
     </div>
     <div class="world-map-main">
@@ -74,13 +81,13 @@
       <aside class="world-map-side">
         <div id="worldMapStatus" class="world-map-status"></div>
         <div id="worldMapDetail" class="world-map-detail"><b>라엔 분지(감나무뜰)</b><span>아르케아 중앙대륙</span><p>창세기 시작점. 현재 문명의 실제 탐사와 항해가 지도에 누적됩니다.</p></div>
-        <div id="worldMapLegend" class="world-map-legend"></div>
+        <div class="observer-label">👁 관찰자 전체 데이터 · 탐사 여부와 무관하게 인구 확인 가능</div><div id="worldCountryList" class="world-country-list"></div><div id="worldMapLegend" class="world-map-legend"></div>
       </aside>
     </div>
   </div>
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=7"></script>
+<script type="module" src="./game.js?v=8"></script>
 </body>
 </html>

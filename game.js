@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=7';
+import { CivitasWorldMap } from './world-map.js?v=8';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -13,7 +13,7 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=7')
+const WORLD_DATA = await fetch('./world.json?v=8')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -47,7 +47,7 @@ function officialResident(c,year){
  personality:JSON.parse(JSON.stringify(c.p)),relationsSeed:[],skills:scaledStartingSkills(c,age),note:c.surface,color:0x677a63})
 }
 
-const MYEONGJA_DEATH_YEAR=0,MYEONGJA_DEATH_DAY=189;
+const MYEONGJA_DEATH_YEAR=3,MYEONGJA_DEATH_DAY=1;
 function isMyeongjaDeathTime(year=state?.year??0,day=state?.day??1){
  return year>MYEONGJA_DEATH_YEAR||(year===MYEONGJA_DEATH_YEAR&&day>=MYEONGJA_DEATH_DAY)
 }
@@ -84,6 +84,7 @@ function initResidentBrain(r){
  r.brain.goal??='오늘을 무사히 보내기';
  r.actionHistory??={};r.recentActions??=[];r.skillXP??={};r.roleConfidence??=35;r.lastRoleChangeDay??=-999;r.lastStoryDay??=-999;
  r.lifeStage??=residentLifeStage(r.age||0);r.careerSeed??=r.originJob||r.job;
+ r.health??={hp:100,maxHp:100,woundedUntil:-1};r.health.hp??=100;r.health.maxHp??=100;r.health.woundedUntil??=-1;
  return r
 }
 function currentAge(r){return r.age}
@@ -105,6 +106,58 @@ function relationChange(a,b,delta=2,kind='trust'){
 }
 
 
+
+const COUNTRY_META=(()=>{
+ const m={};
+ for(const c of WORLD_DATA.cities){
+  m[c.country]??={name:c.country,region:c.region,cities:0};
+  m[c.country].cities++
+ }
+ return m
+})();
+function stableHash01(text){
+ let h=2166136261>>>0;for(const ch of text){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0}
+ return(h%100000)/100000
+}
+function distributeInteger(total,names,weightFn,minEach=0){
+ const out={};if(!names.length)return out;
+ let remaining=total-minEach*names.length;for(const n of names)out[n]=minEach;
+ remaining=Math.max(0,remaining);
+ const weights=names.map(n=>Math.max(.001,weightFn(n))),sum=weights.reduce((a,b)=>a+b,0);
+ const raw=names.map((n,i)=>({n,v:remaining*weights[i]/sum}));
+ let used=0;for(const r of raw){const v=Math.floor(r.v);out[r.n]+=v;used+=v}
+ raw.sort((a,b)=>(b.v-Math.floor(b.v))-(a.v-Math.floor(a.v)));
+ for(let i=0;i<remaining-used;i++)out[raw[i%raw.length].n]++;
+ return out
+}
+function initialCountryState(){
+ const all=Object.keys(COUNTRY_META),arkea=all.filter(n=>COUNTRY_META[n].region==='아르케아 중앙대륙'),other=all.filter(n=>COUNTRY_META[n].region!=='아르케아 중앙대륙');
+ const localN=initialOfficialResidents(0,1).length;
+ const out={};
+ // Arkea core 30: the starting Erdan/Laen group contains the actual visible local residents.
+ const arkeaOthers=arkea.filter(n=>n!=='에르단 왕국');
+ const rest=Math.max(0,30-localN);
+ const arkeaDist=distributeInteger(rest,arkeaOthers,n=>COUNTRY_META[n].cities,arkeaOthers.length?1:0);
+ for(const n of arkea)out[n]=n==='에르단 왕국'?localN:(arkeaDist[n]||0);
+ // Keep exact 30 if rounding/minimum pushed above/below.
+ let aSum=arkea.reduce((s,n)=>s+out[n],0);
+ while(aSum>30){const n=arkeaOthers.sort((a,b)=>out[b]-out[a])[0];if(!n||out[n]<=0)break;out[n]--;aSum--}
+ while(aSum<30){const n=arkeaOthers.sort((a,b)=>COUNTRY_META[b].cities-COUNTRY_META[a].cities)[0]||'에르단 왕국';out[n]++;aSum++}
+ const otherDist=distributeInteger(270,other,n=>COUNTRY_META[n].cities*(.85+stableHash01(n)*.3),1);
+ for(const n of other)out[n]=otherDist[n]||1;
+ const state={};
+ for(const n of all){
+  const h=stableHash01(n);
+  state[n]={population:out[n]||1,region:COUNTRY_META[n].region,cities:COUNTRY_META[n].cities,
+    growth:.009+h*.013,aggression:Math.round(20+h*65),openness:Math.round(25+stableHash01(n+'o')*65),
+    prosperity:Math.round(30+stableHash01(n+'p')*55),births:0,deaths:0,lastPopulation:out[n]||1};
+ }
+ return state
+}
+function defaultTrajectory(){
+ return{cooperation:12,exploration:10,pastoral:8,scholarship:9,trade:4,militarism:2,centralization:5,ecology:8,current:'초기 공동체',lastShiftDay:-999}
+}
+
 function defaultWorldState(){
  return{
   knownRegions:['아르케아 중앙대륙'],
@@ -117,13 +170,16 @@ function defaultWorldState(){
    stores:{label:'원정 저장',p:0,open:false}
   },
   firstSeaExpedition:false,lastRegionRevealAbsDay:-999,lastCityFoundationYear:-1,
+  countries:initialCountryState(),diplomacy:{},wars:[],externalWars:[],lastLocalPopulation:initialOfficialResidents(0,1).length,
   corePopulation:30,otherPopulation:270
  }
 }
 function normalizeWorldState(){
  state.world??=defaultWorldState();const d=defaultWorldState();
  for(const k of ['knownRegions','foundedCities','routes','expeditions'])state.world[k]??=JSON.parse(JSON.stringify(d[k]));
- for(const k of ['landProgress','seaProgress','firstSeaExpedition','lastRegionRevealAbsDay','lastCityFoundationYear','corePopulation','otherPopulation'])if(state.world[k]===undefined)state.world[k]=d[k];
+ for(const k of ['landProgress','seaProgress','firstSeaExpedition','lastRegionRevealAbsDay','lastCityFoundationYear','corePopulation','otherPopulation','lastLocalPopulation'])if(state.world[k]===undefined)state.world[k]=d[k];
+ state.world.countries??=initialCountryState();for(const[n,v]of Object.entries(initialCountryState()))state.world.countries[n]??=v;
+ state.world.diplomacy??={};state.world.wars??=[];state.world.externalWars??=[];
  state.world.seaTech??=d.seaTech;
  for(const k of Object.keys(d.seaTech))state.world.seaTech[k]??=JSON.parse(JSON.stringify(d.seaTech[k]));
  if(!state.world.knownRegions.includes('아르케아 중앙대륙'))state.world.knownRegions.unshift('아르케아 중앙대륙');
@@ -142,7 +198,7 @@ function representativeCity(region){
  const cen=regionCenter(region);return [...cs].sort((a,b)=>Math.hypot(a.x-cen.x,a.y-cen.y)-Math.hypot(b.x-cen.x,b.y-cen.y))[0]
 }
 
-function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false},수로관리:{p:0,open:false},토기저장:{p:0,open:false},직조기초:{p:0,open:false},야간교대:{p:0,open:false}},residents:initialOfficialResidents(0,1),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살폈다. 복실이는 처음부터 사람들 곁을 맴돌며 새 터의 냄새를 맡고 있었다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false,myeongjaDead:false,myeongjaDeathLogged:false},currentStorySeq:1,demography:{births:0,arrivals:0,children:0},civ:{level:0,levelName:'야영지',techUnlocked:0,builds:0,lastAnnual:null},eventMemory:{},worldPopulation:300,world:defaultWorldState(),localMap:{level:0,revealedRadius:90,lastExpansionYear:-1},animalStats:{wild:7,domestic:0,care:0},companion:{bokshil:{x:1.2,z:4.5,active:true}},deceased:[],player:{x:3,z:3,level:1,exp:0,nextExp:100,hp:100,maxHp:100,attack:14,kills:0,deaths:0,dead:false,respawnAt:0,awakened:false,autoHunt:false}}};
+function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false},수로관리:{p:0,open:false},토기저장:{p:0,open:false},직조기초:{p:0,open:false},야간교대:{p:0,open:false}},residents:initialOfficialResidents(0,1),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살폈다. 복실이는 처음부터 사람들 곁을 맴돌며 새 터의 냄새를 맡고 있었다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false,myeongjaDead:false,myeongjaDeathLogged:false},currentStorySeq:1,demography:{births:0,arrivals:0,children:0},civ:{level:0,levelName:'야영지',techUnlocked:0,builds:0,lastAnnual:null},eventMemory:{},worldPopulation:300,world:defaultWorldState(),localMap:{level:0,revealedRadius:90,lastExpansionYear:-1},animalStats:{wild:7,domestic:0,care:0},trajectory:defaultTrajectory(),conflict:{animalRaids:0,warBattles:0,lastAnimalRaidDay:-999,lastBattleDay:-999,foodLost:0,wounded:0,raidersDefeated:0,animalsRepelled:0},companion:{bokshil:{x:1.2,z:4.5,active:true}},deceased:[],player:{x:3,z:3,level:1,exp:0,nextExp:100,hp:100,maxHp:100,attack:14,kills:0,deaths:0,dead:false,respawnAt:0,awakened:false,autoHunt:false}}};
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 
 function mergeOfficialResidents(){
@@ -174,16 +230,22 @@ state.animalStats??={wild:7,domestic:0,care:0};
 state.companion??={bokshil:{x:(state.player?.x??3)-1.2,z:(state.player?.z??3)+1.5,active:true}};
 state.companion.bokshil??={x:(state.player?.x??3)-1.2,z:(state.player?.z??3)+1.5,active:true};
 state.deceased??=[];
-if(isMyeongjaDeathTime(state.year,state.day)){
- const hadDeath=!!state.flags.myeongjaDead;
+state.trajectory??=defaultTrajectory();state.conflict??={animalRaids:0,warBattles:0,lastAnimalRaidDay:-999,lastBattleDay:-999,foodLost:0,wounded:0,raidersDefeated:0,animalsRepelled:0};
+const afterMyeongjaDeath=isMyeongjaDeathTime(state.year,state.day);
+if(!afterMyeongjaDeath){
+ // Correct saves affected by the old 0y189 bug: restore her until the third-year boundary.
+ state.flags.myeongjaDead=false;state.flags.myeongjaDeathLogged=false;
+ state.deceased=state.deceased.filter(d=>d.id!=='C0001');
+ state.logs=state.logs.filter(l=>l.title!=='이명자의 마지막 날');
+ if(!state.logs.find(l=>l.seq===state.currentStorySeq))state.currentStorySeq=state.logs[0]?.seq||1
+}else{
  state.flags.myeongjaDead=true;
- if(!state.deceased.some(d=>d.id==='C0001'))state.deceased.push({id:'C0001',name:'이명자',year:0,day:189,cause:'말기 암'});
- if(!state.flags.myeongjaDeathLogged){
-  state.seq=(state.seq||1)+1;
-  const l={seq:state.seq,type:'story',time:'0년 189일',title:'이명자의 마지막 날',text:'말기 암을 앓던 이명자가 세계력 0년 189일 숨을 거뒀다. 주민들은 그가 남긴 생활 기록과 물건을 정리하고 장례를 준비했다.',speaker:'기록',quote:'그가 사라진 뒤에도 사람들이 스스로 선택한 하루는 계속되었다.'};
-  state.logs.unshift(l);state.currentStorySeq=l.seq;state.flags.myeongjaDeathLogged=true;
- }
- if(!hadDeath)state.worldPopulation=Math.max(0,(state.worldPopulation||300)-1)
+ let d=state.deceased.find(d=>d.id==='C0001');
+ if(!d)state.deceased.push({id:'C0001',name:'이명자',year:3,day:1,cause:'말기 암'});
+ else{d.year=3;d.day=1;d.cause='말기 암'}
+ let l=state.logs.find(l=>l.title==='이명자의 마지막 날');
+ if(l){l.time='3년 1일';l.text='말기 암을 앓던 이명자가 세계력 3년 1일 숨을 거뒀다. 그동안 쌓인 관계와 생활 방식은 주민들의 다음 선택에 서로 다른 흔적으로 남았다.'}
+ state.flags.myeongjaDeathLogged=!!l
 }
 
 normalizeWorldState();
@@ -529,8 +591,8 @@ for(let i=0;i<8;i++){
 const animalGroup=new THREE.Group();scene.add(animalGroup);
 const animals=[];
 function createAnimalModel(species,{x=0,z=0,domestic=false,homeX=x,homeZ=z}={}){
- const g=new THREE.Group(),brown=new THREE.MeshStandardMaterial({color:species==='deer'?0x8d6643:species==='rabbit'?0xa99c84:species==='goat'?0xc8bca3:0xb67d45,roughness:1}),dark=new THREE.MeshStandardMaterial({color:0x40372f,roughness:1}),light=new THREE.MeshStandardMaterial({color:0xe0d1b5,roughness:1});
- const scale=species==='deer'?1.22:species==='goat'?.92:species==='chicken'?.54:.48;
+ const g=new THREE.Group(),brown=new THREE.MeshStandardMaterial({color:species==='deer'?0x8d6643:species==='rabbit'?0xa99c84:species==='goat'?0xc8bca3:species==='boar'?0x57473b:species==='wolf'?0x69706b:0xb67d45,roughness:1}),dark=new THREE.MeshStandardMaterial({color:0x40372f,roughness:1}),light=new THREE.MeshStandardMaterial({color:0xe0d1b5,roughness:1});
+ const scale=species==='deer'?1.22:species==='boar'?1.16:species==='wolf'?1.02:species==='goat'?.92:species==='chicken'?.54:.48;
  const body=new THREE.Mesh(new THREE.SphereGeometry(.38,10,7),brown);body.scale.set(1.35,.78,1.55);body.position.y=.62;g.add(body);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.25,9,7),brown);head.position.set(0,.88,.5);g.add(head);
  const legs=[];
@@ -545,11 +607,17 @@ function createAnimalModel(species,{x=0,z=0,domestic=false,homeX=x,homeZ=z}={}){
    for(const x0 of[-.09,.09]){const ear=new THREE.Mesh(new THREE.CapsuleGeometry(.055,.34,3,6),brown);ear.position.set(x0,1.2,.4);ear.rotation.z=x0<0?.08:-.08;g.add(ear)}
  }else if(species==='deer'){
    for(const x0 of[-.16,.16]){const antler=new THREE.Mesh(new THREE.CylinderGeometry(.025,.035,.45,5),dark);antler.position.set(x0,1.23,.43);antler.rotation.z=x0<0?-.18:.18;g.add(antler)}
+ }else if(species==='boar'){
+   head.scale.set(1.15,.82,1.22);head.position.set(0,.78,.67);
+   for(const x0 of[-.14,.14]){const tusk=new THREE.Mesh(new THREE.ConeGeometry(.035,.24,5),light);tusk.position.set(x0,.72,.91);tusk.rotation.x=-1.12;tusk.rotation.z=x0<0?-.28:.28;g.add(tusk)}
+ }else if(species==='wolf'){
+   body.scale.set(1.55,.72,1.75);head.position.set(0,.9,.62);
+   for(const x0 of[-.13,.13]){const ear=new THREE.Mesh(new THREE.ConeGeometry(.09,.28,5),dark);ear.position.set(x0,1.18,.5);ear.rotation.z=x0<0?.18:-.18;g.add(ear)}
  }else if(species==='goat'){
    for(const x0 of[-.13,.13]){const horn=new THREE.Mesh(new THREE.ConeGeometry(.045,.35,5),light);horn.position.set(x0,1.18,.42);horn.rotation.x=-.25;g.add(horn)}
  }
  g.position.set(x,0,z);g.scale.setScalar(scale);
- g.userData={animal:true,species,domestic,home:new THREE.Vector3(homeX,0,homeZ),target:new THREE.Vector3(x,0,z),speed:species==='deer'?1.6:species==='rabbit'?1.2:.8,nextWander:0,phase:rand(0,10),legs};
+ g.userData={animal:true,species,domestic,home:new THREE.Vector3(homeX,0,homeZ),target:new THREE.Vector3(x,0,z),speed:species==='deer'?1.6:species==='wolf'?1.75:species==='boar'?1.3:species==='rabbit'?1.2:.8,nextWander:0,phase:rand(0,10),legs,raid:false,dead:false,hp:species==='boar'?76:species==='wolf'?58:35,maxHp:species==='boar'?76:species==='wolf'?58:35};
  g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
  animalGroup.add(g);animals.push(g);return g
 }
@@ -575,7 +643,7 @@ function updateAnimals(dt,now){
  ensureDomesticAnimals();
  const b=localMapBounds();
  for(const a of animals){
-  const ud=a.userData;
+  const ud=a.userData;if(ud.raid||ud.dead)continue;
   const toPlayer=a.position.distanceTo(player.position);
   if(!ud.domestic&&toPlayer<5){
    const flee=a.position.clone().sub(player.position);flee.y=0;if(flee.lengthSq()<.01)flee.set(1,0,0);flee.normalize();
@@ -593,6 +661,108 @@ function updateAnimals(dt,now){
  }
 }
 populateWildAnimals();
+
+const conflictHostiles=[];let activeConflict=null,hostileSeq=0;
+function edgeSpawn(){
+ const b=localMapBounds(),side=Math.floor(Math.random()*4);
+ return side===0?new THREE.Vector3(-b.x+4,0,rand(-b.z*.75,b.z*.75)):side===1?new THREE.Vector3(b.x-4,0,rand(-b.z*.75,b.z*.75)):side===2?new THREE.Vector3(rand(-b.x*.75,b.x*.75),0,-b.z+4):new THREE.Vector3(rand(-b.x*.75,b.x*.75),0,b.z-4)
+}
+function addConflictHostile(g,type,target,attack){
+ Object.assign(g.userData,{conflict:true,conflictId:`H${++hostileSeq}`,conflictType:type,targetPoint:target.clone(),attackPower:attack,attackCooldown:rand(.2,.9),loot:0,dead:false});
+ conflictHostiles.push(g);return g
+}
+function raidAnimal(species,target){
+ const s=edgeSpawn(),a=createAnimalModel(species,{x:s.x,z:s.z,homeX:s.x,homeZ:s.z});
+ a.userData.raid=true;a.userData.speed=species==='wolf'?2.25:species==='boar'?1.8:1.5;a.userData.hp=a.userData.maxHp=species==='boar'?86:species==='wolf'?64:42;
+ return addConflictHostile(a,'animal',target,species==='boar'?11:species==='wolf'?9:4)
+}
+function raiderHuman(country){
+ const g=new THREE.Group(),skin=new THREE.MeshStandardMaterial({color:0xc59070,roughness:.9}),cloth=new THREE.MeshStandardMaterial({color:0x75352f,roughness:.9}),dark=new THREE.MeshStandardMaterial({color:0x302b29,roughness:1});
+ const torso=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,.95,8),cloth);torso.position.y=1.55;g.add(torso);
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.27,10,8),skin);head.position.y=2.32;g.add(head);
+ const limbs={};for(const[name,x,y,h]of[['la',-.43,1.82,.72],['ra',.43,1.82,.72],['ll',-.18,1.0,.9],['rl',.18,1.0,.9]]){const p=new THREE.Group();p.position.set(x,y,0);const m=new THREE.Mesh(new THREE.CylinderGeometry(.075,.09,h,6),name==='ll'||name==='rl'?dark:skin);m.position.y=-h/2;p.add(m);g.add(p);limbs[name]=p}
+ const spear=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,1.8,5),new THREE.MeshStandardMaterial({color:0x8d9495,metalness:.35,roughness:.55}));spear.position.set(0,-.8,0);limbs.ra.add(spear);
+ const s=edgeSpawn();g.position.copy(s);g.userData={raidHuman:true,country,name:`${country} 약탈대`,hp:100,maxHp:100,speed:2,limbs,phase:rand(0,10)};
+ g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);return addConflictHostile(g,'human',state.buildings.storage?new THREE.Vector3(9,0,-14):LOC.center.clone(),13)
+}
+function aliveHostile(id){return conflictHostiles.find(h=>h.userData.conflictId===id&&!h.userData.dead)}
+function defendersAvailable(){return state.residents.filter(r=>r.age>=16&&(r.health?.woundedUntil??-1)<=absDay()).sort((a,b)=>(b.skills?.경계||0)-(a.skills?.경계||0))}
+function assignDefenders(n){
+ let used=0;for(const r of defendersAvailable().slice(0,n)){const p=personMap.get(r.id);if(!p)continue;p.userData.combatOverride={targetId:null,cooldown:rand(0,.6)};used++}return used
+}
+function startAnimalRaid(kind='crop'){
+ if(activeConflict)return false;
+ const path=trajectorySummary();
+ // Pastoral/ecology societies get fewer predator/foraging raids.
+ const calm=clamp((state.trajectory.pastoral+state.trajectory.ecology)/180,0,.75);
+ const species=kind==='livestock'?'wolf':Math.random()<.6?'boar':pick(['deer','rabbit']);
+ let count=species==='boar'?3+Math.floor(Math.random()*4):species==='wolf'?3+Math.floor(Math.random()*3):5+Math.floor(Math.random()*4);
+ count=Math.max(2,Math.round(count*(1-calm*.45)));
+ const target=kind==='livestock'?LOC.pen.clone():LOC.field.clone(),hs=[];
+ for(let i=0;i<count;i++)hs.push(raidAnimal(species,target));
+ activeConflict={type:'animal',kind,species,title:`${species==='wolf'?'늑대 무리':species==='boar'?'멧돼지 떼':'야생동물'}의 ${kind==='livestock'?'사육장':'밭'} 습격`,ids:hs.map(h=>h.userData.conflictId),loot:0,started:performance.now(),defenders:assignDefenders(Math.min(6,2+Math.floor(state.residents.length/9)))};
+ state.conflict.animalRaids++;state.conflict.lastAnimalRaidDay=absDay();addTrajectory('militarism',.7);addTrajectory('ecology',.3);
+ addLog('warn',activeConflict.title,`${count}마리의 야생동물이 생활권 안으로 들어왔다. 주민들은 생산을 멈추고 농지와 사육장을 지키러 움직였다.`,'기록','동물도 배고픔과 서식지 변화에 따라 마을의 역사를 바꾼다.');
+ return true
+}
+function startWarRaid(country){
+ if(activeConflict)return false;const hs=[],count=Math.min(11,4+Math.floor(state.residents.length/8)+Math.floor(Math.random()*3));
+ for(let i=0;i<count;i++)hs.push(raiderHuman(country));
+ activeConflict={type:'war',country,title:`${country} 약탈대의 침공`,ids:hs.map(h=>h.userData.conflictId),loot:0,started:performance.now(),defenders:assignDefenders(Math.min(10,4+Math.floor(state.residents.length/7)))};
+ state.conflict.warBattles++;state.conflict.lastBattleDay=absDay();addTrajectory('militarism',2);
+ addLog('warn',activeConflict.title,`${country}의 무장대가 라엔 생활권 외곽을 넘어왔다. 외교 관계가 실제 3D 전투로 이어졌다.`,'기록','전쟁은 연표 이벤트가 아니라 누적된 관계와 선택의 결과다.');return true
+}
+function killHostile(h){if(!h||h.userData.dead)return;h.userData.dead=true;h.visible=false;if(h.userData.raidHuman)state.conflict.raidersDefeated++;else state.conflict.animalsRepelled++}
+function woundResident(r,p){
+ r.health.hp=0;r.health.woundedUntil=absDay()+Math.round(rand(10,32));state.conflict.wounded++;p.userData.combatOverride=null;p.userData.mode='resting';p.userData.workTimer=5;p.userData.task='부상 치료 중';
+ memoryAdd(r,'injury',`${activeConflict?.title||'충돌'}에서 다쳤다.`,80);addTrajectory('cooperation',.3)
+}
+function updateDefenderCombat(p,dt,now){
+ const ov=p.userData.combatOverride;if(!ov)return false;const r=state.residents.find(x=>x.id===p.userData.id);if(!r)return false;
+ if((r.health?.woundedUntil??-1)>absDay()){p.userData.combatOverride=null;return false}
+ let h=aliveHostile(ov.targetId);if(!h){h=conflictHostiles.find(x=>!x.userData.dead);ov.targetId=h?.userData.conflictId||null}if(!h){p.userData.combatOverride=null;return false}
+ ov.cooldown=Math.max(0,(ov.cooldown||0)-dt);const d=h.position.clone().sub(p.position);d.y=0;const dist=d.length();p.userData.tool.visible=true;p.userData.task='마을 방어 중';
+ if(dist>2){d.normalize();p.position.addScaledVector(d,(2.2+(r.skills?.경계||0)*.012)*dt);p.rotation.y=Math.atan2(d.x,d.z)}
+ else{p.rotation.y=Math.atan2(d.x,d.z);p.userData.limbs.ra.rotation.x=-1.15+Math.sin(now*.026)*.65;if(ov.cooldown<=0){ov.cooldown=.8+Math.random()*.35;h.userData.hp-=7+(r.skills?.경계||0)*.09+(r.skills?.목공||0)*.03;if(h.userData.hp<=0)killHostile(h)}}
+ return true
+}
+function hostileAct(h,dt,now){
+ const u=h.userData;u.attackCooldown=Math.max(0,(u.attackCooldown||0)-dt);const defenders=people.filter(p=>p.userData.combatOverride);
+ let nearest=null,nd=999;for(const p of defenders){const d=p.position.distanceTo(h.position);if(d<nd){nd=d;nearest=p}}
+ if(nearest&&nd<2.05){if(u.attackCooldown<=0){u.attackCooldown=1+Math.random()*.65;const r=state.residents.find(x=>x.id===nearest.userData.id);if(r){r.health.hp=Math.max(0,r.health.hp-u.attackPower);if(r.health.hp<=0)woundResident(r,nearest)}}return}
+ const d=u.targetPoint.clone().sub(h.position);d.y=0;
+ if(d.length()>1.7){d.normalize();h.position.addScaledVector(d,(u.speed||1.5)*dt);h.rotation.y=Math.atan2(d.x,d.z);if(u.limbs){const s=Math.sin(now*.012+u.phase)*.5;u.limbs.la.rotation.x=s;u.limbs.ra.rotation.x=-s}}
+ else if(u.attackCooldown<=0){u.attackCooldown=1.2+Math.random()*.8;const loss=u.conflictType==='animal'?(u.species==='boar'?1.1:u.species==='wolf'?.65:.35):1.0;state.resources.food=Math.max(0,state.resources.food-loss);state.conflict.foodLost+=loss;u.loot+=loss}
+}
+function finishConflict(victory){
+ if(!activeConflict)return;const loss=activeConflict.loot.toFixed(1),title=victory?(activeConflict.type==='war'?'침공 격퇴':'야생동물 습격 격퇴'):'피해를 남기고 물러나다';
+ addLog(victory?'good':'warn',title,`${activeConflict.title}이 끝났다. 식량·물자 손실 ${loss}. 부상과 방어 경험은 이후 주민들의 관계·경계·동물 대응 방식에 다시 영향을 준다.`,'기록',victory?'이번 결과도 다음 행동의 기억이 된다.':'피해를 기록해야 다음 선택이 달라진다.');
+ for(const p of people)if(p.userData.combatOverride){p.userData.combatOverride=null;p.userData.mode='thinking'}
+ for(const id of activeConflict.ids){const h=aliveHostile(id);if(h){h.userData.dead=true;h.visible=false}}
+ activeConflict=null
+}
+function updateConflictSystem(dt,now){
+ if(!activeConflict)return;let alive=0,loot=0;
+ for(const id of activeConflict.ids){const h=aliveHostile(id);if(!h)continue;alive++;hostileAct(h,dt,now);loot+=h.userData.loot||0}
+ activeConflict.loot=loot;if(alive===0)finishConflict(true);else if(loot>18||now-activeConflict.started>90000)finishConflict(false)
+}
+function maybeConflictsDaily(){
+ if(activeConflict)return;
+ const animalGap=absDay()-(state.conflict.lastAnimalRaidDay??-999);
+ const calm=(state.trajectory.ecology+state.trajectory.pastoral)/200;
+ if(state.flags.firstField&&animalGap>28&&Math.random()<.010*(1-calm*.55))startAnimalRaid('crop');
+ else if(state.buildings.pen&&animalGap>32&&Math.random()<.005*(1-calm*.5))startAnimalRaid('livestock');
+ const war=(state.world.wars||[]).find(w=>w.active&&w.country),battleGap=absDay()-(state.conflict.lastBattleDay??-999);
+ if(war&&battleGap>38&&Math.random()<.014)startWarRaid(war.country)
+}
+function renderConflictHud(){
+ const el=$('conflictHud');if(!el)return;if(!activeConflict){el.classList.add('hidden');return}el.classList.remove('hidden');
+ const alive=activeConflict.ids.filter(id=>aliveHostile(id)).length,total=activeConflict.ids.length;
+ $('conflictType').textContent=activeConflict.type==='war'?'전쟁':'생태 위협';$('conflictTitle').textContent=activeConflict.title;
+ $('conflictStatus').textContent=`적대 ${alive}/${total} · 방어 ${people.filter(p=>p.userData.combatOverride).length} · 손실 ${activeConflict.loot.toFixed(1)}`;
+ $('conflictBar').style.width=`${clamp(alive/Math.max(1,total)*100,0,100)}%`
+}
+
 
 // central fire
 const fire=new THREE.Group();for(let i=0;i<6;i++){const l=new THREE.Mesh(new THREE.CylinderGeometry(.1,.13,1.8,6),new THREE.MeshStandardMaterial({color:0x493220}));l.rotation.z=Math.PI/2;l.rotation.y=i;fire.add(l)}const flame=new THREE.Mesh(new THREE.ConeGeometry(.42,1.25,9),new THREE.MeshStandardMaterial({color:0xff9a42,emissive:0xff6818,emissiveIntensity:2.2}));flame.position.y=.8;fire.add(flame);fire.position.set(0,0,-1);scene.add(fire);const fireLight=new THREE.PointLight(0xff8b3d,16,14,2);fireLight.position.set(0,2,-1);scene.add(fireLight);
@@ -1005,7 +1175,7 @@ function ensureMyeongjaGraveVisual(){
  const g=new THREE.Group(),stoneM=new THREE.MeshStandardMaterial({color:0x777268,roughness:1}),earthM=new THREE.MeshStandardMaterial({color:0x574634,roughness:1});
  const earth=new THREE.Mesh(new THREE.BoxGeometry(2.1,.14,1.1),earthM);earth.position.y=.07;g.add(earth);
  const stone=new THREE.Mesh(new THREE.BoxGeometry(.64,1.05,.22),stoneM);stone.position.set(0,.58,-.15);stone.rotation.z=-.025;g.add(stone);
- const name=makeFloatingNameSprite('이명자 · 0년 189일');name.position.set(0,1.5,0);name.scale.set(3.2,.62,1);g.add(name);
+ const name=makeFloatingNameSprite('이명자 · 3년 1일');name.position.set(0,1.5,0);name.scale.set(3.2,.62,1);g.add(name);
  g.position.set(-9,0,10);g.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});scene.add(g);myeongjaGrave=g
 }
 function removeResidentVisual(id){
@@ -1015,13 +1185,12 @@ function removeResidentVisual(id){
 function processMyeongjaLifecycle(){
  if(!isMyeongjaDeathTime(state.year,state.day)||state.flags.myeongjaDead)return false;
  state.flags.myeongjaDead=true;state.flags.myeongjaDeathLogged=true;
- if(!state.deceased.some(d=>d.id==='C0001'))state.deceased.push({id:'C0001',name:'이명자',year:0,day:189,cause:'말기 암'});
+ if(!state.deceased.some(d=>d.id==='C0001'))state.deceased.push({id:'C0001',name:'이명자',year:3,day:1,cause:'말기 암'});
  state.residents=state.residents.filter(r=>r.id!=='C0001');removeResidentVisual('C0001');
- state.worldPopulation=Math.max(0,state.worldPopulation-1);
  if(followId==='C0001'){followId='PLAYER';setCameraMode('follow')}
  refreshFollowSelect();ensureMyeongjaGraveVisual();
-updateLocalMapExpansion(false);
- addLog('story','이명자의 마지막 날','말기 암을 앓던 이명자가 세계력 0년 189일 숨을 거뒀다. 주민들은 그가 남긴 생활 기록과 물건을 정리하고 장례를 준비했다. 이제 감나무뜰은 이명자 없이도 스스로 하루를 이어가야 했다.','기록','그가 사라진 뒤에도 사람들이 스스로 선택한 하루는 계속되었다.');
+ const path=trajectorySummary();
+ addLog('story','이명자의 마지막 날',`말기 암을 앓던 이명자가 세계력 3년 1일 숨을 거뒀다. 그러나 그가 남긴 마을은 하나의 정답으로 굳지 않았다. 지금까지 주민들의 선택은 ‘${path.name}’ 성향을 가장 강하게 만들었고, 이후 역사는 그들이 무엇을 반복하고 무엇을 버리느냐에 따라 달라진다.`,'기록','이제부터의 문명은 남은 사람들이 선택한다.');
  uiDirty=true;save();return true
 }
 ensureMyeongjaGraveVisual();
@@ -1200,6 +1369,7 @@ function thoughtVariant(r,a,ctx){
 function decideResident(p){
  const r=state.residents.find(x=>x.id===p.userData.id)||p.userData;
  initResidentBrain(r);const n=r.needs,pr=r.personality,age=currentAge(r);
+ if((r.health?.woundedUntil??-1)>absDay()){r.brain={action:'rest',thought:'상처가 아물 때까지 무리하지 말자.',reason:'부상 회복 중',goal:'회복',alternatives:[],decisionCount:(r.brain?.decisionCount||0)+1,lastDecisionDay:absDay()};p.userData.action='rest';p.userData.target=p.userData.home.clone();p.userData.mode='walking';p.userData.nextMode='resting';p.userData.task='부상 회복 중';return}
  const foodScar=scarcity(state.resources.food,38),waterScar=scarcity(state.resources.water,35);
  const needHouse=(state.buildings.house||0)<Math.max(2,Math.ceil(state.residents.length/3));
  const buildPressure=(needHouse?72:0)+(!state.buildings.storage&&state.flags.firstField?38:0)+(!state.buildings.workshop&&state.buildings.storage?28:0);
@@ -1249,7 +1419,7 @@ function decideResident(p){
 function skillForAction(a){return({forage:'채집',water:'채집',wood:'목공',stone:'채집',farm:'농업',cook:'요리',animals:'사육',waterwork:'목공',pottery:'도공',record:'기록',build:'목공',explore:'채집',help:'기록',learn:'기록'})[a]||null}
 function applyActionEffect(p){
  const r=state.residents.find(x=>x.id===p.userData.id),a=p.userData.action,n=r.needs,fit=roleFit(r,a),eff=.75+fit/100*.85;
- r.actionHistory[a]=(r.actionHistory[a]||0)+1;r.recentActions??=[];r.recentActions.unshift(a);r.recentActions=r.recentActions.slice(0,8);
+ r.actionHistory[a]=(r.actionHistory[a]||0)+1;trajectoryFromAction(r,a,eff);r.recentActions??=[];r.recentActions.unshift(a);r.recentActions=r.recentActions.slice(0,8);
  const sk=skillForAction(a);
  if(sk){r.skills[sk]=clamp((r.skills[sk]||0)+.12*(r.potential/70),0,100);r.bloom=clamp(r.bloom+.018*(r.potential/70),0,100)}
  if(a==='eat'){if(state.resources.food>0)state.resources.food=Math.max(0,state.resources.food-1);n.hunger=clamp(n.hunger-48,0,100);n.safety-=3}
@@ -1313,6 +1483,7 @@ function maybeEmergeRole(r){
 }
 function advanceBrainNeeds(){
  for(const r of state.residents){initResidentBrain(r);const n=r.needs,p=r.personality;
+   if((r.health?.woundedUntil??-1)<=absDay()&&r.health.hp<r.health.maxHp)r.health.hp=Math.min(r.health.maxHp,r.health.hp+12);
    n.hunger=clamp(n.hunger+1.7,0,100);n.fatigue=clamp(n.fatigue+1.15,0,100);
    n.social=clamp(n.social+.35+(100-p.extraversion)*.002,0,100);
    n.safety=clamp(n.safety+(state.resources.food<12?1.2:0)+(state.resources.water<10?1.4:0),0,100);
@@ -1589,9 +1760,141 @@ function dailyTechEngine(){for(const[name,rule]of Object.entries(TECH_RULES)){co
 function civilizationScore(){const b=state.buildings,special=['storage','workshop','herb','pen','meeting','well','kiln','kitchen','watch','loom'].reduce((s,k)=>s+(b[k]?1:0),0);return(b.house||0)*8+(b.field||0)*14+special*22+countOpenTech()*16+state.residents.length*2.2}
 function updateCivilizationLevel(){const score=civilizationScore();let f=CIV_LEVELS[0];for(const lv of CIV_LEVELS)if(score>=lv.score)f=lv;if(f.name!==state.civ.levelName){const old=state.civ.levelName;state.civ.levelName=f.name;state.civ.level=CIV_LEVELS.indexOf(f);addLog('story',`정착지가 ‘${f.name}’ 단계에 들어서다`,`집 ${state.buildings.house}채, 경작지 ${state.buildings.field}구역, 주민 ${state.residents.length}명. 감나무뜰은 더 이상 ${old||'야영지'}의 모습에 머물지 않았다.`,'기록','건물이 늘어난 것보다, 서로 없으면 불편해진 일이 늘어난 게 더 큰 변화였다.')}}
 
+
+const TRAJECTORY_NAMES={
+ cooperation:'공동체 연합',exploration:'개척 연맹',pastoral:'목축 공생권',scholarship:'기록 지식사회',
+ trade:'교역 연맹',militarism:'방벽 국가',centralization:'중앙 운영체계',ecology:'생태 공존권'
+};
+function trajectorySummary(){
+ state.trajectory??=defaultTrajectory();
+ const pairs=Object.entries(state.trajectory).filter(([k,v])=>typeof v==='number'&&!['lastShiftDay'].includes(k)).sort((a,b)=>b[1]-a[1]);
+ const [key,value]=pairs[0]||['cooperation',0];return{key,value,name:TRAJECTORY_NAMES[key]||'초기 공동체',pairs}
+}
+function addTrajectory(key,amount){
+ state.trajectory??=defaultTrajectory();if(typeof state.trajectory[key]!=='number')state.trajectory[key]=0;
+ state.trajectory[key]=clamp(state.trajectory[key]+amount,0,100)
+}
+function trajectoryFromAction(r,a,eff=1){
+ const inc=.025*Math.max(.5,eff);
+ if(a==='help'||a==='socialize'||a==='cook')addTrajectory('cooperation',inc*1.5);
+ if(a==='explore')addTrajectory('exploration',inc*2.1);
+ if(a==='animals')addTrajectory('pastoral',inc*2.0);
+ if(a==='record'||a==='learn'||a==='pottery')addTrajectory('scholarship',inc*1.5);
+ if(a==='farm'||a==='forage'||a==='animals')addTrajectory('ecology',inc*.7);
+ if(a==='build'||a==='record'||a==='waterwork')addTrajectory('centralization',inc*.65);
+}
+function maybeShiftTrajectory(){
+ const top=trajectorySummary(),now=absDay();
+ if(top.value<16||top.name===state.trajectory.current||now-(state.trajectory.lastShiftDay??-999)<90)return;
+ const old=state.trajectory.current;state.trajectory.current=top.name;state.trajectory.lastShiftDay=now;
+ const texts={
+  '공동체 연합':'도움과 공동 작업이 반복되며 개인의 작업보다 함께 해결하는 방식이 마을의 기본 습관이 되기 시작했다.',
+  '개척 연맹':'탐사가 반복되며 정착지의 관심이 안쪽 생산보다 새로운 길과 외부 생활권으로 향하기 시작했다.',
+  '목축 공생권':'동물을 자원으로만 보지 않는 돌봄이 쌓이며 사육·이동·먹이 규칙이 마을 운영의 중심으로 들어왔다.',
+  '기록 지식사회':'기록과 배움이 반복되며 경험을 개인 기억이 아니라 공유 지식으로 남기는 사회가 되기 시작했다.',
+  '교역 연맹':'외부 연결과 교환이 쌓이며 생산량보다 무엇을 누구와 바꿀지가 중요한 사회가 되기 시작했다.',
+  '방벽 국가':'반복된 위협과 방어 경험이 사람들의 우선순위를 생산보다 경계와 방어 준비 쪽으로 바꾸기 시작했다.',
+  '중앙 운영체계':'물·저장·건축·기록을 한데 조정하는 일이 늘면서 공동체의 운영 권한이 한곳에 모이기 시작했다.',
+  '생태 공존권':'채집과 사육에서 무리한 포획을 피하는 선택이 반복되며 주변 생태를 생활권 일부로 보는 문화가 강해졌다.'
+ };
+ addLog('story',`${old}에서 ${top.name} 쪽으로`,texts[top.name]||'주민들의 반복 행동이 문명의 방향을 바꾸기 시작했다.','기록','역사는 계획표보다 사람들이 반복한 행동을 더 오래 기억했다.')
+}
+function syncLocalCountryPopulation(){
+ const c=state.world.countries?.['에르단 왕국'];if(!c)return;
+ const prev=state.world.lastLocalPopulation??state.residents.length,now=state.residents.length,delta=now-prev;
+ if(delta!==0)c.population=Math.max(now,c.population+delta);
+ else c.population=Math.max(now,c.population);
+ state.world.lastLocalPopulation=now;
+ state.worldPopulation=Object.values(state.world.countries).reduce((s,c)=>s+(c.population||0),0)
+}
+function countryAtWar(name){
+ return (state.world.wars||[]).some(w=>w.active&&(w.a===name||w.b===name||w.country===name))||(state.world.externalWars||[]).some(w=>w.active&&(w.a===name||w.b===name))
+}
+function annualCountryPopulationSimulation(){
+ normalizeWorldState();
+ for(const[name,c]of Object.entries(state.world.countries)){
+  c.lastPopulation=c.population;
+  const war=countryAtWar(name),h=stableHash01(name+state.year);
+  let rate=c.growth+(c.prosperity-50)*.00008+(h-.5)*.004;
+  if(war)rate-=.018+stableHash01(name+'war'+state.year)*.018;
+  const births=Math.max(0,Math.round(c.population*Math.max(0,rate+.012)));
+  const deaths=Math.max(0,Math.round(c.population*Math.max(.004,.012-rate)));
+  c.births=births;c.deaths=deaths;c.population=Math.max(1,c.population+births-deaths)
+ }
+ syncLocalCountryPopulation()
+}
+function countriesInRegion(region){return Object.keys(COUNTRY_META).filter(n=>COUNTRY_META[n].region===region)}
+function contactCountries(){
+ return Object.keys(COUNTRY_META).filter(n=>state.world.knownRegions.includes(COUNTRY_META[n].region)&&n!=='에르단 왕국')
+}
+function diplomacyFor(country){
+ state.world.diplomacy??={};
+ if(!state.world.diplomacy[country]){
+  const meta=state.world.countries[country],bias=(meta?.openness??50)-(meta?.aggression??50);
+  state.world.diplomacy[country]={relation:clamp(Math.round(bias*.35),-35,35),status:'neutral',lastIncidentDay:-999}
+ }
+ return state.world.diplomacy[country]
+}
+function activeWarAgainst(country){
+ return (state.world.wars||[]).find(w=>w.active&&w.country===country)
+}
+function startLocalWar(country){
+ const d=diplomacyFor(country);if(d.status==='war')return false;
+ d.status='war';d.relation=Math.min(-72,d.relation);d.warStartDay=absDay();
+ state.world.wars.push({country,active:true,startYear:state.year,startDay:state.day});
+ addTrajectory('militarism',6);addTrajectory('centralization',2);
+ addLog('warn',`${country}과 전쟁 발발`,`${country}과 이어진 길에서 통행·자원·보복 사건이 누적되었다. 주민들의 방어 선택과 상대 세력의 압박이 겹치며 결국 전쟁 상태로 넘어갔다.`,'기록','같은 접촉도 어떤 선택을 반복했느냐에 따라 교역로가 되기도, 전선이 되기도 했다.');
+ return true
+}
+function endLocalWar(country){
+ const d=diplomacyFor(country);d.status='truce';d.relation=-20;
+ const w=activeWarAgainst(country);if(w){w.active=false;w.endYear=state.year;w.endDay=state.day}
+ addLog('story',`${country}과 휴전`,`${country}과의 충돌이 멈췄다. 손실·포로·통행 문제를 두고 협상이 시작되었고, 전쟁 이전과 같은 관계로 돌아갈지는 이후 행동에 달렸다.`,'기록','휴전은 결말이 아니라 다음 관계의 시작이었다.')
+}
+function simulateDiplomacyDaily(){
+ const path=trajectorySummary();
+ for(const country of contactCountries()){
+  const d=diplomacyFor(country),meta=state.world.countries[country];
+  if(d.status==='war'){
+   d.relation=clamp(d.relation+.006,-100,100);
+   if(absDay()-(d.warStartDay??absDay())>160&&Math.random()<.004*(1+state.trajectory.cooperation/60))endLocalWar(country);
+   continue
+  }
+  const tradeBias=(state.trajectory.trade+state.trajectory.cooperation)*.00005;
+  const militaryBias=state.trajectory.militarism*.000055;
+  d.relation=clamp(d.relation+tradeBias-militaryBias+(meta.openness-50)*.00003,-100,100);
+  const incidentChance=.00045*(1+meta.aggression/50)*(1+state.trajectory.centralization/120);
+  if(absDay()-(d.lastIncidentDay??-999)>70&&Math.random()<incidentChance){
+   d.lastIncidentDay=absDay();const hit=6+meta.aggression*.12;d.relation=clamp(d.relation-hit,-100,100);
+   addLog('warn',`${country}과 경계 충돌`,`${country}과 연결된 생활권에서 통행과 자원을 둘러싼 충돌이 발생했다. 주민들이 다음에 교섭·양보·방어 중 무엇을 반복하느냐에 따라 관계가 달라진다.`,'기록','접촉은 자동으로 우호도 적대도 아니었다.')
+  }
+  const readiness=state.civ.level+(state.buildings.watch?1:0)+(state.residents.length>=25?1:0);
+  if(readiness>=3&&d.relation<-66&&Math.random()<.006*(1+meta.aggression/70))startLocalWar(country)
+ }
+}
+function simulateExternalWarsAnnual(){
+ // Other nations also live without waiting for Laen.
+ const names=Object.keys(state.world.countries);
+ for(const w of state.world.externalWars||[]){
+  if(!w.active)continue;
+  if(state.year-w.startYear>=1+Math.floor(stableHash01(w.a+w.b)*4)){w.active=false;w.endYear=state.year}
+ }
+ if((state.world.externalWars||[]).filter(w=>w.active).length>=3)return;
+ const candidates=[...names].sort((a,b)=>state.world.countries[b].aggression-state.world.countries[a].aggression);
+ for(const a of candidates.slice(0,10)){
+  if(Math.random()>.055)continue;
+  const ma=COUNTRY_META[a],targets=names.filter(b=>b!==a&&COUNTRY_META[b].region===ma.region&&!countryAtWar(b));
+  if(!targets.length)continue;const b=targets[Math.floor(Math.random()*targets.length)];
+  if(countryAtWar(a)||countryAtWar(b))continue;
+  state.world.externalWars.push({a,b,active:true,startYear:state.year});
+  addLog('warn',`관찰 기록 · ${a}–${b} 충돌`,`관찰자 지도에서 ${a}과 ${b} 사이의 무력 충돌이 확인되었다. 감나무뜰 주민들이 아직 두 세력을 직접 알지 못하더라도 세계의 역사는 계속 진행된다.`,'관찰 AI','관찰자는 접촉 이전의 역사도 볼 수 있다.');
+  break
+ }
+}
+
 function addWorldRoute(from,to,kind='land'){
  if(state.world.routes.some(r=>r.from===from&&r.to===to))return;
- state.world.routes.push({from,to,kind,year:state.year,day:state.day})
+ state.world.routes.push({from,to,kind,year:state.year,day:state.day});addTrajectory('trade',2.5);addTrajectory('exploration',1.5)
 }
 function revealWorldRegion(region,kind='land'){
  if(state.world.knownRegions.includes(region))return false;
@@ -1619,7 +1922,7 @@ function syncWorldCityTimeline(){
  }
 }
 function updateWorldEngine(){
- normalizeWorldState();updateSeaTech();
+ normalizeWorldState();updateSeaTech();simulateDiplomacyDaily();syncLocalCountryPopulation();maybeShiftTrajectory();
  const explorerCount=state.residents.filter(r=>r.brain?.action==='explore').length;
  state.world.landProgress=clamp(state.world.landProgress+.015+explorerCount*.018+avgSkill('채집')*.00025,0,9999);
  if(state.world.seaTech.sail.open&&state.world.seaTech.navigation.open&&state.world.seaTech.stores.open){
@@ -1640,7 +1943,9 @@ function updateWorldEngine(){
  syncWorldCityTimeline()
 }
 
-function annualWorldPopulation(){const safe=state.resources.food>state.residents.length*.55&&state.resources.water>state.residents.length*.5;state.worldPopulation=Math.max(state.residents.length,Math.round(state.worldPopulation*(1+(safe?.032:.014))))}
+function annualWorldPopulation(){
+ annualCountryPopulationSimulation();simulateExternalWarsAnnual()
+}
 function annualSummary(prev){
  const now={population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};
  if(prev){
@@ -1686,7 +1991,7 @@ function tryMilestones(){
 function advanceDay(){
  state.day++;
  if(state.day>365){const prev=state.civ.lastAnnual||{population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};state.day=1;state.year++;state.residents.forEach(r=>r.age++);annualWorldPopulation();annualSummary(prev)}
- processMyeongjaLifecycle();syncOfficialPopulationRuntime(true);updateLifeStages();updateLocalMapExpansion(true);dailySettlementEconomy();advanceBrainNeeds();dailyTechEngine();updateWorldEngine();
+ processMyeongjaLifecycle();syncOfficialPopulationRuntime(true);updateLifeStages();updateLocalMapExpansion(true);dailySettlementEconomy();advanceBrainNeeds();dailyTechEngine();updateWorldEngine();maybeConflictsDaily();
  if(Math.random()<.075){state.weather=pick(['맑음','흐림','약한 비','바람']);if(state.weather==='약한 비')gain({water:2.5})}
  tryMilestones();syncVillageVisuals(false);state.demography.children=state.residents.filter(r=>r.age<16).length;
  if(!state.civ.lastAnnual)state.civ.lastAnnual={population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};
@@ -1698,6 +2003,7 @@ function updatePeople(dt,now){
  const timeScale=state.speed===20?3.0:state.speed===5?1.75:state.speed===1?1:.25;
  people.forEach(p=>{
    const ud=p.userData;resetPose(ud);
+   if(ud.combatOverride&&updateDefenderCombat(p,dt,now))return;
    if(ud.mode==='thinking'){decideResident(p);return}
    if(ud.mode==='walking'){
      ud.tool.visible=false;
@@ -1727,7 +2033,7 @@ if(state.buildings.herb){const q=worldToMini(LOC.herbs.x+4,LOC.herbs.z-2);mctx.f
 if(state.buildings.pen){const q=worldToMini(LOC.pen.x,LOC.pen.z);mctx.strokeStyle='#c3a574';mctx.strokeRect(q.x-5,q.y-5,10,10)}if(state.buildings.well){const q=worldToMini(20,6);mctx.fillStyle='#6f9eb1';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}if(state.buildings.kitchen){const q=worldToMini(-8,-14);mctx.fillStyle='#b58d58';mctx.fillRect(q.x-4,q.y-4,8,8)}if(state.buildings.kiln){const q=worldToMini(14,-23);mctx.fillStyle='#9a684d';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}if(state.buildings.watch){const q=worldToMini(-28,-3);mctx.fillStyle='#d0b27f';mctx.fillRect(q.x-3,q.y-6,6,12)}
 const pq=worldToMini(player.position.x,player.position.z);mctx.fillStyle='#6f8dff';mctx.beginPath();mctx.arc(pq.x,pq.y,7,0,Math.PI*2);mctx.fill();
 const bq=worldToMini(bokshil.position.x,bokshil.position.z);mctx.fillStyle='#8c5f3e';mctx.beginPath();mctx.arc(bq.x,bq.y,5,0,Math.PI*2);mctx.fill();
-for(const a of animals){const q=worldToMini(a.position.x,a.position.z);mctx.fillStyle=a.userData.domestic?'#e0bd74':'#759c67';mctx.beginPath();mctx.arc(q.x,q.y,a.userData.domestic?3.2:2.4,0,Math.PI*2);mctx.fill()}
+for(const a of animals){const q=worldToMini(a.position.x,a.position.z);mctx.fillStyle=a.userData.domestic?'#e0bd74':'#759c67';mctx.beginPath();mctx.arc(q.x,q.y,a.userData.domestic?3.2:2.4,0,Math.PI*2);mctx.fill()}for(const h of conflictHostiles){if(h.userData.dead||!h.visible)continue;const q=worldToMini(h.position.x,h.position.z);mctx.fillStyle=h.userData.raidHuman?'#d44f43':'#c46a4d';mctx.beginPath();mctx.arc(q.x,q.y,h.userData.raidHuman?4:3.2,0,Math.PI*2);mctx.fill()}
 if(state.flags.myeongjaDead){const gq=worldToMini(-9,10);mctx.fillStyle='#73746f';mctx.fillRect(gq.x-3,gq.y-5,6,10)}
 for(const mo of monsters){if(mo.userData.dead)continue;const q=worldToMini(mo.position.x,mo.position.z);mctx.fillStyle='#bf5f63';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}
 people.forEach(p=>{const q=worldToMini(p.position.x,p.position.z);mctx.fillStyle=p.userData.id==='C0001'?'#f2b665':'#f5e3b5';mctx.beginPath();mctx.arc(q.x,q.y,p.userData.id==='C0001'?7:5,0,Math.PI*2);mctx.fill()});if(eventFocus){const e=worldToMini(eventFocus.x,eventFocus.z);mctx.strokeStyle='#e66f65';mctx.lineWidth=4;mctx.beginPath();mctx.arc(e.x,e.y,12,0,Math.PI*2);mctx.stroke()}}
@@ -1757,7 +2063,7 @@ function renderPeopleList(){
 }
 function renderWorld(){
  const b=state.buildings,t=state.tech,children=state.residents.filter(r=>r.age<16).length,adults=state.residents.length-children;
- $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 관찰자 곁에 실제 3D 동료로 존재합니다. 전투 레벨은 없고 계속 따라다닙니다.</p><span class="tag">복실이 동행</span><span class="tag">이명자 ${state.flags.myeongjaDead?'0년 189일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장</h3><p>관측 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p><span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div>`
+ $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 관찰자 곁에 실제 3D 동료로 존재합니다. 전투 레벨은 없고 계속 따라다닙니다.</p><span class="tag">복실이 동행</span><span class="tag">이명자 ${state.flags.myeongjaDead?'3년 1일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장</h3><p>주민 접촉 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p><span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div><div class="card"><h3>관찰자 세계 인구</h3><p>관찰자는 주민의 탐사 여부와 관계없이 30개 국가·세력권의 실제 시뮬레이션 인구를 모두 볼 수 있습니다.</p>${Object.entries(state.world.countries).sort((a,b)=>b[1].population-a[1].population).slice(0,10).map(([n,c])=>`<span class="tag">${n} ${c.population}명</span>`).join('')}<p>전체 국가는 🌍 세계지도에서 확인.</p></div><div class="card"><h3>현재 역사 노선 · ${trajectorySummary().name}</h3><p>고정 시나리오가 아니라 주민이 반복한 행동으로 변합니다.</p>${trajectorySummary().pairs.slice(0,5).map(([k,v])=>`<span class="trajectory-tag">${TRAJECTORY_NAMES[k]||k} ${v.toFixed(1)}</span>`).join('')}</div><div class="card"><h3>생태·전쟁 기록</h3><p>동물 습격 ${state.conflict.animalRaids}회 · 전투 ${state.conflict.warBattles}회 · 부상 ${state.conflict.wounded}명 · 식량 손실 ${state.conflict.foodLost.toFixed(1)}</p><span class="tag">현재 전쟁 ${(state.world.wars||[]).filter(w=>w.active).length}</span><span class="tag">외부 국가간 전쟁 ${(state.world.externalWars||[]).filter(w=>w.active).length}</span></div>`
 }
 function renderHistory(){$('historyList').innerHTML=state.logs.slice(0,220).map(l=>`<div class="log-item ${l.type}"><b>${l.title}</b><p>${l.text}</p><time>세계력 ${l.time} · ${l.speaker||''}</time></div>`).join('')}
 function chronological(){return[...state.logs].sort((a,b)=>a.seq-b.seq)}function novelText(style='healing'){const L=chronological(),out=['문명: 감나무뜰의 창세기','CIVILIZATION: Genesis','',`원고 생성 시점: 세계력 ${stamp()}`,`현재 주민 ${state.residents.length}명 · 기록 사건 ${state.logs.length}개`,'','※ 아래 원고는 게임 안에서 실제 발생해 저장된 사건을 시간순으로 재구성한 것입니다.',''];if(style==='chronicle'){for(const l of L){out.push(`[세계력 ${l.time}] ${l.title}`,l.text,l.quote?`“${l.quote}” — ${l.speaker}`:'','')}return out.join('\n')}out.push('프롤로그 — 라엔 분지','',`아르케아 중앙대륙의 라엔 분지에는 아직 마을이라 부를 만한 것도 없었다. 흙과 물길, 낮은 둔덕, 그리고 오늘을 살아내야 하는 사람들이 있었을 뿐이었다.`,'',`말기 암을 앓는 이명자는 남은 시간을 모든 일을 혼자 해내는 데 쓰지 않았다. 대신 누가 흙을 읽고, 누가 도구를 만들고, 누가 기억을 기록으로 남기는지 바라보았다.`,'');let ch=0,lastYear=null;for(const l of L){const y=l.time.split('년')[0];if(y!==lastYear){lastYear=y;ch++;out.push(`제${ch}장 — 세계력 ${y}년`,'')}if(style==='webnovel'){out.push(l.type==='warn'?'그날, 평소와 다른 기척이 감나무뜰에 내려앉았다.':'작은 변화였다. 하지만 아무것도 없던 이곳에서는 작은 변화가 곧 역사였다.','',l.text,'',`“${storyQuoteFor(l)}”`,`${l.speaker||'이명자'}의 말이 오래 남았다.`,'')}else{out.push(l.text,'',`“${storyQuoteFor(l)}”`,`— ${l.speaker||'이명자'}`,`세계력 ${l.time}, 사람들은 그날을 ‘${l.title}’이라는 이름으로 기억했다.`,'')}}out.push('에필로그 — 계속되는 하루','',`현재 감나무뜰에는 ${state.residents.length}명의 주민이 살아간다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}. 숫자는 작지만 그 안에는 사람들의 하루가 들어 있다.`,'','=== 등장인물 현재 기록 ===',...state.residents.map(r=>`${r.name}(${r.id}) · ${r.age}세 · ${r.job} · 잠재력 ${r.potential} · 개화율 ${r.bloom.toFixed(1)}% · ${r.note}`));return out.join('\n')}
@@ -1810,7 +2116,7 @@ applyHud();
 
 const worldMapUI=new CivitasWorldMap({
  overlay:$('worldMapOverlay'),canvas:$('worldMapCanvas'),detail:$('worldMapDetail'),
- legend:$('worldMapLegend'),status:$('worldMapStatus'),
+ legend:$('worldMapLegend'),status:$('worldMapStatus'),countryList:$('worldCountryList'),
  getState:()=>state,data:WORLD_DATA,onClose:()=>{}
 });
 $('worldMapBtn').onclick=()=>worldMapUI.open();
@@ -1819,7 +2125,7 @@ $('mobileWorldMapBtn')?.addEventListener('click',()=>worldMapUI.open());
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;uiDirty=true;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
 
 let uiDirty=true,lastUiRender=0;let last=performance.now();let viewportWatch=0;
-function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;updateSim(dt);updatePeople(dt,now);updatePlayer(dt,now);updateBokshil(dt,now);updateAnimals(dt,now);updateMonsters(dt,now);updateCamera(now);flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3;drawMini();if(now-viewportWatch>900){resizeWorld();viewportWatch=now}if(uiDirty&&now-lastUiRender>360){renderUI();lastUiRender=now}if((now|0)%300<18){updatePlayerHud();if(selectedBrainId)renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId));}if(!$('worldMapOverlay').classList.contains('hidden')&&((now|0)%700<18))worldMapUI.draw();renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;updateSim(dt);updatePeople(dt,now);updatePlayer(dt,now);updateBokshil(dt,now);updateAnimals(dt,now);updateConflictSystem(dt,now);updateMonsters(dt,now);updateCamera(now);flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3;drawMini();if(now-viewportWatch>900){resizeWorld();viewportWatch=now}if(uiDirty&&now-lastUiRender>360){renderUI();lastUiRender=now}if((now|0)%300<18){updatePlayerHud();if(selectedBrainId)renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId));}if((now|0)%300<18)renderConflictHud();if(!$('worldMapOverlay').classList.contains('hidden')&&((now|0)%700<18))worldMapUI.draw();renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 let resizeTimer=0;
 function scheduleResize(){
  clearTimeout(resizeTimer);resizeWorld(true);
