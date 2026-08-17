@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=9.6">
+<link rel="stylesheet" href="./styles.css?v=9.6.1">
 
 </head>
 <body>
@@ -17,6 +17,29 @@
 <div id="runtimeDiag" class="runtime-diag hidden">
   <b>시뮬레이션 보호모드</b><span id="runtimeDiagText"></span>
 </div>
+
+<script>
+(function(){
+  function showFatal(msg){
+    try{
+      var text=String(msg||'알 수 없는 오류');
+      var box=document.getElementById('runtimeDiag');
+      var txt=document.getElementById('runtimeDiagText');
+      if(box&&txt){
+        box.classList.remove('hidden');
+        txt.textContent='v9.6.1 시작 오류: '+text;
+      }
+      var loading=document.getElementById('loading');
+      if(loading){
+        loading.innerHTML='<div><b>게임 시작 오류</b><p style="max-width:82vw;word-break:break-word">'+text.replace(/[<>]/g,'')+'</p></div>';
+      }
+    }catch(e){}
+  }
+  window.addEventListener('error',function(e){showFatal(e.message||e.error||'script error')});
+  window.addEventListener('unhandledrejection',function(e){showFatal(e.reason&&e.reason.message?e.reason.message:e.reason)});
+})();
+</script>
+
 
 <div id="loading" class="loading"><div><div class="spinner"></div><b>감나무뜰을 불러오는 중</b><p>3D 세계와 주민들의 하루를 준비하고 있습니다.</p></div></div>
 <header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="worldMapBtn" class="icon world-map-btn" title="세계지도">🌍</button><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
@@ -138,6 +161,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=9.6"></script>
+<script type="module" src="./game.js?v=9.6.1"></script>
 </body>
 </html>

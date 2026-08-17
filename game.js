@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=9.6';
+import { CivitasWorldMap } from './world-map.js?v=9.6.1';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -47,9 +47,9 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=9.6')
+const WORLD_DATA = await fetch('./world.json?v=9.6.1')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.6')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=9.6.1')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -526,6 +526,12 @@ createFrontierTile(0,-210,320,80,3,9);
 createFrontierTile(0,210,320,80,3,10);
 createFrontierTile(-260,0,100,340,3,11);
 createFrontierTile(260,0,100,340,3,12);
+
+// v9.6.1 BOOT ORDER FIX
+// These variables must exist before the first terrain streaming call updates the location HUD.
+let regionViewActive=false,regionViewName=null,regionHiddenState=[];
+let regionVisitCountry=null,regionVisitCityId=null,regionWalkPlane=null,regionMapTransform=null;
+let regionObserver=null,regionObserverTarget=null;
 
 const LOCAL_LANDMARKS=[
  {name:'감나무뜰',icon:'⌂',p:LOC.center,color:0xf0cf80},
@@ -3332,9 +3338,7 @@ applyHud();
 
 // ---------- OBSERVER REGIONAL 3D MAPS ----------
 const regionViewGroup=new THREE.Group();regionViewGroup.visible=false;scene.add(regionViewGroup);
-let regionViewActive=false,regionViewName=null,regionHiddenState=[];
-let regionVisitCountry=null,regionVisitCityId=null,regionWalkPlane=null,regionMapTransform=null;
-let regionObserver=null,regionObserverTarget=null;
+
 function disposeRegionView(){
  regionWalkPlane=null;regionMapTransform=null;regionObserver=null;regionObserverTarget=null;
  while(regionViewGroup.children.length){
@@ -3598,7 +3602,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v9.6 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v9.6.1 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }
@@ -3667,4 +3671,4 @@ window.visualViewport?.addEventListener('scroll',scheduleResize,{passive:true});
 if(window.ResizeObserver)new ResizeObserver(()=>resizeWorld()).observe(gameRoot);
 updateLifeStages();state.demography.children=state.residents.filter(r=>r.age<16).length;
 {const score=civilizationScore();let f=CIV_LEVELS[0];for(const lv of CIV_LEVELS)if(score>=lv.score)f=lv;state.civ.levelName=f.name;state.civ.level=CIV_LEVELS.indexOf(f)}
-updateLocalMapExpansion(false);syncVillageVisuals(false);renderUI();setTimeout(()=>$('loading').classList.add('hidden'),450);setInterval(save,5000);
+updateLocalMapExpansion(false);syncVillageVisuals(false);renderUI();setTimeout(()=>{$('loading').classList.add('hidden');document.documentElement.dataset.civBoot='ready'},450);setInterval(save,5000);
