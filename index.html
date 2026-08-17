@@ -1,793 +1,105 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#14110d">
-<title>문명 v0.6</title>
-<style>
-:root{
-  --bg:#14110d;--panel:#231c14;--panel2:#2e2418;--line:#6f5839;
-  --gold:#e0bb72;--text:#f4ead6;--muted:#b8aa91;--green:#8eb878;
-  --blue:#7eb3cf;--red:#cf7869;--ink:#17120d;--cream:#e8d3a2
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:linear-gradient(#12100c,#1a150f);color:var(--text);
-font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
-button,input{font:inherit}
-header{position:sticky;top:0;z-index:60;background:#16120ded;border-bottom:1px solid var(--line);
-backdrop-filter:blur(10px);padding:11px 13px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.title{font-size:19px;font-weight:900;color:var(--gold)}
-.badge{font-size:10px;padding:3px 6px;border:1px solid #7b613d;border-radius:999px;margin-left:4px}
-.date{font-size:12px;line-height:1.35;color:var(--muted);text-align:right}
-main{padding:10px;max-width:1200px;margin:auto}
-.grid{display:grid;grid-template-columns:1.42fr .78fr;gap:10px}
-@media(max-width:850px){.grid{grid-template-columns:1fr}}
-.panel{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
-border-radius:15px;padding:12px;box-shadow:0 8px 24px #0005}
-.panel h2{margin:0 0 9px;font-size:14px;color:var(--gold)}
-.small{font-size:11px;color:var(--muted);line-height:1.45}.section-gap{margin-top:10px}
-.btn{appearance:none;border:1px solid #81683d;background:linear-gradient(#493a22,#302515);color:#fff0cd;
-border-radius:10px;padding:10px 7px;font-weight:800;font-size:12px}
-.btn.primary{background:linear-gradient(#806228,#5c4318);border-color:#c49c50}
-.btn.blue{background:linear-gradient(#355d70,#233c49);border-color:#628ca0}
-.btn.red{background:linear-gradient(#69372c,#43231c);border-color:#9a5b50}
-.btn.active{outline:2px solid #e0bb72;box-shadow:0 0 0 2px #0005}
-
-/* MAPS */
-.map-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.map-switch{display:flex;gap:5px;overflow:auto}
-.map-switch button{padding:7px 9px;font-size:11px;flex:0 0 auto}
-.map-shell{position:relative;height:510px;overflow:hidden;border:1px solid #8d7448;border-radius:14px;background:#5d7f8f}
-.stage{position:absolute;left:0;top:0;transform-origin:0 0;touch-action:none}
-.world-stage{width:1200px;height:760px}
-.local-stage{width:900px;height:650px;background:#879d6a}
-.village-stage{width:900px;height:650px;background:#8aa16a}
-.map-tools{position:absolute;right:8px;top:8px;z-index:35;display:flex;gap:5px}
-.map-tools button{width:38px;height:36px;padding:0;font-size:18px}
-.map-help{position:absolute;left:8px;bottom:8px;z-index:35;background:#16120ddd;border:1px solid #6c5838;
-border-radius:9px;padding:6px 8px;font-size:9px;color:#dac8a6}
-svg{position:absolute;inset:0}
-.world-svg{width:1200px;height:760px}.local-svg{width:900px;height:650px}
-.ocean{fill:#5f8394}.ocean2{fill:#6f94a3;opacity:.22}.coast{stroke:#dfc48f;stroke-width:3;filter:drop-shadow(0 2px 2px #0005)}
-.land-a{fill:#9c8b57}.land-b{fill:#748754}.land-c{fill:#826f56}.land-d{fill:#9f8a54}.land-e{fill:#6b8053}.land-f{fill:#b09056}.land-g{fill:#74544a}.land-h{fill:#74667f}
-.forest{fill:#516b47;opacity:.75}.mountain{fill:#665b4b;opacity:.9}.desert{fill:#c09b5b;opacity:.9}.volcanic{fill:#4e4442;opacity:.92}
-.river{fill:none;stroke:#82b9d1;stroke-width:4;stroke-linecap:round;opacity:.85}.lake{fill:#6c98ab;stroke:#d4c79e;stroke-width:2}
-.region-label{position:absolute;transform:translate(-50%,-50%);z-index:8;background:#17120ddd;border:1px solid #765f3d;
-border-radius:11px;padding:7px 9px;font-size:10px;white-space:nowrap;box-shadow:0 4px 12px #0007}
-.region-label strong{display:block;color:#ffe1a3;font-size:12px}.region-label .meta{font-size:9px;color:#c5b59a}
-.region-label.contact{border-color:#b99152}.region-label.active{outline:2px solid #ffe08a;box-shadow:0 0 18px #ffd66588}
-.fog{position:absolute;transform:translate(-50%,-50%);z-index:6;border-radius:50%;background:radial-gradient(circle,#2b2f32e8 0 38%,#20252ad6 58%,transparent 76%);pointer-events:none}
-.fog span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:25px;color:#c9c7c2;opacity:.65}
-.route{position:absolute;height:3px;transform-origin:left center;z-index:10;border-radius:999px;background:#e8c36b99;box-shadow:0 0 5px #0005}
-.route.water{background:#c7ecfa99}.marker{position:absolute;z-index:16;transform:translate(-50%,-50%);font-size:24px;filter:drop-shadow(0 2px 3px #000);transition:left .65s ease,top .65s ease}
-.marker span{display:block;font-size:9px;background:#16120de8;border:1px solid #7e673f;padding:2px 5px;border-radius:999px;white-space:nowrap}
-.local-water{fill:#729eae}.local-river{fill:none;stroke:#6c98a9;stroke-width:14;stroke-linecap:round}
-.local-road{fill:none;stroke:#b69d6f;stroke-width:7;stroke-linecap:round;stroke-dasharray:10 7}
-.local-hill{fill:#697b52;opacity:.9}.local-forest{fill:#4f6b45;opacity:.88}.local-field{fill:#a3a65b;opacity:.9}
-.settle{position:absolute;transform:translate(-50%,-50%);z-index:16;width:38px;height:38px;border-radius:50%;border:2px solid #ead08a;background:#21190fe8;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 12px #0009}
-.settle .popdot{position:absolute;left:29px;top:-5px;background:#16120de8;border:1px solid #937748;border-radius:999px;font-size:8px;padding:2px 5px;white-space:nowrap;color:#ffe2a4}
-.settle.capital{width:46px;height:46px;font-size:22px;border-color:#ffe18c}
-.local-title{position:absolute;z-index:14;transform:translate(-50%,-50%);font-size:10px;color:#fff1cb;background:#1b160ebd;border:1px solid #725a37;padding:4px 6px;border-radius:8px;white-space:nowrap}
-
-/* VILLAGE */
-#villageCanvas{position:absolute;inset:0;width:900px;height:650px;z-index:2}
-.village-top{position:absolute;left:10px;top:10px;z-index:18;background:#17120ddd;border:1px solid #7b623e;border-radius:10px;padding:7px 9px;font-size:10px}
-.village-top b{display:block;color:#ffe1a3;font-size:12px}
-.village-legend{position:absolute;right:10px;bottom:10px;z-index:18;background:#17120ddd;border:1px solid #715a3b;border-radius:10px;padding:6px 8px;font-size:9px}
-.npc-list{max-height:300px;overflow:auto}
-.npc-row{padding:8px;border-bottom:1px dashed #59472e;font-size:11px;display:flex;justify-content:space-between;gap:8px}
-.npc-row strong{color:#ffe0a0}.npc-action{color:#a9d6e8;font-size:10px}
-.building-list{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.building-card{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:8px;font-size:10px}
-.building-card strong{display:block;color:#ffe0a0}
-
-
-/* FULLSCREEN MAP MODE */
-#mapPanel{position:relative}
-.fullMapBtn{padding:7px 10px!important;font-size:11px!important}
-#mapPanel.map-fullscreen{
-  position:fixed;inset:0;z-index:120;margin:0;padding:0;border:0;border-radius:0;
-  background:#10100c;box-shadow:none;
-}
-#mapPanel.map-fullscreen .map-head{
-  position:absolute;left:10px;right:10px;top:10px;z-index:140;
-  margin:0;padding:8px 9px;border-radius:12px;
-  background:#15110de8;border:1px solid #725b39;backdrop-filter:blur(8px)
-}
-#mapPanel.map-fullscreen .map-head h2{display:none}
-#mapPanel.map-fullscreen .map-shell{
-  position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;
-}
-#mapPanel.map-fullscreen .map-tools{top:72px}
-#mapPanel.map-fullscreen .map-help{bottom:max(10px,env(safe-area-inset-bottom));left:10px}
-#mapPanel.map-fullscreen #exitFullMap{display:inline-block}
-#mapPanel:not(.map-fullscreen) #exitFullMap{display:none}
-#mapPanel.map-fullscreen #enterFullMap{display:none}
-body.map-lock{overflow:hidden;touch-action:none}
-@media(max-width:850px){
-  #mapPanel.map-fullscreen .map-head{top:max(8px,env(safe-area-inset-top));}
-  #mapPanel.map-fullscreen .map-switch{max-width:calc(100vw - 95px)}
-  #mapPanel.map-fullscreen .map-tools{top:66px;right:9px}
-}
-
-/* HUD */
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
-.stat{background:#18130da8;border:1px solid #5e4a30;border-radius:11px;padding:9px}.stat b{display:block;color:#ffe1a2;font-size:21px}.stat span{font-size:11px;color:var(--muted)}
-.objective{font-size:15px;font-weight:900;color:#ffdda0}
-.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{font-size:11px;padding:6px 8px;border:1px solid #655130;border-radius:999px;background:#18130e}
-.good{border-color:#638255;color:#c4e7b2}.lock{border-color:#81625a;color:#e4b2a8}.warn{border-color:#916d36;color:#f1ce8b}
-.tabs{display:flex;gap:6px;overflow:auto;padding-bottom:3px}.tabs button{flex:0 0 auto;padding:7px 9px;font-size:11px}
-.tabpage{display:none}.tabpage.show{display:block}
-.techgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tech{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:8px;font-size:11px}
-.techhead{display:flex;justify-content:space-between;gap:5px}.grade{color:#ffe09c;font-weight:900}.bar{height:5px;background:#0c0907;border-radius:999px;overflow:hidden;margin-top:6px}.fill{height:100%;background:linear-gradient(90deg,#6b9361,#d8b96a)}
-.event{padding:8px 0;border-bottom:1px dashed #59472e;font-size:12px;line-height:1.4}.event small{color:var(--muted)}.log{max-height:290px;overflow:auto}
-.mission{padding:8px;background:#18130e;border:1px solid #59462d;border-radius:10px;margin-bottom:7px;font-size:11px}
-.mtop{display:flex;justify-content:space-between;gap:8px}.mtop em{font-style:normal;color:#b0dcec}
-.controls{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
-.command{display:flex;gap:7px;margin-top:8px}.command input{flex:1;min-width:0;background:#14100c;border:1px solid #655132;color:var(--text);padding:10px;border-radius:10px}
-.people{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.person{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:9px}
-.person strong{display:block;color:#ffe0a0;font-size:12px}.person span{font-size:10px;color:var(--muted)}
-.rrow,.historyCard{background:#18130e;border:1px solid #59462d;border-radius:10px;padding:8px;margin-bottom:7px}
-.rtop{display:flex;justify-content:space-between;gap:7px;font-size:11px}.rmeta{font-size:9px;color:var(--muted);margin-top:4px}
-
-/* MODAL */
-.modal{display:none;position:fixed;inset:0;background:#0009;z-index:90;padding:16px;align-items:flex-end;justify-content:center}
-.modal.show{display:flex}.sheet{width:min(650px,100%);max-height:86vh;overflow:auto;background:linear-gradient(#34291a,#211a12);border:1px solid #8b7045;border-radius:18px 18px 12px 12px;padding:15px;box-shadow:0 20px 60px #000}
-.sheet h3{margin:0 0 8px;color:#ffe0a0}.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.box{background:#17120d;border:1px solid #59462d;border-radius:10px;padding:9px;font-size:11px}
-.choice{width:100%;text-align:left;margin-top:7px}.alertTitle{font-size:18px;color:#ffd98c;font-weight:900}
-.pauseflag{display:none;background:#6a2f24;color:#ffd9ca;border:1px solid #a75a4d;border-radius:999px;padding:4px 8px;font-size:10px;margin-left:6px}.pauseflag.show{display:inline-block}
-footer{text-align:center;color:#8d806b;font-size:10px;padding:18px 10px 34px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="theme-color" content="#08110f" />
+  <title>문명 REBIRTH · 세계력 0년</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+    }
+  }
+  </script>
 </head>
 <body>
-<header>
-<div class="top">
-  <div class="title">《문명》 세계 운영 <span class="badge">v0.6</span><span id="pauseFlag" class="pauseflag">AUTO 정지</span></div>
-  <div id="date" class="date"></div>
-</div>
-</header>
+  <div id="game"></div>
 
-<main>
-<section class="grid">
-<div class="panel" id="mapPanel">
-<div class="map-head">
-<h2 style="margin:0">🗺 지도</h2>
-<div class="map-switch">
-<button id="worldBtn" class="btn primary active" onclick="switchMap('world')">월드맵</button>
-<button id="localBtn" class="btn" onclick="switchMap('local')">아르케아</button>
-<button id="villageBtn" class="btn" onclick="switchMap('village')">마을</button>
-<button id="enterFullMap" class="btn blue fullMapBtn" onclick="toggleFullMap(true)">⛶ 크게</button>
-<button id="exitFullMap" class="btn red fullMapBtn" onclick="toggleFullMap(false)">✕ 닫기</button>
-</div>
-</div>
+  <header class="topbar glass">
+    <div>
+      <div class="eyebrow">CIVILIZATION · REBIRTH</div>
+      <div class="world-date"><b id="worldDate">세계력 0년 1일</b><span>아르케아 · 감나무뜰</span></div>
+    </div>
+    <div class="top-actions">
+      <button id="cameraBtn" class="icon-btn" aria-label="카메라 전환">◉</button>
+      <button id="menuBtn" class="icon-btn" aria-label="메뉴">☰</button>
+    </div>
+  </header>
 
-<div class="map-shell" id="mapShell">
-  <div class="stage world-stage" id="worldStage">
-    <svg class="world-svg" viewBox="0 0 1200 760">
-      <rect class="ocean" width="1200" height="760"/>
-      <ellipse class="ocean2" cx="590" cy="650" rx="520" ry="100"/>
-      <path class="coast land-b" d="M80,115 C115,78 205,72 258,105 C295,129 302,183 274,226 C238,269 146,281 91,246 C53,220 45,155 80,115 Z"/>
-      <path class="forest" d="M92,124 C135,99 219,96 257,128 C272,156 259,207 223,228 C178,248 110,231 83,197 C71,169 75,143 92,124 Z"/>
-      <path class="coast land-c" d="M410,80 C464,45 569,52 616,92 C651,126 643,180 597,211 C550,241 454,226 412,192 C378,163 374,105 410,80 Z"/>
-      <path class="mountain" d="M425,108 L462,78 L494,121 L527,87 L558,130 L591,98 L618,147 L585,189 L449,190 L402,148 Z"/>
-      <path class="coast land-h" d="M945,45 C1002,20 1107,41 1139,91 C1165,136 1123,184 1063,192 C1005,201 936,176 912,132 C893,98 905,62 945,45 Z"/>
-      <path class="coast land-a" d="M380,265 C447,225 570,214 660,246 C744,275 776,343 751,421 C726,500 635,544 517,535 C417,528 344,479 330,411 C315,343 332,294 380,265 Z"/>
-      <path class="forest" d="M358,295 C399,256 471,245 508,269 C502,320 472,344 424,357 C386,348 361,331 358,295 Z"/>
-      <path class="mountain" d="M477,247 L505,219 L530,260 L559,230 L588,271 L618,246 L649,288 L620,314 L501,307 Z"/>
-      <path class="river" d="M535,282 C515,324 522,365 554,401 C577,429 580,468 559,509"/>
-      <ellipse class="lake" cx="574" cy="444" rx="34" ry="24"/>
-      <path class="coast land-d" d="M850,245 C918,218 1030,230 1082,276 C1127,316 1128,380 1084,424 C1037,471 932,477 861,443 C808,417 793,348 816,302 C826,281 835,259 850,245 Z"/>
-      <ellipse class="lake" cx="995" cy="360" rx="36" ry="22"/>
-      <path class="coast land-f" d="M70,520 C116,474 231,472 291,512 C338,545 334,606 295,649 C250,699 137,703 77,664 C32,634 29,561 70,520 Z"/>
-      <path class="desert" d="M83,531 C132,504 232,505 279,536 C304,568 295,621 260,650 C209,675 121,667 82,636 C53,603 55,558 83,531 Z"/>
-      <path class="coast land-e" d="M424,600 C474,565 575,563 636,600 C680,627 679,674 642,704 C597,739 491,739 438,708 C394,682 390,626 424,600 Z"/>
-      <ellipse class="coast land-e" cx="700" cy="655" rx="43" ry="27"/>
-      <ellipse class="coast land-e" cx="748" cy="704" rx="28" ry="18"/>
-      <path class="coast land-g" d="M890,560 C937,527 1047,531 1094,568 C1137,602 1127,657 1087,691 C1037,733 940,729 894,696 C856,668 850,592 890,560 Z"/>
-      <path class="volcanic" d="M909,579 L947,545 L979,588 L1015,552 L1055,600 L1080,642 L1047,684 L931,682 L885,637 Z"/>
-    </svg>
+  <aside class="quest glass">
+    <div class="quest-kicker">현재 이야기</div>
+    <div id="questTitle" class="quest-title">불씨를 지켜라</div>
+    <div id="questText" class="quest-text">이명자가 마을 중앙의 꺼져가는 불 앞에서 사람들을 모으고 있다.</div>
+    <div class="quest-row"><span id="questStep">이명자에게 가기</span><b id="questDistance">42m</b></div>
+  </aside>
 
-    <div class="region-label contact" data-region="silvarion" style="left:15%;top:23%"><strong>실바리온</strong><span class="meta" id="rp-silvarion"></span></div>
-    <div class="region-label contact" data-region="kardin" style="left:43%;top:18%"><strong>카르딘</strong><span class="meta" id="rp-kardin"></span></div>
-    <div class="region-label contact" data-region="serakan" style="left:81%;top:43%"><strong>세라칸</strong><span class="meta" id="rp-serakan"></span></div>
-    <div class="region-label contact active" data-region="nereia" style="left:46%;top:86%"><strong>네레이아</strong><span class="meta" id="rp-nereia"></span></div>
-    <div class="region-label" data-region="solark" style="left:16%;top:82%"><strong id="solarkName">???</strong><span class="meta" id="rp-solark"></span></div>
-    <div class="region-label" data-region="dravas" style="left:84%;top:82%"><strong id="dravasName">???</strong><span class="meta" id="rp-dravas"></span></div>
-    <div class="region-label" data-region="lumera" style="left:86%;top:15%"><strong id="lumeraName">???</strong><span class="meta" id="rp-lumera"></span></div>
-    <div class="region-label active" data-region="arkea" style="left:46%;top:50%"><strong>아르케아</strong><span class="meta">감나무뜰에서 시작</span></div>
+  <div id="crosshair" class="crosshair"><span></span></div>
+  <div id="targetHint" class="target-hint glass">가까이 가면 상호작용할 수 있습니다</div>
 
-    <div id="fogSolark" class="fog" style="left:16%;top:80%;width:260px;height:180px"><span>?</span></div>
-    <div id="fogDravas" class="fog" style="left:84%;top:80%;width:280px;height:190px"><span>?</span></div>
-    <div id="fogLumera" class="fog" style="left:86%;top:14%;width:250px;height:170px"><span>?</span></div>
+  <section class="character-card glass">
+    <div class="avatar">영</div>
+    <div class="character-meta">
+      <strong>영하</strong>
+      <span id="playerState">직접 조작 중</span>
+    </div>
+    <div class="meters">
+      <i class="hp"></i><i class="energy"></i>
+    </div>
+  </section>
 
-    <div class="route" id="rk"></div><div class="route" id="rs"></div><div class="route water" id="rn"></div>
-    <div class="marker" id="mk">🐕<span>카르딘 원정</span></div>
-    <div class="marker" id="ms">🐎<span>세라칸 원정</span></div>
-    <div class="marker" id="mn">⛵<span>네레이아 교역선</span></div>
+  <section class="auto-panel glass">
+    <div class="auto-head">
+      <div><span class="live-dot"></span><b>AUTO</b></div>
+      <span id="autoStatus">수동</span>
+    </div>
+    <div class="auto-modes">
+      <button data-auto="manual" class="auto-btn active">수동</button>
+      <button data-auto="semi" class="auto-btn">반자동</button>
+      <button data-auto="full" class="auto-btn">완전 AUTO</button>
+    </div>
+    <div id="autoTask" class="auto-task">네가 직접 움직입니다.</div>
+  </section>
+
+  <div class="mobile-controls">
+    <div id="joystick" class="joystick"><div id="stick" class="stick"></div></div>
+    <div class="action-cluster">
+      <button id="interactBtn" class="action big">대화</button>
+      <button id="runBtn" class="action">달리기</button>
+      <button id="focusBtn" class="action">추적</button>
+    </div>
   </div>
 
-  <div class="stage local-stage" id="localStage" style="display:none">
-    <svg class="local-svg" viewBox="0 0 900 650">
-      <rect width="900" height="650" fill="#879d6a"/>
-      <path class="local-forest" d="M0,0 H900 V150 C720,175 610,145 490,168 C340,196 180,171 0,210 Z"/>
-      <path class="local-hill" d="M60,115 C150,65 270,80 340,145 C255,165 182,174 83,167 Z"/>
-      <path class="local-field" d="M85,290 C180,250 292,269 338,333 C278,402 155,410 88,354 Z"/>
-      <path class="local-water" d="M515,400 C590,345 715,351 790,414 C851,465 837,552 774,592 C690,642 557,611 509,540 C479,497 481,440 515,400 Z"/>
-      <path class="local-river" d="M420,0 C438,94 451,166 448,236 C444,326 498,359 559,405"/>
-      <path class="local-road" d="M389,280 C330,300 286,319 240,340"/>
-      <path class="local-road" d="M405,294 C443,325 469,350 490,381"/>
-      <path class="local-road" d="M401,266 C394,224 390,194 382,160"/>
-      <path class="local-road" d="M421,305 C460,330 500,356 549,383"/>
-    </svg>
-    <div class="local-title" style="left:42%;top:9%">북부 산자락</div>
-    <div class="local-title" style="left:20%;top:51%">서부 목초지</div>
-    <div class="local-title" style="left:72%;top:82%">큰물</div>
-    <button class="settle capital" data-settle="감나무뜰" style="left:44%;top:44%">🌳<span class="popdot" id="sp-감나무뜰"></span></button>
-    <button class="settle" data-settle="북부 숲터" style="left:41%;top:24%">🌲<span class="popdot" id="sp-북부 숲터"></span></button>
-    <button class="settle" data-settle="서부 초원" style="left:27%;top:53%">🌾<span class="popdot" id="sp-서부 초원"></span></button>
-    <button class="settle" data-settle="큰물터" style="left:64%;top:68%">⚓<span class="popdot" id="sp-큰물터"></span></button>
-    <button class="settle" data-settle="교역터" style="left:51%;top:56%">📦<span class="popdot" id="sp-교역터"></span></button>
+  <div id="dialogue" class="dialogue hidden">
+    <div class="dialogue-inner glass">
+      <div class="speaker-row"><div id="speakerAvatar" class="speaker-avatar">명</div><div><span id="speakerRole">조언자</span><b id="speakerName">이명자</b></div></div>
+      <p id="dialogueText">이 세계에서 우리가 가진 건 사람과 시간뿐이야. 먼저 불씨부터 살리자.</p>
+      <div id="choices" class="choices"></div>
+    </div>
   </div>
 
-  <div class="stage village-stage" id="villageStage" style="display:none">
-    <canvas id="villageCanvas" width="900" height="650"></canvas>
-    <div class="village-top"><b id="villageName">감나무뜰</b><span id="villageMeta"></span></div>
-    <div class="village-legend">● 사람 · 🏠 주거 · ▣ 창고 · ⚒ 작업장 · 🌾 농장 · 🐾 축사</div>
+  <div id="eventToast" class="event-toast glass hidden"></div>
+
+  <div id="menu" class="sheet hidden">
+    <div class="sheet-card glass">
+      <div class="sheet-top"><div><span>WORLD</span><b>세계 현황</b></div><button id="closeMenu" class="icon-btn">×</button></div>
+      <div class="stats">
+        <div><span>세계 인구</span><b>300</b></div>
+        <div><span>아르케아</span><b>30</b></div>
+        <div><span>미확인 인구</span><b>270</b></div>
+        <div><span>발견 권역</span><b>1 / 8</b></div>
+      </div>
+      <div class="menu-section">
+        <span>진행 원칙</span>
+        <p>시간은 사건을 만들고, 사건은 사람의 선택을 만들며, 선택은 역사가 됩니다.</p>
+      </div>
+      <button id="resetBtn" class="danger">세계력 0년으로 초기화</button>
+    </div>
   </div>
 
-  <div class="map-tools">
-    <button class="btn" onclick="zoomMap(.18)">＋</button>
-    <button class="btn" onclick="zoomMap(-.18)">−</button>
-    <button class="btn" onclick="resetMapView()">⌂</button>
-  </div>
-  <div id="mapHelp" class="map-help">월드맵 · 드래그/확대 가능</div>
-</div>
-</div>
+  <div class="desktop-help glass">WASD 이동 · Shift 달리기 · E 대화 · 마우스 드래그 시점</div>
 
-<div>
-<div class="panel">
-<h2>👥 아르케아 현황</h2>
-<div class="stats">
-<div class="stat"><b id="pop">0</b><span>총인구</span></div>
-<div class="stat"><b id="adult">0</b><span>성인</span></div>
-<div class="stat"><b id="children">0</b><span>아이</span></div>
-<div class="stat"><b id="outsider">0</b><span>장기체류 외부인</span></div>
-</div>
-</div>
-<div class="panel section-gap">
-<h2>🧠 자유의지 엔진</h2>
-<div class="objective">성격 + 능력 + 욕구 + 관계 + 환경 → 행동 선택</div>
-<div class="small" style="margin-top:5px">직업·이주·학습·친밀관계·건설은 강제 배정이 아니라 반복 행동의 결과로 생긴다.</div>
-</div>
-<div class="panel section-gap">
-<h2>🏘 현재 마을</h2>
-<div id="activeVillageSummary" class="small"></div>
-<button class="btn blue" style="width:100%;margin-top:8px" onclick="switchMap('village')">현재 마을 확대</button>
-</div>
-</div>
-</section>
-
-<section class="panel section-gap">
-<div class="tabs">
-<button class="btn primary active" onclick="openTab('overview',this)">현황</button>
-<button class="btn" onclick="openTab('npcs',this)">주민</button>
-<button class="btn" onclick="openTab('buildings',this)">건물</button>
-<button class="btn" onclick="openTab('settlements',this)">정착지</button>
-<button class="btn" onclick="openTab('missions',this)">원정</button>
-<button class="btn" onclick="openTab('tech',this)">기술</button>
-<button class="btn" onclick="openTab('regions',this)">외부 문명</button>
-<button class="btn" onclick="openTab('history',this)">연대기</button>
-</div>
-
-<div id="tab-overview" class="tabpage show">
-<div class="grid section-gap">
-<div><h2>📰 최근 사건</h2><div class="log" id="log"></div></div>
-<div><h2>🎮 시간·AUTO·명령</h2>
-<div class="controls">
-<button class="btn" onclick="advance(7)">＋7일</button>
-<button class="btn" onclick="advance(30)">▶ 1개월</button>
-<button class="btn primary" onclick="advanceYear()">⏩ 1년</button>
-<button class="btn blue" id="autoBtn" onclick="toggleAuto()">AUTO 시작</button>
-<button class="btn" onclick="focusTech()">🛠 기술 집중</button>
-<button class="btn" onclick="saveGame(true)">💾 저장</button>
-</div>
-<div class="command"><input id="cmd" placeholder="예: 감나무뜰 확대 / 기술 우선 / 1년 진행"><button class="btn primary" onclick="runCommand()">실행</button></div>
-<button class="btn red" style="width:100%;margin-top:8px" onclick="resetGame()">초기화</button>
-<div class="small" style="margin-top:7px">마을 확대 상태에서는 주민들이 실제로 건물 사이를 이동한다. 중요 사건은 AUTO를 멈춘다.</div>
-</div>
-</div>
-</div>
-
-<div id="tab-npcs" class="tabpage"><div id="npcList" class="npc-list section-gap"></div></div>
-<div id="tab-buildings" class="tabpage"><div id="buildingList" class="building-list section-gap"></div></div>
-<div id="tab-settlements" class="tabpage"><div id="settleList" class="section-gap"></div></div>
-<div id="tab-missions" class="tabpage"><div id="missions" class="section-gap"></div></div>
-<div id="tab-tech" class="tabpage"><div class="techgrid section-gap" id="techgrid"></div></div>
-<div id="tab-regions" class="tabpage"><div id="regionList" class="section-gap"></div></div>
-<div id="tab-history" class="tabpage"><div id="history" class="section-gap"></div></div>
-</section>
-</main>
-
-<div class="modal" id="infoModal"><div class="sheet">
-<h3 id="infoTitle">상세</h3><div id="infoBody"></div>
-<button class="btn" style="width:100%;margin-top:10px" onclick="closeInfo()">닫기</button>
-</div></div>
-
-<div class="modal" id="eventModal"><div class="sheet">
-<div class="alertTitle">⚠️ 중요 사건 — AUTO 정지</div>
-<h3 id="eventTitle" style="margin-top:8px"></h3>
-<div id="eventBody" class="small"></div><div id="eventChoices" style="margin-top:9px"></div>
-</div></div>
-
-<div class="modal" id="yearModal"><div class="sheet">
-<h3>📖 지난 1년의 역사</h3><div id="yearBody"></div>
-<button class="btn primary" style="width:100%;margin-top:10px" onclick="closeYear()">계속</button>
-</div></div>
-
-<footer>《문명》 v0.6 · 전체화면 지도 + 인간 자유의지 + 살아있는 마을</footer>
-
-<script>
-const G=['F','E','D','C','B','A','S','SS','SSS'];
-const REGION_NAMES={arkea:'아르케아',kardin:'카르딘',serakan:'세라칸',silvarion:'실바리온',nereia:'네레이아',solark:'솔라크',dravas:'드라바스',lumera:'루메라'};
-const MP={gam:{x:46,y:50},west:{x:39,y:53},big:{x:52,y:57},kar:{x:43,y:18},ser:{x:81,y:43},ner:{x:46,y:86}};
-const SETTLE_INFO={
- '감나무뜰':{role:'문명의 시초 · 농업·기록·교육·제작',rep:'마루'},
- '북부 숲터':{role:'사냥·목재·약초·경계',rep:'한결'},
- '서부 초원':{role:'목축·승용동물·교역',rep:'해온'},
- '큰물터':{role:'어업·선박·수운',rep:'가람'},
- '교역터':{role:'교통·상업·외부인 정착',rep:'응결'}
-};
-const FIRST_NAMES=['하루','이슬','봄이','아리','도담','누리','푸름','나래','새봄','다온','여울','보리','미르','모아','온새','가람','해온','마루','한결','응결','다솜','아람','이든','솔','나라','태람','하람','라온','세온','윤슬','가온','마리','노을','여름','아라','비오','해솔','나루','로운','시온','별','단비','하늬','초롱','미리','다래','새론','해든','모람','이룸','가람2','바다','새길','고운','온유','마음','슬기','누림','한빛','해람'];
-const TRAITS=['호기심','신중함','사교성','성실함','모험심','돌봄성','독립성'];
-const SKILLS=['농업','목공','금속','항해','목축','사냥','기록','돌봄','교섭','건축'];
-const ACTION_NAMES={work:'일함',learn:'배움',social:'교류',rest:'휴식',build:'건설',care:'돌봄',migrate:'이주 검토',explore:'탐색'};
-const BUILDING_TYPES={
- house:{name:'주거',icon:'🏠',cap:5},
- storage:{name:'공동창고',icon:'▣',cap:0},
- workshop:{name:'작업장',icon:'⚒',cap:0},
- farm:{name:'농장',icon:'🌾',cap:0},
- pen:{name:'축사',icon:'🐾',cap:0},
- hall:{name:'공동회관',icon:'🏛',cap:0},
- dock:{name:'선착장',icon:'⚓',cap:0},
- market:{name:'교역장',icon:'📦',cap:0},
- clinic:{name:'돌봄소',icon:'✚',cap:0}
-};
-
-const DEFAULT={
- year:6,day:82,pop:70,adult:31,children:39,outsider:2,activeVillage:'감나무뜰',
- settlements:{
-  '감나무뜰':{pop:28,level:'마을'},'북부 숲터':{pop:8,level:'정착지'},'서부 초원':{pop:8,level:'정착지'},
-  '큰물터':{pop:16,level:'마을'},'교역터':{pop:10,level:'정착지'}
- },
- animals:{guard:9,trail:7,boar:6,mount:42},
- tech:{
-  농업:{g:3,p:48},금속가공:{g:1,p:78},목공:{g:2,p:64},목축:{g:2,p:72},
-  해양선박:{g:2,p:31},판재선:{g:1,p:52},염장:{g:2,p:45},수상매듭:{g:2,p:61},기록:{g:1,p:69},동물운용:{g:2,p:74}
- },
- missions:[
-  {id:'k',name:'카르딘 기술연수',from:'gam',to:'kar',p:62,r:.28,d:1,icon:'🐕'},
-  {id:'s',name:'세라칸 목축교류',from:'west',to:'ser',p:45,r:.25,d:1,icon:'🐎'},
-  {id:'n',name:'네레이아 교역선',from:'big',to:'ner',p:74,r:.34,d:-1,icon:'⛵'}
- ],
- regions:{
-  kardin:{pop:54,tech:2.0,growth:.021,contact:true,relation:68,special:'금속·광산·산악로',discovered:true},
-  serakan:{pop:69,tech:1.8,growth:.028,contact:true,relation:61,special:'목축·선택번식·이동생활',discovered:true},
-  silvarion:{pop:58,tech:1.7,growth:.024,contact:true,relation:66,special:'수목·숲·목재 분류',discovered:true},
-  nereia:{pop:91,tech:2.3,growth:.026,contact:true,relation:72,special:'항해·선박·염장',discovered:true},
-  solark:{pop:37,tech:1.5,growth:.020,contact:false,relation:0,special:'미확인',discovered:false},
-  dravas:{pop:49,tech:1.6,growth:.019,contact:false,relation:0,special:'미확인',discovered:false},
-  lumera:{pop:42,tech:1.5,growth:.022,contact:false,relation:0,special:'미확인',discovered:false}
- },
- logs:[['네레이아 외곽 대섬과 첫 해외교역 성공','6년 82일'],['판재선 건조 기초 습득','6년 76일'],['아르케아 최초 해외상륙','6년 62일']],
- history:[],npcs:[],villages:{},nextNpcId:1
-};
-
-const clone=x=>JSON.parse(JSON.stringify(x));
-let state=null;
-try{state=JSON.parse(localStorage.getItem('civilization_v05')||'null')}catch(e){}
-if(!state){
- state=clone(DEFAULT);
- let v4=null;try{v4=JSON.parse(localStorage.getItem('civilization_v04')||'null')}catch(e){}
- if(v4){
-   ['year','day','pop','adult','children','outsider','animals','tech','missions','regions','logs','history'].forEach(k=>{if(v4[k]!==undefined)state[k]=clone(v4[k])});
-   if(v4.settlements){
-     Object.entries(v4.settlements).forEach(([n,v])=>{
-       if(!state.settlements[n])return;
-       if(typeof v==='number')state.settlements[n].pop=v; else state.settlements[n]={...state.settlements[n],...clone(v)};
-     });
-   }
-   state.logs.unshift(['v0.4 진행 데이터를 v0.5로 승계 · 주민 개별 시뮬레이션 생성','시스템']);
- }
- initializeVillagesAndNPCs();
-}
-
-let currentMap='world',mapScale=.68,mapX=0,mapY=0,drag=null,autoTimer=null,eventLock=false,animFrame=null;
-
-function rand(a,b){return a+Math.random()*(b-a)}
-function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
-function normalize(){while(state.day>365){state.day-=365;state.year++}while(state.day<1){state.day+=365;state.year=Math.max(0,state.year-1)}}
-function stamp(){return `${state.year}년 ${state.day}일`}
-function addLog(msg){state.logs.unshift([msg,stamp()]);state.logs=state.logs.slice(0,80)}
-function saveGame(show=false){localStorage.setItem('civilization_v05',JSON.stringify(state));if(show)alert('저장됐어!')}
-function grade(t){return G[Math.max(0,Math.min(G.length-1,t.g))]}
-
-function initializeVillagesAndNPCs(){
- const names=Object.keys(state.settlements);
- names.forEach(n=>{if(!state.villages[n])state.villages[n]={buildings:baseBuildings(n,state.settlements[n].pop),workDone:0,buildProgress:0}});
- let idx=0;
- names.forEach(n=>{
-   const target=state.settlements[n].pop;
-   for(let i=0;i<target;i++)state.npcs.push(makeNpc(n,idx++));
- });
- state.nextNpcId=state.npcs.length+1;
-}
-function baseBuildings(name,pop){
- const b=[];
- const houses=Math.max(2,Math.ceil(pop/5));
- for(let i=0;i<houses;i++)b.push(newBuilding('house',name,i));
- b.push(newBuilding('storage',name,20),newBuilding('workshop',name,21));
- if(name==='감나무뜰'||name==='서부 초원')b.push(newBuilding('farm',name,22),newBuilding('pen',name,23));
- if(name==='큰물터')b.push(newBuilding('dock',name,24));
- if(name==='교역터')b.push(newBuilding('market',name,25));
- if(pop>=20)b.push(newBuilding('hall',name,26));
- if(pop>=35)b.push(newBuilding('clinic',name,27));
- return b;
-}
-function newBuilding(type,name,seed){
- const angle=(seed*2.37)%6.28,rad=110+(seed%5)*28;
- return {id:`${name}-${type}-${seed}-${Math.floor(Math.random()*9999)}`,type,x:450+Math.cos(angle)*rad+rand(-35,35),y:325+Math.sin(angle)*rad*.72+rand(-25,25),level:1};
-}
-function makeNpc(settlement,index=0){
- const age=index<state.children?Math.floor(rand(0,15)):Math.floor(rand(18,48));
- const traits={};TRAITS.forEach(t=>traits[t]=Math.floor(rand(25,90)));
- const skills={};SKILLS.forEach(s=>skills[s]=Math.floor(rand(0,28)));
- if(settlement==='큰물터'){skills.항해+=25;skills.목공+=8}
- if(settlement==='서부 초원'){skills.목축+=25}
- if(settlement==='북부 숲터'){skills.사냥+=22;skills.목공+=10}
- if(settlement==='교역터'){skills.교섭+=20;skills.기록+=10}
- if(settlement==='감나무뜰'){skills.농업+=18;skills.기록+=10}
- const id=state.nextNpcId++;
- const name=FIRST_NAMES[(id-1)%FIRST_NAMES.length]+(id>FIRST_NAMES.length?Math.ceil(id/FIRST_NAMES.length):'');
- return {id,name,age,settlement,traits,skills,job:null,jobXP:{},action:'rest',target:null,
-   energy:Math.floor(rand(55,95)),hunger:Math.floor(rand(15,55)),social:Math.floor(rand(25,75)),curiosity:Math.floor(rand(35,85)),
-   relations:{},x:450+rand(-100,100),y:325+rand(-80,80),tx:450,ty:325,important:id<=8};
-}
-function adultNpc(n){return n.age>=16}
-function activeNPCs(){return state.npcs.filter(n=>n.settlement===state.activeVillage)}
-function village(name=state.activeVillage){return state.villages[name]}
-
-function chooseAction(n){
- if(n.age<6)return Math.random()<.55?'rest':'social';
- const v=village(n.settlement),crowd=state.settlements[n.settlement].pop/Math.max(1,housingCapacity(n.settlement));
- const scores={
-   rest:(100-n.energy)*1.35+n.hunger*.25,
-   work:n.energy*.35+(n.traits.성실함||50)*.65+bestSkill(n).value*.5,
-   learn:n.curiosity*.75+(n.traits.호기심||50)*.7,
-   social:n.social*.8+(n.traits.사교성||50)*.65,
-   care:(n.traits.돌봄성||50)*.65+(n.skills.돌봄||0)*.6,
-   build:crowd>1?55+crowd*25:15+(n.skills.건축||0)*.8,
-   migrate:crowd>1.15?45+crowd*18:5
- };
- if(n.energy<30){scores.rest+=60;scores.work-=40;scores.build-=40}
- if(n.age<14){scores.work*=.3;scores.build*=.2;scores.learn+=25;scores.social+=20}
- const entries=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
- const top=entries.slice(0,3),sum=top.reduce((s,x)=>s+Math.max(1,x[1]),0);
- let r=Math.random()*sum;
- for(const [a,sc] of top){r-=Math.max(1,sc);if(r<=0)return a}
- return entries[0][0];
-}
-function bestSkill(n){
- let best=['농업',n.skills.농업||0];
- Object.entries(n.skills).forEach(([k,v])=>{if(v>best[1])best=[k,v]});
- return {name:best[0],value:best[1]};
-}
-function relevantBuilding(n,action){
- const bs=village(n.settlement).buildings;
- const pref=action==='learn'?['workshop','hall']:action==='social'?['hall','market','storage']:action==='care'?['clinic','house']:action==='build'?['workshop','storage']:
-             action==='work'?workBuildingOrder(n):['house'];
- for(const t of pref){const x=bs.find(b=>b.type===t);if(x)return x}
- return bs[0];
-}
-function workBuildingOrder(n){
- const s=bestSkill(n).name;
- if(['농업'].includes(s))return ['farm','storage','workshop'];
- if(['목축'].includes(s))return ['pen','farm','storage'];
- if(['항해'].includes(s))return ['dock','workshop','storage'];
- if(['교섭'].includes(s))return ['market','hall','storage'];
- if(['돌봄'].includes(s))return ['clinic','hall','house'];
- return ['workshop','storage','farm'];
-}
-function doNpcStep(n){
- const a=chooseAction(n);n.action=a;
- const b=relevantBuilding(n,a);if(b){n.target=b.id;n.tx=b.x+rand(-18,18);n.ty=b.y+rand(-18,18)}
- if(a==='rest'){n.energy=Math.min(100,n.energy+20);n.hunger=Math.max(0,n.hunger-8)}
- if(a==='work'){
-   n.energy=Math.max(0,n.energy-10);n.hunger=Math.min(100,n.hunger+8);
-   const skill=workSkillForBuilding(b?.type,n);n.skills[skill]=Math.min(100,(n.skills[skill]||0)+rand(.4,1.2));
-   n.jobXP[skill]=(n.jobXP[skill]||0)+1;village(n.settlement).workDone++;
-   maybeAssignJob(n,skill);
- }
- if(a==='learn'){
-   n.energy=Math.max(0,n.energy-5);n.curiosity=Math.max(10,n.curiosity-7);
-   const skill=pick(SKILLS);n.skills[skill]=Math.min(100,(n.skills[skill]||0)+rand(.6,1.5));
- }
- if(a==='social'){n.social=Math.max(10,n.social-12);socialize(n)}
- if(a==='care'){n.energy=Math.max(0,n.energy-7);n.skills.돌봄=Math.min(100,n.skills.돌봄+rand(.4,1))}
- if(a==='build'){n.energy=Math.max(0,n.energy-12);n.skills.건축=Math.min(100,n.skills.건축+rand(.4,1.1));village(n.settlement).buildProgress+=1+(n.skills.건축/100)}
- if(a==='migrate')attemptMigration(n);
- n.energy=Math.max(0,n.energy-rand(0,2));n.hunger=Math.min(100,n.hunger+rand(1,3));n.social=Math.min(100,n.social+rand(1,3));n.curiosity=Math.min(100,n.curiosity+rand(0,2));
-}
-function workSkillForBuilding(type,n){
- return {farm:'농업',pen:'목축',dock:'항해',market:'교섭',clinic:'돌봄',workshop:bestSkill(n).name,storage:'기록',hall:'교섭',house:'건축'}[type]||bestSkill(n).name;
-}
-function maybeAssignJob(n,skill){
- const xp=n.jobXP[skill]||0;
- if(!n.job&&xp>=10){
-   n.job=skill+' 담당';
-   addLog(`👤 ${n.name}이(가) 반복된 역할 끝에 자연스럽게 ‘${n.job}’으로 불리기 시작`);
- }
- if(n.job&&xp>=28&&Math.random()<.02){addLog(`⭐ ${n.name}의 ${skill} 숙련이 마을에서 눈에 띄는 수준으로 성장`)}
-}
-function socialize(n){
- const others=state.npcs.filter(x=>x.settlement===n.settlement&&x.id!==n.id&&Math.abs(x.age-n.age)<20);
- if(!others.length)return;
- const o=pick(others),key=String(o.id),old=n.relations[key]||0;
- n.relations[key]=Math.min(100,old+rand(1,4));
- o.relations[String(n.id)]=Math.min(100,(o.relations[String(n.id)]||0)+rand(.5,2.5));
- if(old<70&&n.relations[key]>=70&&adultNpc(n)&&adultNpc(o))addLog(`❤️ ${n.name}와 ${o.name} 사이의 친밀도가 크게 높아짐`);
-}
-function attemptMigration(n){
- if(n.age<16||Math.random()>.16)return;
- const options=Object.keys(state.settlements).filter(x=>x!==n.settlement);
- let target=options.sort((a,b)=>settlementAttraction(b,n)-settlementAttraction(a,n))[0];
- if(settlementAttraction(target,n)>settlementAttraction(n.settlement,n)+10){
-   state.settlements[n.settlement].pop--;state.settlements[target].pop++;const from=n.settlement;n.settlement=target;
-   addLog(`🧭 ${n.name}이(가) ${from}에서 ${target}(으)로 자발적으로 이주`);
- }
-}
-function settlementAttraction(name,n){
- const v=state.villages[name],cap=housingCapacity(name),pop=state.settlements[name].pop;
- let s=(cap-pop)*2;
- if(name==='큰물터')s+=(n.skills.항해||0)*.4;
- if(name==='서부 초원')s+=(n.skills.목축||0)*.4;
- if(name==='북부 숲터')s+=(n.skills.사냥||0)*.4;
- if(name==='교역터')s+=(n.skills.교섭||0)*.4;
- if(name==='감나무뜰')s+=(n.skills.농업||0)*.25+(n.skills.기록||0)*.25;
- return s;
-}
-function housingCapacity(name){
- return state.villages[name].buildings.filter(b=>b.type==='house').reduce((s,b)=>s+BUILDING_TYPES.house.cap*b.level,0);
-}
-function villageBuildTick(name){
- const v=state.villages[name],pop=state.settlements[name].pop,cap=housingCapacity(name);
- if(pop>cap&&v.buildProgress>=7){
-   const b=newBuilding('house',name,v.buildings.length+30);v.buildings.push(b);v.buildProgress-=7;
-   addLog(`🏠 ${name}: 주민들이 주거 부족을 해결하려 새 집을 완성`);
- }
- if(pop>=20&&!v.buildings.some(b=>b.type==='hall')&&v.buildProgress>=10){
-   v.buildings.push(newBuilding('hall',name,80));v.buildProgress-=10;addLog(`🏛 ${name}: 공동회관이 주민 주도로 세워짐`)
- }
- if(pop>=35&&!v.buildings.some(b=>b.type==='clinic')&&v.buildProgress>=12){
-   v.buildings.push(newBuilding('clinic',name,81));v.buildProgress-=12;addLog(`✚ ${name}: 돌봄소가 생김`)
- }
- if(pop>=45&&!v.buildings.some(b=>b.type==='market')&&v.buildProgress>=12){
-   v.buildings.push(newBuilding('market',name,82));v.buildProgress-=12;addLog(`📦 ${name}: 상설 교역장이 생김`)
- }
- updateSettlementLevel(name);
-}
-function updateSettlementLevel(name){
- const s=state.settlements[name],p=s.pop,old=s.level;
- s.level=p>=120?'도시':p>=70?'읍':p>=25?'마을':'정착지';
- if(old!==s.level)addLog(`🏘 ${name}이(가) ${old}에서 ${s.level}(으)로 성장`)
-}
-function npcSimulation(days){
- const steps=Math.max(1,Math.min(72,Math.ceil(days/3)));
- for(let i=0;i<steps;i++){
-   const sample=state.npcs.length<=220?state.npcs:state.npcs.filter((_,ix)=>ix%Math.ceil(state.npcs.length/220)===0);
-   sample.forEach(doNpcStep);
-   Object.keys(state.villages).forEach(villageBuildTick);
- }
-}
-
-function techTick(days){
- const mult=days/30;
- Object.entries(state.tech).forEach(([name,t])=>{
-  let gain=(2.2+Math.random()*3.8)*mult;
-  const skilled=state.npcs.filter(n=>(n.skills[name.replace('가공','')]||0)>55).length;
-  gain*=1+Math.min(.35,skilled*.01);
-  if(['해양선박','판재선','금속가공','동물운용'].includes(name))gain*=1.28;
-  t.p+=gain;while(t.p>=100&&t.g<G.length-1){t.p-=100;t.g++;addLog(`${name} 기술이 ${grade(t)} 단계로 상승`)}
- })
-}
-function missionTick(days){
- state.missions.forEach(m=>{m.p+=days*m.r*m.d;if(m.p>=100){m.p=100;m.d=-1;addLog(`${m.name}: 목적지 도착 · 현지 학습 시작`)}
- else if(m.p<=0){m.p=0;m.d=1;addLog(`${m.name}: 아르케아 귀환 · 복귀교육`);const k=m.id==='k'?'금속가공':m.id==='s'?'목축':'해양선박';state.tech[k].p+=12}})
-}
-function populationTick(days){
- const months=Math.floor(days/30);let births=0,imm=0,deaths=0;
- for(let m=0;m<months;m++){if(Math.random()<.40)births++;if(Math.random()<.14)imm++;if(Math.random()<.022&&state.pop>25)deaths++}
- if(days>=365){births+=Math.max(1,Math.round(state.pop*.03));if(Math.random()<.65)imm+=1+Math.floor(Math.random()*3)}
- for(let i=0;i<births;i++){
-   const settle=weightedSettlement();state.children++;state.pop++;state.settlements[settle].pop++;state.npcs.push(makeNpc(settle,0))
- }
- if(births)addLog(`👶 출생 ${births}명 · 아이들도 개별 주민으로 추가`);
- for(let i=0;i<imm;i++){
-   const settle=Math.random()<.55?'교역터':weightedSettlement();state.adult++;state.pop++;state.settlements[settle].pop++;const n=makeNpc(settle,999);n.age=Math.floor(rand(18,42));n.skills[pick(SKILLS)]+=25;state.npcs.push(n)
- }
- if(imm)addLog(`🧳 외부인 ${imm}명 자발적 정착 · 개별 기술과 성격을 가진 주민으로 편입`);
- for(let i=0;i<deaths;i++){
-   const adults=state.npcs.filter(adultNpc);if(!adults.length)break;const n=pick(adults),ix=state.npcs.findIndex(x=>x.id===n.id);
-   if(ix>=0){state.npcs.splice(ix,1);state.adult=Math.max(0,state.adult-1);state.pop--;state.settlements[n.settlement].pop--;addLog(`⚱ ${n.name} 사망 · 온새 계통이 장례를 맡음`)}
- }
-}
-function weightedSettlement(){
- const arr=Object.keys(state.settlements),weights=arr.map(n=>Math.max(1,housingCapacity(n)-state.settlements[n].pop+5));
- let sum=weights.reduce((a,b)=>a+b,0),r=Math.random()*sum;for(let i=0;i<arr.length;i++){r-=weights[i];if(r<=0)return arr[i]}return arr[0]
-}
-function regionTick(days){
- const years=days/365;Object.values(state.regions).forEach(r=>{const c=Math.floor(r.pop*r.growth*years+Math.random()*1.2);if(c>0)r.pop+=c;r.tech+=(.03+Math.random()*.06)*years})
-}
-function ageTick(days){
- if(days<365)return;state.npcs.forEach(n=>n.age+=Math.floor(days/365));
- const newAdults=state.npcs.filter(n=>n.age>=16&&n.age-Math.floor(days/365)<16).length;
- if(newAdults){state.children=Math.max(0,state.children-newAdults);state.adult+=newAdults;addLog(`🌱 ${newAdults}명의 2세대가 성년기에 진입`)}
-}
-function advance(days,fromAuto=false){
- if(eventLock)return;const startYear=state.year;
- state.day+=days;normalize();npcSimulation(days);missionTick(days);techTick(days);populationTick(days);regionTick(days);ageTick(days);
- if(state.year>startYear){for(let y=startYear;y<state.year;y++)chronicle(y+1)}
- syncCounts();addLog(`${days}일 경과 · 주민과 세계가 자율 진행`);saveGame();render();
- if(fromAuto&&eventLock)stopAuto()
-}
-function syncCounts(){
- state.pop=state.npcs.length;
- state.children=state.npcs.filter(n=>n.age<16).length;
- state.adult=state.pop-state.children;
- Object.keys(state.settlements).forEach(name=>state.settlements[name].pop=state.npcs.filter(n=>n.settlement===name).length);
-}
-function advanceYear(){
- if(eventLock)return;const s={pop:state.pop,jobs:state.npcs.filter(n=>n.job).length,build:Object.values(state.villages).reduce((a,v)=>a+v.buildings.length,0)};
- const start=state.year;advance(365);showYear({title:`세계력 ${start}년 → ${state.year}년`,pop:`인구 ${s.pop} → ${state.pop}`,jobs:`자연발생 직업 보유자 ${s.jobs} → ${state.npcs.filter(n=>n.job).length}`,build:`건물 ${s.build} → ${Object.values(state.villages).reduce((a,v)=>a+v.buildings.length,0)}`,events:state.logs.slice(0,8).map(x=>x[0])})
-}
-function chronicle(y){
- const jobs=state.npcs.filter(n=>n.job).length;
- state.history.unshift({when:`${y}년`,text:`아르케아 인구 ${state.pop}명. 자연발생 직업 ${jobs}명. ${state.activeVillage}을 포함한 정착지들이 주민 행동에 따라 성장했다.`});state.history=state.history.slice(0,35)
-}
-function focusTech(){Object.values(state.tech).forEach(t=>t.p+=5);state.npcs.filter(adultNpc).slice(0,20).forEach(n=>n.curiosity=Math.min(100,n.curiosity+10));addLog('기술 우선 정책 강화 · 학습 욕구와 작업장 지원 상승');saveGame();render()}
-function toggleAuto(){if(autoTimer){stopAuto();return}autoBtn.textContent='AUTO 정지';autoBtn.classList.add('active');autoTimer=setInterval(()=>advance(30,true),1100)}
-function stopAuto(){if(autoTimer){clearInterval(autoTimer);autoTimer=null}autoBtn.textContent='AUTO 시작';autoBtn.classList.remove('active')}
-function runCommand(){
- const v=cmd.value.trim();if(!v)return;
- if(v.includes('1년')||v.includes('일년'))advanceYear();
- else if(v.includes('1개월')||v.includes('한 달')||v.includes('한달'))advance(30);
- else if(v.includes('기술'))focusTech();
- else if(v.includes('감나무뜰')){state.activeVillage='감나무뜰';switchMap('village')}
- else if(v.includes('큰물터')){state.activeVillage='큰물터';switchMap('village')}
- else if(v.includes('서부')){state.activeVillage='서부 초원';switchMap('village')}
- else if(v.includes('북부')){state.activeVillage='북부 숲터';switchMap('village')}
- else if(v.includes('교역터')){state.activeVillage='교역터';switchMap('village')}
- else {addLog(`관측자 명령 기록: ${v}`);render()}
- cmd.value='';saveGame()
-}
-
-
-function toggleFullMap(on){
- const panel=document.getElementById('mapPanel');
- panel.classList.toggle('map-fullscreen',!!on);
- document.body.classList.toggle('map-lock',!!on);
- setTimeout(()=>resetMapView(),60);
-}
-
-/* MAP */
-function switchMap(type){
- currentMap=type;worldStage.style.display=type==='world'?'block':'none';localStage.style.display=type==='local'?'block':'none';villageStage.style.display=type==='village'?'block':'none';
- [worldBtn,localBtn,villageBtn].forEach(b=>b.classList.remove('active','primary'));
- (type==='world'?worldBtn:type==='local'?localBtn:villageBtn).classList.add('active','primary');
- mapHelp.textContent=type==='world'?'월드맵 · 권역과 원정':type==='local'?'아르케아 지역지도 · 정착지를 누르면 마을 확대':'마을 확대 · 건물과 주민이 실제로 움직임';
- resetMapView();if(type==='village')startVillageAnimation()
-}
-function stage(){return currentMap==='world'?worldStage:currentMap==='local'?localStage:villageStage}
-function stageSize(){return currentMap==='world'?{w:1200,h:760}:{w:900,h:650}}
-function applyMap(){stage().style.transform=`translate(${mapX}px,${mapY}px) scale(${mapScale})`}
-function resetMapView(){const sz=stageSize(),w=mapShell.clientWidth,h=mapShell.clientHeight;mapScale=Math.min(w/sz.w,h/sz.h)*1.03;mapX=(w-sz.w*mapScale)/2;mapY=(h-sz.h*mapScale)/2;applyMap()}
-function zoomMap(d){const old=mapScale;mapScale=Math.max(.38,Math.min(1.7,mapScale+d));const cx=mapShell.clientWidth/2,cy=mapShell.clientHeight/2;mapX=cx-(cx-mapX)*(mapScale/old);mapY=cy-(cy-mapY)*(mapScale/old);applyMap()}
-function bindDrag(el){el.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,mx:mapX,my:mapY};el.setPointerCapture(e.pointerId)});el.addEventListener('pointermove',e=>{if(!drag)return;mapX=drag.mx+(e.clientX-drag.x);mapY=drag.my+(e.clientY-drag.y);applyMap()});el.addEventListener('pointerup',()=>drag=null);el.addEventListener('pointercancel',()=>drag=null)}
-bindDrag(worldStage);bindDrag(localStage);bindDrag(villageStage);
-function line(el,a,b){const dx=b.x-a.x,dy=b.y-a.y;el.style.left=a.x+'%';el.style.top=a.y+'%';el.style.width=Math.hypot(dx,dy)+'%';el.style.transform=`rotate(${Math.atan2(dy,dx)*180/Math.PI}deg)`}
-function marker(el,m){const a=MP[m.from],b=MP[m.to],q=m.p/100;el.style.left=(a.x+(b.x-a.x)*q)+'%';el.style.top=(a.y+(b.y-a.y)*q)+'%'}
-
-/* VILLAGE CANVAS */
-const canvas=document.getElementById('villageCanvas'),ctx=canvas.getContext('2d');
-function buildingColor(type){return {house:'#9e7b55',storage:'#7e694c',workshop:'#736057',farm:'#a69d55',pen:'#85704d',hall:'#8a7558',dock:'#667d84',market:'#9c744b',clinic:'#8b806d'}[type]||'#7d6b50'}
-function startVillageAnimation(){
- if(animFrame)cancelAnimationFrame(animFrame);
- const loop=()=>{if(currentMap==='village'){animateNPCPositions();drawVillage();animFrame=requestAnimationFrame(loop)}};
- loop()
-}
-function animateNPCPositions(){
- activeNPCs().forEach(n=>{n.x+=(n.tx-n.x)*.025;n.y+=(n.ty-n.y)*.025;if(Math.hypot(n.tx-n.x,n.ty-n.y)<4){const b=relevantBuilding(n,n.action);if(b){n.tx=b.x+rand(-15,15);n.ty=b.y+rand(-15,15)}}})
-}
-function drawVillage(){
- ctx.clearRect(0,0,900,650);
- ctx.fillStyle='#8aa16a';ctx.fillRect(0,0,900,650);
- ctx.fillStyle='#78925d';ctx.beginPath();ctx.arc(120,100,150,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#a8a65c';ctx.fillRect(55,405,230,125);
- if(state.activeVillage==='큰물터'){ctx.fillStyle='#6d9bab';ctx.beginPath();ctx.ellipse(720,480,210,150,0,0,Math.PI*2);ctx.fill()}
- ctx.strokeStyle='#b9a276';ctx.lineWidth=9;ctx.setLineDash([13,8]);ctx.beginPath();ctx.moveTo(120,330);ctx.lineTo(780,330);ctx.stroke();ctx.setLineDash([]);
- const v=village();
- v.buildings.forEach(b=>{
-   ctx.fillStyle=buildingColor(b.type);ctx.strokeStyle='#3c3022';ctx.lineWidth=2;
-   if(b.type==='farm'){ctx.fillRect(b.x-26,b.y-20,52,40);ctx.strokeRect(b.x-26,b.y-20,52,40)}
-   else{ctx.fillRect(b.x-18,b.y-15,36,30);ctx.strokeRect(b.x-18,b.y-15,36,30)}
-   ctx.fillStyle='#f7e2aa';ctx.font='11px -apple-system';ctx.textAlign='center';ctx.fillText(BUILDING_TYPES[b.type].icon,b.x,b.y+4)
- });
- activeNPCs().forEach(n=>{
-   ctx.beginPath();ctx.arc(n.x,n.y,n.important?5.5:4,0,Math.PI*2);
-   ctx.fillStyle=n.age<16?'#f0d88c':n.important?'#f5a96c':'#d9e7de';ctx.fill();ctx.strokeStyle='#28312d';ctx.lineWidth=1;ctx.stroke();
- });
-}
-canvas.addEventListener('click',e=>{
- const rect=canvas.getBoundingClientRect(),sx=900/rect.width,sy=650/rect.height,x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
- const n=activeNPCs().sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
- if(n&&Math.hypot(n.x-x,n.y-y)<22)openNpc(n.id)
-});
-
-/* DETAILS */
-function openSettlement(name){state.activeVillage=name;saveGame();switchMap('village');render()}
-function openNpc(id){
- const n=state.npcs.find(x=>x.id===id);if(!n)return;const bs=bestSkill(n);
- infoTitle.textContent=`${n.name} · ${n.age}세`;
- const rels=Object.entries(n.relations).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,v])=>{const o=state.npcs.find(x=>x.id==id);return o?`${o.name} ${Math.round(v)}`:''}).filter(Boolean).join(' · ')||'뚜렷한 친밀관계 없음';
- infoBody.innerHTML=`<div class="sheet-grid"><div class="box"><b>거주</b><br>${n.settlement}</div><div class="box"><b>직업</b><br>${n.job||'아직 없음'}</div><div class="box"><b>현재 행동</b><br>${ACTION_NAMES[n.action]||n.action}</div><div class="box"><b>강점</b><br>${bs.name} ${Math.round(bs.value)}</div></div><div class="box" style="margin-top:7px"><b>성격</b><br>${TRAITS.map(t=>`${t} ${n.traits[t]}`).join(' · ')}</div><div class="box" style="margin-top:7px"><b>욕구</b><br>기력 ${Math.round(n.energy)} · 사회욕구 ${Math.round(n.social)} · 호기심 ${Math.round(n.curiosity)}</div><div class="box" style="margin-top:7px"><b>관계</b><br>${rels}</div>`;
- infoModal.classList.add('show')
-}
-function openRegion(id){
- if(id==='arkea'){switchMap('local');return}
- const r=state.regions[id];infoTitle.textContent=r.discovered?REGION_NAMES[id]:'미탐사 권역';
- infoBody.innerHTML=r.discovered?`<div class="sheet-grid"><div class="box"><b>추정 인구</b><br>${r.pop}명</div><div class="box"><b>기술지수</b><br>${r.tech.toFixed(2)}</div><div class="box"><b>접촉</b><br>${r.contact?'예':'아니오'}</div><div class="box"><b>관계</b><br>${r.contact?r.relation+'/100':'알 수 없음'}</div></div><div class="box" style="margin-top:7px">${r.special}</div>`:`<div class="box">아직 정보가 없다.</div>`;
- infoModal.classList.add('show')
-}
-function closeInfo(){infoModal.classList.remove('show')}
-function showYear(y){yearBody.innerHTML=`<div class="historyCard"><b>${y.title}</b><br>${y.pop}</div><div class="historyCard"><b>직업</b><br>${y.jobs}</div><div class="historyCard"><b>건물</b><br>${y.build}</div><div class="historyCard"><b>대표 사건</b><br>• ${y.events.join('<br>• ')}</div>`;yearModal.classList.add('show')}
-function closeYear(){yearModal.classList.remove('show')}
-function openTab(id,btn){document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('show'));document.getElementById('tab-'+id).classList.add('show');document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active','primary'));btn.classList.add('active','primary')}
-
-/* RENDER */
-function render(){
- normalize();syncCounts();
- date.innerHTML=`세계력 ${state.year}년 ${state.day}일<br>아르케아`;
- pop.textContent=state.pop;adult.textContent=state.adult;children.textContent=state.children;outsider.textContent=state.outsider;
- Object.entries(state.settlements).forEach(([n,s])=>{const el=document.getElementById('sp-'+n);if(el)el.textContent=s.pop+'명'});
- Object.entries(state.regions).forEach(([id,r])=>{const el=document.getElementById('rp-'+id);if(el)el.textContent=r.discovered?(r.contact?`접촉 · ${r.pop}명`:'발견 · 미접촉'):'미탐사'});
- [['solark','fogSolark','solarkName'],['dravas','fogDravas','dravasName'],['lumera','fogLumera','lumeraName']].forEach(([id,fid,nid])=>{document.getElementById(fid).style.display=state.regions[id].discovered?'none':'block';document.getElementById(nid).textContent=state.regions[id].discovered?REGION_NAMES[id]:'???'});
- line(rk,MP.gam,MP.kar);line(rs,MP.west,MP.ser);line(rn,MP.big,MP.ner);marker(mk,state.missions[0]);marker(ms,state.missions[1]);marker(mn,state.missions[2]);
- const av=state.activeVillage,v=village(av),avNPC=activeNPCs();
- villageName.textContent=av;villageMeta.textContent=`${state.settlements[av].level} · ${state.settlements[av].pop}명 · 건물 ${v.buildings.length}개`;
- activeVillageSummary.innerHTML=`<b>${av}</b> · ${state.settlements[av].level}<br>주민 ${avNPC.length}명 · 건물 ${v.buildings.length}개 · 주거수용 ${housingCapacity(av)}명<br>${SETTLE_INFO[av].role}`;
- npcList.innerHTML=avNPC.slice().sort((a,b)=>(b.important-a.important)||a.age-b.age).map(n=>`<div class="npc-row" onclick="openNpc(${n.id})"><div><strong>${n.name}</strong> · ${n.age}세<br><span>${n.job||'직업 형성 중'} · ${bestSkill(n).name} ${Math.round(bestSkill(n).value)}</span></div><div class="npc-action">${ACTION_NAMES[n.action]||n.action}</div></div>`).join('');
- buildingList.innerHTML=v.buildings.map(b=>`<div class="building-card"><strong>${BUILDING_TYPES[b.type].icon} ${BUILDING_TYPES[b.type].name}</strong>단계 ${b.level}${b.type==='house'?` · ${BUILDING_TYPES.house.cap*b.level}명 수용`:''}</div>`).join('');
- settleList.innerHTML=Object.entries(state.settlements).map(([n,s])=>`<div class="event" onclick="openSettlement('${n}')"><b>${n}</b> · ${s.level} · ${s.pop}명<br><small>${SETTLE_INFO[n].role}</small></div>`).join('');
- missions.innerHTML=state.missions.map(m=>`<div class="mission"><div class="mtop"><b>${m.icon} ${m.name}</b><em>${m.d>0?'목적지로':'귀환'} ${Math.round(m.p)}%</em></div><div class="bar"><div class="fill" style="width:${m.p}%"></div></div></div>`).join('');
- techgrid.innerHTML=Object.entries(state.tech).map(([n,t])=>`<div class="tech"><div class="techhead"><span>${n}</span><span class="grade">${grade(t)}</span></div><div class="bar"><div class="fill" style="width:${Math.min(100,t.p)}%"></div></div></div>`).join('');
- regionList.innerHTML=Object.entries(state.regions).map(([id,r])=>`<div class="rrow" onclick="openRegion('${id}')"><div class="rtop"><b>${r.discovered?REGION_NAMES[id]:'???'}</b><span>${r.discovered?r.pop+'명 · 기술 '+r.tech.toFixed(1):'미탐사'}</span></div><div class="rmeta">${r.discovered?r.special:'정보 없음'}</div></div>`).join('');
- history.innerHTML=(state.history.length?state.history:[{when:'현재',text:'1년을 진행하면 개별 주민 행동을 포함한 연대기가 쌓인다.'}]).slice(0,10).map(h=>`<div class="historyCard"><b>${h.when}</b><br>${h.text}</div>`).join('');
- log.innerHTML=state.logs.slice(0,24).map(e=>`<div class="event">${e[0]}<br><small>${e[1]==='시스템'?'시스템':'세계력 '+e[1]}</small></div>`).join('');
- if(currentMap==='village')drawVillage();
- saveGame()
-}
-function resetGame(){if(confirm('v0.5 진행 데이터를 초기화할까? v0.4 저장은 남아 있어.')){stopAuto();state=clone(DEFAULT);initializeVillagesAndNPCs();localStorage.removeItem('civilization_v05');render();switchMap('world')}}
-
-document.querySelectorAll('[data-region]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openRegion(el.dataset.region)}));
-document.querySelectorAll('[data-settle]').forEach(el=>el.addEventListener('click',e=>{e.stopPropagation();openSettlement(el.dataset.settle)}));
-infoModal.addEventListener('click',e=>{if(e.target===infoModal)closeInfo()});
-window.addEventListener('resize',resetMapView);
-
-mapShell.addEventListener('dblclick',()=>toggleFullMap(!document.getElementById('mapPanel').classList.contains('map-fullscreen')));
-
-
-render();setTimeout(()=>switchMap('world'),60);
-</script>
+  <script type="module" src="./game.js"></script>
 </body>
 </html>
