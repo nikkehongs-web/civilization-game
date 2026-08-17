@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=10.5.1">
+<link rel="stylesheet" href="./styles.css?v=10.6">
 
 </head>
 <body>
@@ -27,7 +27,7 @@
       var txt=document.getElementById('runtimeDiagText');
       if(box&&txt){
         box.classList.remove('hidden');
-        txt.textContent='v10.5.1 시작 오류: '+text;
+        txt.textContent='v10.5.3 시작 오류: '+text;
       }
       var loading=document.getElementById('loading');
       if(loading){
@@ -150,7 +150,7 @@
   </div>
   <div class="camera-quick">
     <button id="mobileWorldMapBtn" class="world-quick" aria-label="세계지도">🌍</button>
-    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button><button id="locateMeBtn" class="locate-me" aria-label="내 위치 확인">📍</button>
+    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button><button id="transportBtn" class="transport-btn" aria-label="이동수단">🐎</button><button id="expeditionTrackBtn" class="expedition-track-btn" aria-label="원정 추적">🧭</button><button id="locateMeBtn" class="locate-me" aria-label="내 위치 확인">📍</button>
     <button id="dragModeBtn" aria-label="드래그 모드">✥</button>
     <button id="zoomInBtn" aria-label="확대">＋</button>
     <button id="cameraResetBtn" aria-label="카메라 초기화">◎</button>
@@ -162,6 +162,15 @@
 <div class="hint glass">드래그: 카메라 회전 · 핀치: 확대/축소 · 바닥 터치: 이동 · 더블탭: 내 캐릭터 추적</div>
 
 
+
+
+<section id="expeditionTrackerPanel" class="expedition-tracker-panel hidden">
+ <div class="expedition-tracker-shell">
+  <div class="expedition-tracker-head"><div><small>OBSERVER EXPEDITION TRACKER</small><b>🧭 원정대 추적 관찰</b><span>실제로 떠난 주민과 현재 이동 위치</span></div><button id="expeditionTrackerClose">×</button></div>
+  <div id="expeditionTrackerList"></div>
+ </div>
+</section>
+<div id="transportHud" class="transport-hud hidden">🐎 기승 이동 · 3.4×</div>
 
 <section id="observerRegionPanel" class="observer-region-panel hidden">
   <div class="orp-head"><b id="orpTitle">국가 관찰</b><button id="orpClose">×</button></div>
@@ -198,6 +207,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=10.5.1"></script>
+<script type="module" src="./game.js?v=10.6"></script>
 </body>
 </html>

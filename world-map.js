@@ -155,6 +155,13 @@ export class CivitasWorldMap{
  open(){
   this.overlay.classList.remove('hidden');this.resize();this.updateModeButtons();this.draw();
  }
+ focusExpedition(expId){
+  const st=this.getState(),exp=(st.world.expeditions||[]).find(e=>e.id===expId);if(!exp)return;
+  const a=this.cityById.get(exp.from),b=this.cityById.get(exp.to);if(!a||!b)return;
+  const p=clamp(exp.progress||0,0,1),mx=a.x+(b.x-a.x)*p,my=a.y+(b.y-a.y)*p;
+  this.scale=2.0;const t=this.baseTransform(),dpr=this.canvas.width/Math.max(1,this.canvas.clientWidth),s=t.base*this.scale,mapCx=(t.minX+t.maxX)/2,mapCy=(t.minY+t.maxY)/2;
+  this.ox=-(mx-mapCx)*s/dpr;this.oy=-(my-mapCy)*s/dpr;this.draw()
+ }
  close(){this.overlay.classList.add('hidden');this.onClose?.()}
  resize(){
   const r=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.5);
@@ -403,9 +410,11 @@ export class CivitasWorldMap{
    const a=this.cityById.get(exp.from),b=this.cityById.get(exp.to);if(!a||!b)continue;
    const A=this.screen(a.x,a.y),B=this.screen(b.x,b.y),p=clamp(exp.progress||0,0,1);
    const x=A.x+(B.x-A.x)*p,y=A.y+(B.y-A.y)*p;
-   ctx.save();ctx.fillStyle=exp.kind==='sea'?'#78d2e5':'#f0ce7b';ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=2;
-   ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();ctx.stroke();
-   ctx.fillStyle='#f3e7c8';ctx.font='9px -apple-system,sans-serif';ctx.textAlign='left';ctx.fillText(`${Math.round(p*100)}%`,x+9,y+3);ctx.restore()
+   const tracked=st.world.trackedExpeditionId===exp.id,personId=tracked?st.world.trackedExpeditionPersonId:null,person=(st.residents||[]).find(r=>r.id===personId),names=(exp.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);
+   ctx.save();ctx.fillStyle=exp.kind==='sea'?'#78d2e5':'#f0ce7b';ctx.strokeStyle=tracked?'#fff0a8':'rgba(0,0,0,.45)';ctx.lineWidth=tracked?4:2;
+   ctx.beginPath();ctx.arc(x,y,tracked?9:6,0,Math.PI*2);ctx.fill();ctx.stroke();
+   ctx.fillStyle='#f3e7c8';ctx.font=tracked?'bold 10px -apple-system,sans-serif':'9px -apple-system,sans-serif';ctx.textAlign='left';
+   ctx.fillText(tracked?`👁 ${person?.name||names.join('·')||'원정대'} · ${exp.phase==='return'?'귀환':'이동'} ${Math.round((exp.phase==='return'?1-p:p)*100)}%`:`${Math.round(p*100)}%`,x+12,y+3);ctx.restore()
   }
 
   // Current political territory: connect each active polity's controlled city anchors.
@@ -475,7 +484,7 @@ export class CivitasWorldMap{
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
   const active=(w.expeditions||[]).filter(e=>e.active);
-  const ex=active.length?active.map(e=>`<span class="expedition-pill">${e.kind==='sea'?'⛵':'🚶'} ${e.region} · ${e.distanceKm.toLocaleString()}km · ${Math.max(0,e.arrivalAbsDay-(st.year*365+st.day))}일 남음</span>`).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
+  const ex=active.length?active.map(e=>{const ns=(e.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);const end=e.phase==='return'?e.returnArrivalAbsDay:e.arrivalAbsDay;return `<span class="expedition-pill">${e.kind==='sea'?'⛵':'🐎'} ${e.region} · ${e.phase==='return'?'귀환':'이동'} · ${Math.max(0,(end||0)-(st.year*365+st.day))}일 · ${ns.join('·')||'원정대'}</span>`}).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
   const activeN=this.activeCountries().length,deadN=Object.values(w.countries||{}).filter(c=>c.active===false).length,seasonNow=st.climate?.season||'';
   this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${seasonNow} ${st.weather||''} · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 실제 사람 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 현존국 ${activeN} · 소멸/통합국 ${deadN} · 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length} · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 아르케아 핵심 30 · 타 권역 270. 도보는 30km/일, 기승 48km/일, 항해 110km/일 기준이며 지형·준비 시간이 추가됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
   this.renderCountries()

@@ -708,3 +708,82 @@ body.region-view .player-location-hud .plh-main small{color:#78b8c6}
  .dog-card{padding:7px}
  .dog-card b{font-size:7px}.dog-card p{font-size:5.2px}
 }
+
+/* ===== v10.5.4 RPG MODAL CLOSE FIX ===== */
+.rpg-panel{
+  overflow:hidden!important;
+  overscroll-behavior:contain;
+  touch-action:pan-y;
+}
+.rpg-shell{
+  position:relative!important;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+.rpg-head{
+  position:sticky!important;
+  top:0!important;
+  z-index:90!important;
+  min-height:48px;
+  padding:4px 56px 6px 4px;
+  margin:-4px -4px 5px;
+  background:linear-gradient(to bottom,rgba(12,19,18,.995) 72%,rgba(12,19,18,.88));
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+#rpgClose{
+  position:fixed!important;
+  z-index:9999!important;
+  top:max(10px,calc(env(safe-area-inset-top) + 8px))!important;
+  right:max(10px,calc(env(safe-area-inset-right) + 8px))!important;
+  width:48px!important;
+  height:48px!important;
+  min-width:48px!important;
+  min-height:48px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  margin:0!important;
+  border-radius:14px!important;
+  border:1px solid rgba(255,255,255,.22)!important;
+  background:rgba(20,31,27,.96)!important;
+  color:#fff!important;
+  font-size:27px!important;
+  line-height:1!important;
+  cursor:pointer;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:rgba(255,255,255,.12);
+  box-shadow:0 7px 22px rgba(0,0,0,.35);
+}
+#rpgClose:active{transform:scale(.94)}
+@media(max-width:560px){
+  .rpg-shell{
+    height:100dvh!important;
+    max-height:100dvh!important;
+    border-radius:0!important;
+    padding-top:max(8px,env(safe-area-inset-top))!important;
+    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
+  #rpgClose{
+    top:max(8px,calc(env(safe-area-inset-top) + 6px))!important;
+    right:8px!important;
+    width:50px!important;
+    height:50px!important;
+  }
+}
+
+/* ===== v10.6 TRANSPORT + EXPEDITION TRACKING ===== */
+.camera-quick .transport-btn.active{background:rgba(173,116,64,.30)!important;border-color:rgba(231,181,111,.65)!important;color:#ffe0a4}
+.camera-quick .expedition-track-btn{border-color:rgba(101,183,198,.32);background:rgba(48,121,139,.14)}
+.transport-hud{position:fixed;z-index:36;left:50%;bottom:118px;transform:translateX(-50%);padding:6px 9px;border-radius:999px;background:rgba(18,28,22,.83);border:1px solid rgba(236,201,124,.22);font-size:6px;color:#f0d79d;pointer-events:none}
+.transport-hud.hidden{display:none}
+.expedition-tracker-panel{position:fixed;z-index:88;inset:0;background:rgba(0,0,0,.64);display:grid;place-items:center;padding:7px}.expedition-tracker-panel.hidden{display:none}
+.expedition-tracker-shell{width:min(600px,100%);max-height:88vh;overflow:auto;padding:10px;border-radius:18px;background:rgba(11,20,18,.98);border:1px solid rgba(104,186,200,.17)}
+.expedition-tracker-head{display:flex;justify-content:space-between;gap:8px;align-items:start;position:sticky;top:0;background:rgba(11,20,18,.97);z-index:3;padding-bottom:7px}
+.expedition-tracker-head small{display:block;font-size:5.5px;color:#82aeb6}.expedition-tracker-head b{display:block;font-size:13px;color:#e8dbad}.expedition-tracker-head span{font-size:5.5px;color:#91a49f}
+.expedition-tracker-head button{width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:21px}
+.tracker-card{display:grid;grid-template-columns:1fr auto;gap:6px;padding:8px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065);margin-top:5px}
+.tracker-card b{font-size:8px}.tracker-card small,.tracker-card p{font-size:5.5px;color:#9baba5;line-height:1.45;margin:3px 0}.tracker-card button{border:1px solid rgba(103,186,201,.24);background:rgba(64,142,158,.10);border-radius:8px;padding:5px 6px;font-size:5.5px}
+.tracker-card .track-person{grid-column:1/-1;margin-top:2px}.tracker-empty{padding:20px;text-align:center;font-size:7px;color:#81958e}
+@media(max-width:560px){.transport-hud{bottom:130px;font-size:5px}.expedition-tracker-panel{align-items:end;padding:3px}.expedition-tracker-shell{width:100%;max-height:78dvh;border-radius:17px 17px 0 0;padding-bottom:max(10px,env(safe-area-inset-bottom))}.tracker-card{grid-template-columns:1fr}.tracker-card button{width:100%}}
