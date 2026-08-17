@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=10.6';
+import { CivitasWorldMap } from './world-map.js?v=11';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -50,11 +50,11 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const ITEM_CATALOG = await fetch('./items.json?v=10.6')
+const ITEM_CATALOG = await fetch('./items.json?v=11')
   .then(r=>{if(!r.ok)throw new Error(`items.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=10.6')
+const WORLD_DATA = await fetch('./world.json?v=11')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
-const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=10.6')
+const WORLD_PEOPLE_SEED = await fetch('./world-people.json?v=11')
   .then(r=>{if(!r.ok)throw new Error(`world-people.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -409,6 +409,23 @@ const MONSTER_MUTATIONS=[
  {id:'rage',name:'폭주반응',hp:1,atk:1.32,speed:1.12,interval:.9},
  {id:'leech',name:'흡수세포',hp:1.10,atk:1.12,speed:1,interval:1}
 ];
+
+const DANGER_CLASSES=[
+ {id:'5',name:'5급',min:0,max:44},{id:'4',name:'4급',min:45,max:79},{id:'3',name:'3급',min:80,max:129},
+ {id:'2',name:'2급',min:130,max:199},{id:'1',name:'1급',min:200,max:299},{id:'special',name:'특급',min:300,max:99999}
+];
+function dangerClassForScore(score){return DANGER_CLASSES.find(d=>score>=d.min&&score<=d.max)||DANGER_CLASSES[DANGER_CLASSES.length-1]}
+function monsterDangerScore(level,rank,mutation){
+ const rb={normal:0,mutant:28,elite:82,prototype:180}[rank]||0;
+ const mb=mutation?22:0;
+ return Math.round(level*8+rb+mb)
+}
+function defaultMonsterEvolution(){
+ const families={};for(const c of MONSTER_CATALOG)families[c.id]={seen:false,firstYear:null,kills:0,highestLevel:0,highestScore:0,highestClass:'5',ranks:{normal:false,mutant:false,elite:false,prototype:false},mutations:{}};
+ return{families,selected:MONSTER_CATALOG[0]?.id||null}
+}
+function defaultObserverLocation(){return{mode:'laen',region:'아르케아 중앙대륙',country:'에르단 왕국',cityId:WORLD_DATA?.meta?.startCityId||'L001',label:'감나무뜰'}}
+
 function defaultRpgState(){
  return{
    silver:0,bioFragments:0,dataShards:0,itemSeq:0,
@@ -418,7 +435,7 @@ function defaultRpgState(){
  }
 }
 
-function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',climate:defaultClimateState(),resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false},수로관리:{p:0,open:false},토기저장:{p:0,open:false},직조기초:{p:0,open:false},야간교대:{p:0,open:false}},residents:initialOfficialResidents(0,1),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살폈다. 복실이는 처음부터 사람들 곁을 맴돌며 새 터의 냄새를 맡고 있었다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false,myeongjaDead:false,myeongjaDeathLogged:false},currentStorySeq:1,demography:{births:0,arrivals:0,children:0},civ:{level:0,levelName:'야영지',techUnlocked:0,builds:0,lastAnnual:null},eventMemory:{},worldPopulation:WORLD_START_POPULATION,world:defaultWorldState(),worldPeople:cloneWorldPeopleSeed(),worldPersonSeq:1000000,localMap:{level:0,revealedRadius:90,lastExpansionYear:-1},animalStats:{wild:7,domestic:0,care:0},trajectory:defaultTrajectory(),conflict:{animalRaids:0,warBattles:0,lastAnimalRaidDay:-999,lastBattleDay:-999,foodLost:0,wounded:0,raidersDefeated:0,animalsRepelled:0},companion:{bokshil:{x:1.2,z:4.5,active:true}},dogLineage:defaultDogLineage(),deceased:[],rpg:defaultRpgState(),observerTransport:{mode:'walk'},player:{x:3,z:3,level:1,exp:0,nextExp:100,hp:100,maxHp:100,attack:14,kills:0,deaths:0,dead:false,respawnAt:0,awakened:false,autoHunt:false}}};
+function fresh(){return{year:0,day:1,speed:1,running:true,weather:'맑음',climate:defaultClimateState(),resources:{food:22,water:28,wood:14,stone:8,labor:22},caps:{food:100,water:100,wood:100,stone:100,labor:60},buildings:{house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0},tech:{기록습관:{p:0,open:false},공동취사:{p:0,open:false},건조저장:{p:0,open:false},목공기초:{p:0,open:false},약초분류:{p:0,open:false},사육기초:{p:0,open:false},수로관리:{p:0,open:false},토기저장:{p:0,open:false},직조기초:{p:0,open:false},야간교대:{p:0,open:false}},residents:initialOfficialResidents(0,1),logs:[{seq:1,type:'story',time:'0년 1일',title:'황무지의 첫 아침',text:'이명자와 주민들이 라엔 분지의 흙과 물길을 살폈다. 복실이는 처음부터 사람들 곁을 맴돌며 새 터의 냄새를 맡고 있었다.',speaker:'이명자',quote:'오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.'}],seq:1,flags:{firstField:false,firstHarvest:false,storage:false,illness:false,myeongjaDead:false,myeongjaDeathLogged:false},currentStorySeq:1,demography:{births:0,arrivals:0,children:0},civ:{level:0,levelName:'야영지',techUnlocked:0,builds:0,lastAnnual:null},eventMemory:{},worldPopulation:WORLD_START_POPULATION,world:defaultWorldState(),worldPeople:cloneWorldPeopleSeed(),worldPersonSeq:1000000,localMap:{level:0,revealedRadius:90,lastExpansionYear:-1},animalStats:{wild:7,domestic:0,care:0},trajectory:defaultTrajectory(),conflict:{animalRaids:0,warBattles:0,lastAnimalRaidDay:-999,lastBattleDay:-999,foodLost:0,wounded:0,raidersDefeated:0,animalsRepelled:0},companion:{bokshil:{x:1.2,z:4.5,active:true}},dogLineage:defaultDogLineage(),deceased:[],rpg:defaultRpgState(),monsterEvolution:defaultMonsterEvolution(),observerTransport:{mode:'walk'},player:{x:3,z:3,level:1,exp:0,nextExp:100,hp:100,maxHp:100,attack:14,kills:0,deaths:0,dead:false,respawnAt:0,awakened:false,autoHunt:false}}};
 let state;try{state=JSON.parse(localStorage.getItem(KEY))||fresh()}catch{state=fresh()}
 
 function mergeOfficialResidents(){
@@ -477,6 +494,7 @@ state.worldPeople??=cloneWorldPeopleSeed();
 state.worldPersonSeq??=1000000;
 for(const p of state.worldPeople){p.alive??=1;p.parents??=[];p.partnerId??=null;p.lineage??=p.f||p.id;p.birthCountry??=p.c}
 migrateWorldGenealogy();ensurePoliticsInitialized();
+state.monsterEvolution??=defaultMonsterEvolution();state.world.observerLocation??=defaultObserverLocation();
 state.observerTransport??={mode:'walk'};
 state.rpg??=defaultRpgState();
 for(const[k,v]of Object.entries(defaultRpgState()))if(state.rpg[k]===undefined)state.rpg[k]=JSON.parse(JSON.stringify(v));
@@ -1179,6 +1197,26 @@ function rebuildFrontierVillages(){
   for(let i=0;i<houses;i++){const col=i%4,row=Math.floor(i/4),h=new THREE.Group(),base=new THREE.Mesh(new THREE.BoxGeometry(4.2,2.2,3.6),new THREE.MeshStandardMaterial({color:0x967653,roughness:1})),roof=new THREE.Mesh(new THREE.ConeGeometry(3.1,1.7,4),new THREE.MeshStandardMaterial({color:0x55402e,roughness:1}));base.position.y=1.1;roof.position.y=3;roof.rotation.y=Math.PI/4;h.add(base,roof);h.position.set((col-1.5)*6.4,0,(row-1)*6.6);g.add(h)}
   const label=makeFloatingNameSprite(`${name} · 개척 정착지`);label.position.set(0,5,0);label.scale.set(4.2,.75,1);g.add(label);g.position.set(x,0,z);frontierVillageGroup.add(g)})
 }
+
+const urbanInfraGroup=new THREE.Group();scene.add(urbanInfraGroup);let urbanInfraSig='';
+function localUrbanStage(pop=localSettlementPopulation()){
+ if(pop<35)return'야영지';if(pop<80)return'촌락';if(pop<150)return'소도시';if(pop<260)return'도시';return'광역도시'
+}
+function rebuildUrbanInfrastructure(){
+ const pop=localSettlementPopulation(),stage=localUrbanStage(pop),sig=`${stage}|${Math.floor(pop/20)}|${Math.floor(state.year/10)}`;if(sig===urbanInfraSig)return;urbanInfraSig=sig;
+ while(urbanInfraGroup.children.length)urbanInfraGroup.remove(urbanInfraGroup.children.pop());
+ const roadMat=new THREE.MeshStandardMaterial({color:stage==='야영지'?0xa18a62:0x8f7957,roughness:1});
+ const roadCount=stage==='야영지'?1:stage==='촌락'?3:stage==='소도시'?5:7;
+ for(let i=0;i<roadCount;i++){const r=new THREE.Mesh(new THREE.BoxGeometry(72,.025,.85),roadMat);r.position.set(0,.018,-50+i*12);urbanInfraGroup.add(r)}
+ if(['소도시','도시','광역도시'].includes(stage)){
+   const plaza=new THREE.Mesh(new THREE.CylinderGeometry(7,7,.04,20),new THREE.MeshStandardMaterial({color:0xa38c65,roughness:1}));plaza.position.set(18,.03,15);urbanInfraGroup.add(plaza);
+   for(let i=0;i<4;i++){const stall=new THREE.Mesh(new THREE.BoxGeometry(2.2,1.3,1.6),new THREE.MeshStandardMaterial({color:0x806343,roughness:1}));stall.position.set(13+i*3.3,.65,14+(i%2)*3);urbanInfraGroup.add(stall)}
+ }
+ if(['도시','광역도시'].includes(stage)){
+   const hall=new THREE.Mesh(new THREE.BoxGeometry(7,3.5,5),new THREE.MeshStandardMaterial({color:0x8a7458,roughness:1}));hall.position.set(0,1.75,28);urbanInfraGroup.add(hall)
+ }
+}
+
 function urbanReplan(){
  const pop=localSettlementPopulation(),visualHouses=clamp(Math.ceil(Math.sqrt(pop)*.26),2,72),visualFields=clamp(Math.ceil(Math.sqrt(pop)*.065),1,16);
  if(state.year>=10){state.buildings.house=Math.max(state.buildings.house,visualHouses);state.buildings.field=Math.max(state.buildings.field,visualFields)}
@@ -1190,7 +1228,7 @@ function urbanReplan(){
    const g=visualByKey.get(`field:${i}`);if(g){const s=fieldSpot(i);g.position.set(s[0],0,s[1])}
  }
  for(const r of state.residents){const p=personMap.get(r.id);if(p)p.userData.home.copy(residentHomePosition(r))}
- rebuildFrontierVillages()
+ rebuildFrontierVillages();rebuildUrbanInfrastructure()
 }
 
 function syncVillageVisuals(animate=false){
@@ -1439,15 +1477,27 @@ function createObserverHorseModel(){
  const tail=new THREE.Mesh(new THREE.CylinderGeometry(.035,.07,.65,6),dark);tail.position.set(0,.78,-.72);tail.rotation.x=.75;g.add(tail);
  g.visible=false;g.scale.setScalar(.88);scene.add(g);return g
 }
-function observerTransportMultiplier(){return state.observerTransport?.mode==='horse'?3.4:1}
-function setObserverTransport(mode){
- if(regionViewActive&&mode==='horse'){state.observerTransport.mode='horse'}
- else state.observerTransport.mode=mode;
- const on=state.observerTransport.mode==='horse';observerHorse.visible=on&&!regionViewActive;
- $('transportBtn')?.classList.toggle('active',on);$('transportHud')?.classList.toggle('hidden',!on);
- if(on)showEvent('🐎 관찰자 기승 · 이동속도 3.4배');else showEvent('🚶 도보 이동')
+const OBSERVER_TRANSPORTS={
+ walk:{name:'도보',icon:'🚶',speed:1,unlock:()=>true},
+ horse:{name:'기승',icon:'🐎',speed:3.4,unlock:()=>true},
+ cart:{name:'수레',icon:'🛒',speed:4.8,unlock:()=>state.year>=10||state.tech.목공기초?.open},
+ carriage:{name:'마차',icon:'🚐',speed:6.4,unlock:()=>state.year>=25&&(state.tech.목공기초?.open||state.civ.level>=2)}
+};
+function unlockedObserverTransports(){return Object.entries(OBSERVER_TRANSPORTS).filter(([,v])=>v.unlock()).map(([k])=>k)}
+function observerTransportMultiplier(){return OBSERVER_TRANSPORTS[state.observerTransport?.mode]?.speed||1}
+function updateTransportVisual(){
+ const mode=state.observerTransport?.mode||'walk',t=OBSERVER_TRANSPORTS[mode]||OBSERVER_TRANSPORTS.walk,on=mode!=='walk';
+ observerHorse.visible=on&&!regionViewActive;
+ $('transportBtn').textContent=t.icon;$('transportBtn')?.classList.toggle('active',on);
+ $('transportHud')?.classList.toggle('hidden',!on);if(on)$('transportHud').textContent=`${t.icon} ${t.name} 이동 · ${t.speed}×`
 }
-function toggleObserverTransport(){setObserverTransport(state.observerTransport?.mode==='horse'?'walk':'horse')}
+function setObserverTransport(mode){
+ if(!OBSERVER_TRANSPORTS[mode]?.unlock())mode='walk';state.observerTransport.mode=mode;updateTransportVisual();
+ const t=OBSERVER_TRANSPORTS[mode];showEvent(`${t.icon} ${t.name} 이동 · ${t.speed}배`)
+}
+function toggleObserverTransport(){
+ const modes=unlockedObserverTransports(),cur=state.observerTransport?.mode||'walk',i=Math.max(0,modes.indexOf(cur));setObserverTransport(modes[(i+1)%modes.length])
+}
 
 function createPlayerModel(){
  const g=new THREE.Group();
@@ -2033,16 +2083,41 @@ function buildExperimentMonsterVisual(cfg,rank,mutation){
  }
  return g
 }
+
+function recordMonsterObservation(m,kill=false){
+ const u=m?.userData;if(!u?.type)return;
+ state.monsterEvolution??=defaultMonsterEvolution();const f=state.monsterEvolution.families[u.type]??={seen:false,firstYear:null,kills:0,highestLevel:0,highestScore:0,highestClass:'5',ranks:{normal:false,mutant:false,elite:false,prototype:false},mutations:{}};
+ if(!f.seen){f.seen=true;f.firstYear=state.year;f.firstDay=state.day}
+ if(kill)f.kills=(f.kills||0)+1;f.highestLevel=Math.max(f.highestLevel||0,u.level||0);f.highestScore=Math.max(f.highestScore||0,u.dangerScore||0);f.highestClass=dangerClassForScore(f.highestScore).id;
+ f.ranks[u.rank]=true;if(u.mutation)f.mutations[u.mutation.id]=(f.mutations[u.mutation.id]||0)+(kill?1:0)
+}
+function dangerBadgeHtml(id){const d=DANGER_CLASSES.find(x=>x.id===id)||DANGER_CLASSES[0];return`<span class="danger-badge danger-${id}">${d.name}</span>`}
+function renderMonsterLineage(){
+ const ev=state.monsterEvolution??defaultMonsterEvolution(),selected=ev.selected||MONSTER_CATALOG[0]?.id,cfg=MONSTER_CATALOG.find(c=>c.id===selected)||MONSTER_CATALOG[0],f=ev.families[cfg.id]||{};
+ $('monsterLineageSummary').textContent=`발견 ${Object.values(ev.families).filter(x=>x.seen).length}/${MONSTER_CATALOG.length}계통 · 총 처치 ${Object.values(ev.families).reduce((s,x)=>s+(x.kills||0),0)}회`;
+ $('monsterFamilyTabs').innerHTML=MONSTER_CATALOG.map(c=>`<button data-mf="${c.id}" class="${c.id===cfg.id?'active':''}">${c.code} ${ev.families[c.id]?.seen?c.name:'???'}</button>`).join('');
+ const rankNames={normal:'일반체',mutant:'변이체',elite:'엘리트',prototype:'프로토타입'};
+ $('monsterFamilyDetail').innerHTML=`<div class="monster-project-title"><div><b>${f.seen?`${cfg.project||cfg.code} · ${cfg.name}`:'미분석 실험계통'}</b><p>${f.seen?`${cfg.family||''} · ${cfg.origin||''}`:'해당 계통을 직접 발견하거나 처치해야 기록이 열린다.'}</p></div>${dangerBadgeHtml(f.highestClass||'5')}</div>
+ ${f.seen?`<p><b>실험 목적</b> ${cfg.objective||cfg.experiment}<br><b>실패 결과</b> ${cfg.failure||cfg.experiment}</p>`:''}
+ <div class="evo-track">${Object.entries(rankNames).map(([k,n])=>`<div class="evo-node ${f.ranks?.[k]?'':'locked'}"><b>${n}</b>${f.ranks?.[k]?`확인됨`:'미확인'}</div>`).join('')}</div>
+ <div class="mut-grid">${MONSTER_MUTATIONS.map(m=>`<span><b>${m.name}</b><br>${f.mutations?.[m.id]?`${f.mutations[m.id]}회 확인`:'미확인'}</span>`).join('')}</div>
+ <p>최초 발견: ${f.firstYear!=null?`${f.firstYear}년 ${f.firstDay||1}일`:'미발견'} · 처치 ${f.kills||0}회 · 최고 LV.${f.highestLevel||0} · 최고 위험점수 ${f.highestScore||0}</p>`;
+ $('monsterFamilyTabs').querySelectorAll('[data-mf]').forEach(b=>b.onclick=()=>{state.monsterEvolution.selected=b.dataset.mf;renderMonsterLineage()})
+}
+function openMonsterLineage(){renderMonsterLineage();$('monsterLineagePanel').classList.remove('hidden')}
+function closeMonsterLineage(){$('monsterLineagePanel').classList.add('hidden')}
+
 function createMonster(){
  const cfg=pickMonsterConfig(),spawn=randomMonsterSpawn(),lvl=experimentMonsterLevel(spawn),rank=rollMonsterRank(lvl),rankM=MONSTER_RANKS[rank];
  const mutation=rank==='normal'&&Math.random()>.25?null:pick(MONSTER_MUTATIONS),mut=mutation||{hp:1,atk:1,speed:1,interval:1};
  const g=buildExperimentMonsterVisual(cfg,rank,mutation);
  const visualScale=(cfg.scale||1)*rankM.scale;g.scale.setScalar(visualScale);g.position.copy(spawn);
  const maxHp=Math.round(((cfg.baseHp||50)+lvl*(cfg.hpPerLevel||12))*rankM.hp*mut.hp);
+ const dangerScore=monsterDangerScore(lvl,rank,mutation),danger=dangerClassForScore(dangerScore);
  const rankPrefix=rank==='normal'?'':rank==='mutant'?'변이 ':rank==='elite'?'엘리트 ':'프로토타입 ';
  g.userData={
    monster:true,id:`M${++monsterSpawnSeq}`,type:cfg.id,code:cfg.code,name:`${rankPrefix}${cfg.name}`,baseName:cfg.name,
-   experiment:cfg.experiment,rank,mutation,level:lvl,maxHp,hp:maxHp,
+   experiment:cfg.experiment,project:cfg.project,family:cfg.family,rank,mutation,level:lvl,dangerScore,dangerClass:danger.id,dangerName:danger.name,maxHp,hp:maxHp,
    speed:((cfg.speed||1.4)+lvl*.012)*mut.speed,scanRange:cfg.scanRange||10,attackRange:cfg.attackRange||2.2,
    leashRange:cfg.leashRange||20,attackPower:((cfg.attack||7)+lvl*(cfg.attackPerLevel||.8))*rankM.atk*mut.atk,
    attackInterval:(cfg.attackInterval||1.5)*mut.interval,attackCooldown:rand(.2,.8),
@@ -2078,7 +2153,7 @@ function killMonster(m){
  if(!m||m.userData.dead)return;
  const ud=m.userData;ud.dead=true;ud.fsm.set(MonsterStates.DEAD);m.visible=false;state.player.kills++;
  gainPlayerExp(CombatRules.expForMonster(ud.level,ud)*(ud.rank==='prototype'?3:ud.rank==='elite'?1.8:ud.rank==='mutant'?1.3:1));
- const loot=rewardMonsterLoot(m);
+ recordMonsterObservation(m,true);const loot=rewardMonsterLoot(m);
  ud.respawnAt=performance.now()+ud.respawnMs;
  if(selectedMonster===m)selectedMonster=null;
  addLog('good',`${ud.code} · ${ud.name} 처치`,`${ud.experiment} 처치 보상: ${loot}. 실험체 조직과 장비 잔해는 관찰자의 전투 성장에 사용된다.`,'SYSTEM',`LV.${ud.level} ${MONSTER_RANKS[ud.rank]?.name||''} · 누적 사냥 ${state.player.kills}회`);
@@ -2111,7 +2186,7 @@ function movePlayerTo(v){
 function setMonsterTarget(m){
  if(state.observerTransport?.mode==='horse')setObserverTransport('walk');
  if(!state.player.awakened||state.player.dead||!m||m.userData.dead)return;
- selectedMonster=m;player.userData.moving=false;player.userData.fsm.set(PlayerStates.MOVING);renderMonsterTargetHud()
+ selectedMonster=m;recordMonsterObservation(m,false);player.userData.moving=false;player.userData.fsm.set(PlayerStates.MOVING);renderMonsterTargetHud()
 }
 function updatePlayer(dt,now){
  if(regionViewActive)return;
@@ -2141,7 +2216,7 @@ function updatePlayer(dt,now){
      ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing*.65;
      ud.limbs.ll.rotation.x=-swing*.78;ud.limbs.rl.rotation.x=swing*.78;
      state.player.x=player.position.x;state.player.z=player.position.z;
- if(observerHorse){observerHorse.visible=state.observerTransport?.mode==='horse'&&!regionViewActive;observerHorse.position.set(player.position.x,0,player.position.z);observerHorse.rotation.y=player.rotation.y}
+ if(observerHorse){observerHorse.visible=(state.observerTransport?.mode||'walk')!=='walk'&&!regionViewActive;observerHorse.position.set(player.position.x,0,player.position.z);observerHorse.rotation.y=player.rotation.y}
      followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';if(camMode!=='follow')setCameraMode('follow');
      return
    }
@@ -2178,7 +2253,7 @@ function updatePlayer(dt,now){
  }
 
  state.player.x=player.position.x;state.player.z=player.position.z;
- if(observerHorse){observerHorse.visible=state.observerTransport?.mode==='horse'&&!regionViewActive;observerHorse.position.set(player.position.x,0,player.position.z);observerHorse.rotation.y=player.rotation.y}
+ if(observerHorse){observerHorse.visible=(state.observerTransport?.mode||'walk')!=='walk'&&!regionViewActive;observerHorse.position.set(player.position.x,0,player.position.z);observerHorse.rotation.y=player.rotation.y}
  if(navWaypoint&&player.position.distanceTo(navWaypoint.p)<3){navWaypoint=null;$('navHud')?.classList.add('hidden');showEvent('감나무뜰에 도착했습니다.')}
  if(state.player.hp<playerCombatStats().maxHp&&!selectedMonster)state.player.hp=Math.min(playerCombatStats().maxHp,state.player.hp+dt*1.2)
 }
@@ -2862,6 +2937,9 @@ $('dogLineageBtn').onclick=openDogLineage;
 $('dogLineageClose').onclick=()=>$('dogLineagePanel').classList.add('hidden');
 $('dogLineagePanel').addEventListener('click',e=>{if(e.target===$('dogLineagePanel'))$('dogLineagePanel').classList.add('hidden')});
 
+$('monsterLineageBtn').onclick=openMonsterLineage;
+$('monsterLineageClose').onclick=closeMonsterLineage;
+$('monsterLineagePanel').addEventListener('click',e=>{if(e.target===$('monsterLineagePanel'))closeMonsterLineage()});
 $('rpgBtn').onclick=()=>{$('rpgPanel').classList.remove('hidden');renderRpgPanel()};
 function closeRpgPanel(e){
  if(e){e.preventDefault?.();e.stopPropagation?.()}
@@ -3723,6 +3801,19 @@ function tryMilestones(){
  if(buildReady()&&b.field<Math.min(6,target)&&state.resources.wood>=5&&state.resources.stone>=2&&state.resources.labor>=8){spend({wood:5,stone:2,labor:8});b.field++;state.civ.builds++;markBuilt();syncVillageVisuals(true);addLog('good',`경작지 ${b.field}구역으로 확장`,`주민 수와 식량 소비가 늘어 새 고랑을 만들었다.`,'아람','먹을 사람 수만큼 다음 계절을 준비하는 거야.')}
  updateCivilizationLevel()
 }
+
+function longTermStabilitySweep(){
+ // residents
+ const ids=new Set();state.residents=state.residents.filter(r=>{if(!r?.id||ids.has(r.id))return false;ids.add(r.id);return true});
+ for(const r of state.residents){r.age=clamp(Number(r.age||0),0,105);if(r.brain?.memories?.length>30)r.brain.memories=r.brain.memories.slice(-30)}
+ // world
+ state.world.foundedCities=[...new Set(state.world.foundedCities||[])].filter(id=>WORLD_CITY_BY_ID.has(id));
+ for(const n of activeCountryNames()){const c=state.world.countries[n];if(!c)continue;c.population=Math.max(1,Math.round(c.population||1));if(c.history?.length>120)c.history=c.history.slice(-120);if(c.events?.length>60)c.events=c.events.slice(0,60)}
+ for(const w of state.world.externalWars||[])if(w.active&&state.year-(w.startYear||state.year)>3){w.active=false;w.endYear=state.year}
+ state.rpg.inventory=(state.rpg.inventory||[]).slice(-60);if(state.logs.length>420)state.logs=state.logs.slice(-420);
+ syncDogLineageVisuals();syncCountrySettlementGrowth()
+}
+
 function advanceDay(){
  state.day++;
  if(state.day>365){
@@ -3730,7 +3821,7 @@ function advanceDay(){
    state.day=1;state.year++;state.residents.forEach(r=>r.age++);
    guarded('지역세대교체',()=>processLocalDemographyAnnual());
    guarded('연간인구',()=>annualWorldPopulation());
-   guarded('연간기록',()=>annualSummary(prev));guarded('도시재정비',()=>urbanReplan())
+   guarded('연간기록',()=>annualSummary(prev));guarded('도시재정비',()=>urbanReplan());guarded('장기안정화',()=>longTermStabilitySweep())
  }
  guarded('이명자생애',()=>processMyeongjaLifecycle());
  guarded('복실이계보',()=>processDogLineageDaily());
@@ -4057,11 +4148,11 @@ function renderMonsterTargetHud(){
  const h=$('monsterTargetHud');if(!h)return;
  if(!selectedMonster||selectedMonster.userData.dead){h.classList.add('hidden');return}
  const u=selectedMonster.userData;h.classList.remove('hidden');
- $('monsterTargetCode').textContent=`${u.code} · ${MONSTER_RANKS[u.rank]?.name||u.rank}`;
+ $('monsterTargetCode').textContent=`${u.code} · ${MONSTER_RANKS[u.rank]?.name||u.rank} · ${u.dangerName||'5급'}`;
  $('monsterTargetName').textContent=u.name;
  $('monsterTargetMeta').textContent=`LV.${u.level} · HP ${Math.max(0,Math.ceil(u.hp))}/${u.maxHp}`;
  $('monsterHpBar').style.width=`${clamp(u.hp/u.maxHp*100,0,100)}%`;
- $('monsterMutationText').textContent=u.mutation?`변이: ${u.mutation.name}`:'추가 변이 없음'
+ $('monsterMutationText').textContent=`위험점수 ${u.dangerScore||0} · ${u.mutation?`변이 ${u.mutation.name}`:'추가 변이 없음'}`
 }
 
 function renderNovel(){$('novelPreview').textContent=novelText($('novelStyle').value)}function updatePlayerHud(){
@@ -4172,7 +4263,9 @@ const regionCitizenMeshes=[];
 function clearRegionCitizens(){for(const p of regionCitizenMeshes)regionViewGroup.remove(p);regionCitizenMeshes.length=0}
 function makeTinyCitizen(person,x,z){
  const g=new THREE.Group(),body=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.52,6),new THREE.MeshStandardMaterial({color:person.g==='F'?0x8c6f70:0x667684,roughness:1})),head=new THREE.Mesh(new THREE.SphereGeometry(.11,7,5),new THREE.MeshStandardMaterial({color:0xc79b7f,roughness:1}));
- body.position.y=.38;head.position.y=.77;g.add(body,head);g.position.set(x,0,z);g.scale.setScalar(REGION_HUMAN_SCALE);g.userData={personId:person.id,phase:stableHash01(person.id)*10};regionViewGroup.add(g);regionCitizenMeshes.push(g);return g
+ body.position.y=.38;head.position.y=.77;g.add(body,head);g.position.set(x,0,z);g.scale.setScalar(REGION_HUMAN_SCALE);
+ const role=person.role||['농사','목축','공방','시장','채집'][Math.floor(stableHash01(person.id+'role')*5)],home=new THREE.Vector3(x,0,z),a=stableHash01(person.id+'work-a')*Math.PI*2,rr=4+stableHash01(person.id+'work-r')*8,work=home.clone().add(new THREE.Vector3(Math.cos(a)*rr,0,Math.sin(a)*rr));
+ g.userData={personId:person.id,phase:stableHash01(person.id)*10,role,home,work,target:work.clone(),atWork:false,nextSwitch:0};regionViewGroup.add(g);regionCitizenMeshes.push(g);return g
 }
 function cityPopulationCount(cityId,country=null){
  const owner=country||cityController(cityId),c=state.world.countries[owner];
@@ -4218,8 +4311,8 @@ function populateRegionObservers(name,sx,sz){
 function updateRegionCitizens(dt,now){
  if(!regionViewActive)return;
  for(const g of regionCitizenMeshes){
-   const ph=g.userData.phase||0;
-   g.position.x+=Math.sin(now*.0005+ph)*dt*.45;g.position.z+=Math.cos(now*.00045+ph)*dt*.45;g.rotation.y+=Math.sin(now*.0007+ph)*dt*.08
+   const u=g.userData;if(now>u.nextSwitch||g.position.distanceTo(u.target)<.35){u.atWork=!u.atWork;u.target.copy(u.atWork?u.work:u.home);u.nextSwitch=now+3500+stableHash01(u.personId+Math.floor(now/5000))*4500}
+   const d=u.target.clone().sub(g.position);d.y=0;if(d.length()>.28){d.normalize();g.position.addScaledVector(d,dt*.72);g.rotation.y=Math.atan2(d.x,d.z)}
  }
 }
 function refreshRegionObserverPanel(){
@@ -4326,8 +4419,24 @@ function updateRegionObserver(dt,now){
    regionObserver.rotation.y=Math.atan2(d.x,d.z);
    camMode='follow'
  }
- updatePlayerLocationHud()
+ updatePlayerLocationHud();observerWorldLocation()
 }
+
+function observerWorldLocation(){
+ state.world.observerLocation??=defaultObserverLocation();
+ if(regionViewActive&&regionObserver&&regionMapTransform){
+   const p=regionObserver.position,rm=regionMapTransform;
+   const worldX=(p.x/170)*Math.max(1,rm.maxX-rm.minX)+(rm.minX+rm.maxX)/2;
+   const worldY=(p.z/120)*Math.max(1,rm.maxY-rm.minY)+(rm.minY+rm.maxY)/2;
+   const city=nearestRegionCity(p.x,p.z);
+   state.world.observerLocation={mode:'region',region:regionViewName,country:regionVisitCountry||cityController(city)||city?.country||null,cityId:city?.id||regionVisitCityId||null,label:city?.name||regionViewName,worldX,worldY}
+ }else{
+   const start=WORLD_CITY_BY_ID.get(WORLD_DATA.meta.startCityId);
+   state.world.observerLocation={mode:'laen',region:'아르케아 중앙대륙',country:'에르단 왕국',cityId:start?.id||'L001',label:mainPlaceName(),worldX:start?.x,worldY:start?.y}
+ }
+ return state.world.observerLocation
+}
+
 function enterCountryView(country,cityId=null){
  let city=cityId?WORLD_CITY_BY_ID.get(cityId):null;
  if(!city||!state.world.foundedCities.includes(city.id)||cityController(city)!==country)city=countryCapital(country);
@@ -4348,7 +4457,7 @@ function enterRegionView(name,opts={}){
  $('regionViewTitle').textContent=regionVisitCountry?`${regionVisitCountry} · ${name}`:name;refreshRegionObserverPanel();
  const meta=WORLD_DATA.regions.find(r=>r.name===name),count=WORLD_DATA.cities.filter(c=>c.region===name).length;
  $('regionViewSub').textContent=`${city?city.name+' · ':''}${meta?.desc||'지역'} · 관찰자 직접 이동 · 주민 접촉에는 영향 없음`;
- camMode='follow';autoFocus.copy(regionObserver.position);yaw=.72;pitch=.70;distance=30;resizeWorld(true);updatePlayerLocationHud(true)
+ camMode='follow';autoFocus.copy(regionObserver.position);yaw=.72;pitch=.70;distance=30;resizeWorld(true);updatePlayerLocationHud(true);observerWorldLocation()
 }
 function exitRegionView(){
  if(!regionViewActive)return;regionViewActive=false;regionViewGroup.visible=false;
@@ -4358,19 +4467,19 @@ function exitRegionView(){
 }
 $('orpClose').onclick=()=>$('observerRegionPanel').classList.add('hidden');
 $('regionLaenBtn').onclick=()=>exitRegionView();
-$('regionWorldMapBtn').onclick=()=>{exitRegionView();worldMapUI.open()};
+$('regionWorldMapBtn').onclick=()=>{observerWorldLocation();worldMapUI.open();worldMapUI.focusObserver?.(false)};
 
 const worldMapUI=new CivitasWorldMap({
  overlay:$('worldMapOverlay'),canvas:$('worldMapCanvas'),detail:$('worldMapDetail'),
  legend:$('worldMapLegend'),status:$('worldMapStatus'),countryList:$('worldCountryList'),
  getState:()=>state,data:WORLD_DATA,onClose:()=>{},
  onOpenRegion:(name)=>enterRegionView(name),
- onTravelCountry:(name)=>enterCountryView(name),
- onTravelCity:(city)=>enterCountryView(cityController(city),city.id),
- onTravelRegion:(name)=>enterRegionView(name,{travel:true})
+ onTravelCountry:(name)=>{if(regionViewActive)exitRegionView();enterCountryView(name)},
+ onTravelCity:(city)=>{if(regionViewActive)exitRegionView();enterCountryView(cityController(city),city.id)},
+ onTravelRegion:(name)=>{if(regionViewActive)exitRegionView();enterRegionView(name,{travel:true})}
 });
-$('worldMapBtn').onclick=()=>worldMapUI.open();
-$('mobileWorldMapBtn')?.addEventListener('click',()=>worldMapUI.open());
+$('worldMapBtn').onclick=()=>{observerWorldLocation();worldMapUI.open()};
+$('mobileWorldMapBtn')?.addEventListener('click',()=>{observerWorldLocation();worldMapUI.open()});
 $('homeGuideBtn')?.addEventListener('click',()=>setHomeWaypoint(true));
 $('transportBtn')?.addEventListener('click',toggleObserverTransport);
 $('expeditionTrackBtn')?.addEventListener('click',openExpeditionTracker);
@@ -4398,7 +4507,7 @@ function runtimeFault(name,err){
  const el=$('runtimeDiag'),txt=$('runtimeDiagText');
  if(el&&txt){
    el.classList.remove('hidden');
-   txt.textContent=`v10.6 · ${name}: ${String(err?.message||err).slice(0,100)}`;
+   txt.textContent=`v11 · ${name}: ${String(err?.message||err).slice(0,100)}`;
    clearTimeout(runtimeFault.hideTimer);
    runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
  }

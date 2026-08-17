@@ -20,7 +20,12 @@
     "expPerLevel": 7,
     "respawnMs": 8000,
     "experiment": "근섬유 재생률을 강제로 높이던 실험의 생존 개체. 비정상적인 근육 성장과 골격 비대가 고착됐다.",
-    "lootTag": "muscle"
+    "lootTag": "muscle",
+    "project": "PROJECT ARES",
+    "family": "근육·재생 계통",
+    "origin": "폐쇄 생체강화동 A구역",
+    "objective": "근섬유 재생과 고밀도 근력 증폭",
+    "failure": "세포 증식 제어 실패로 근육과 골격이 비정상 비대"
   },
   {
     "id": "cutter_04",
@@ -43,7 +48,12 @@
     "expPerLevel": 7,
     "respawnMs": 6500,
     "experiment": "사지 반응속도와 도약력을 높이려던 실험에서 발생한 사족 변이체. 전완 골격이 칼날처럼 길어졌다.",
-    "lootTag": "cutter"
+    "lootTag": "cutter",
+    "project": "PROJECT VELOX",
+    "family": "신경·기동 계통",
+    "origin": "반응속도 실험동 B구역",
+    "objective": "사지 반응속도와 도약 성능 강화",
+    "failure": "전완 골격이 칼날화되고 사족 보행으로 변이"
   },
   {
     "id": "spore_11",
@@ -66,7 +76,12 @@
     "expPerLevel": 8,
     "respawnMs": 9000,
     "experiment": "조직 재생용 균사 실험이 숙주 신경계를 장악한 사례. 체내 포자낭이 계속 증식한다.",
-    "lootTag": "spore"
+    "lootTag": "spore",
+    "project": "PROJECT MYCEL",
+    "family": "균사·재생 계통",
+    "origin": "조직재생 연구동 C구역",
+    "objective": "균사 기반 장기·조직 재생",
+    "failure": "균사체가 숙주의 신경계를 점유"
   },
   {
     "id": "conductor_09",
@@ -89,7 +104,12 @@
     "expPerLevel": 8,
     "respawnMs": 7600,
     "experiment": "신경 자극 전달 실험 중 체내 전도 조직이 과성장했다. 움직일 때 잔류 전하가 피부 밖으로 새어나온다.",
-    "lootTag": "conductor"
+    "lootTag": "conductor",
+    "project": "PROJECT NERVA",
+    "family": "전도·신경 계통",
+    "origin": "전기자극 연구동 D구역",
+    "objective": "신경전도 속도와 전기자극 내성 강화",
+    "failure": "전도조직 과성장과 생체전하 누출"
   },
   {
     "id": "bone_22",
@@ -112,7 +132,12 @@
     "expPerLevel": 9,
     "respawnMs": 9800,
     "experiment": "골밀도 강화 실험이 폭주해 골격이 피부 밖으로 자라난 개체. 머리와 등에서 방어용 골각이 형성됐다.",
-    "lootTag": "bone"
+    "lootTag": "bone",
+    "project": "PROJECT OSSIS",
+    "family": "골격·방어 계통",
+    "origin": "골밀도 강화동 E구역",
+    "objective": "골밀도와 외상 저항성 극대화",
+    "failure": "골각이 피부 밖으로 증식"
   },
   {
     "id": "failed_01",
@@ -135,6 +160,11 @@
     "expPerLevel": 11,
     "respawnMs": 11000,
     "experiment": "인간형 생체 강화 실험의 회수 실패 개체. 일부 전투 행동을 기억하지만 인지 기능은 붕괴했다.",
-    "lootTag": "failed"
+    "lootTag": "failed",
+    "project": "PROJECT ECHO",
+    "family": "인간형 강화 계통",
+    "origin": "인간형 실험동 F구역",
+    "objective": "인지 보존형 전투 신체 강화",
+    "failure": "전투기억 일부만 남고 인지기능 붕괴"
   }
 ]

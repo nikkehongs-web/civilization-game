@@ -787,3 +787,37 @@ body.region-view .player-location-hud .plh-main small{color:#78b8c6}
 .tracker-card b{font-size:8px}.tracker-card small,.tracker-card p{font-size:5.5px;color:#9baba5;line-height:1.45;margin:3px 0}.tracker-card button{border:1px solid rgba(103,186,201,.24);background:rgba(64,142,158,.10);border-radius:8px;padding:5px 6px;font-size:5.5px}
 .tracker-card .track-person{grid-column:1/-1;margin-top:2px}.tracker-empty{padding:20px;text-align:center;font-size:7px;color:#81958e}
 @media(max-width:560px){.transport-hud{bottom:130px;font-size:5px}.expedition-tracker-panel{align-items:end;padding:3px}.expedition-tracker-shell{width:100%;max-height:78dvh;border-radius:17px 17px 0 0;padding-bottom:max(10px,env(safe-area-inset-bottom))}.tracker-card{grid-template-columns:1fr}.tracker-card button{width:100%}}
+
+/* ===== v11 WORLD POSITION / MONSTER LINEAGE / CITY LIFE ===== */
+.world-observer-badge{
+ position:absolute;z-index:5;left:8px;top:8px;padding:5px 8px;border-radius:999px;
+ background:rgba(12,24,22,.88);border:1px solid rgba(255,224,128,.34);
+ color:#ffe4a0;font-size:6px;font-weight:900;pointer-events:none;backdrop-filter:blur(7px)
+}
+#mapLocateObserver{color:#ffe09a!important;border-color:rgba(255,218,117,.35)!important}
+.monster-lineage-btn{
+ height:34px;border:1px solid rgba(135,111,220,.28);background:rgba(96,70,170,.16);
+ border-radius:10px;padding:0 7px;font-size:6.5px;font-weight:900;color:#dbd2ff;white-space:nowrap
+}
+.monster-lineage-panel{position:fixed;z-index:89;inset:0;background:rgba(0,0,0,.68);display:grid;place-items:center;padding:7px}
+.monster-lineage-panel.hidden{display:none}
+.monster-lineage-shell{width:min(760px,100%);max-height:94vh;overflow:auto;padding:11px;border-radius:18px;background:rgba(10,13,19,.985);border:1px solid rgba(143,120,227,.20)}
+.monster-lineage-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;position:sticky;top:0;z-index:3;background:rgba(10,13,19,.98);padding-bottom:7px}
+.monster-lineage-head small{display:block;font-size:5.5px;color:#978cc3}.monster-lineage-head b{display:block;font-size:14px;color:#e3dcff}.monster-lineage-head span{font-size:5.5px;color:#8f9a9f}
+.monster-lineage-head button{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);font-size:22px}
+.danger-scale{padding:8px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06)}
+.danger-scale>b{display:block;font-size:7px;color:#cbc2ec;margin-bottom:5px}.danger-scale>div{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.danger-scale span{padding:5px 2px;border-radius:7px;text-align:center;font-size:5px;border:1px solid rgba(255,255,255,.06)}.danger-scale span b{display:block;font-size:7px}
+.danger-5{color:#b8c2bd;background:rgba(120,150,135,.08)}.danger-4{color:#91d09d;background:rgba(74,158,96,.10)}.danger-3{color:#86bbed;background:rgba(69,116,184,.12)}.danger-2{color:#ce9cf0;background:rgba(143,74,193,.13)}.danger-1{color:#f0a370;background:rgba(203,86,46,.14)}.danger-special{color:#ff7585;background:rgba(215,41,66,.16)}
+.monster-family-tabs{display:flex;overflow:auto;gap:4px;padding:7px 0}.monster-family-tabs button{flex:0 0 auto;padding:6px 7px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.035);font-size:5.8px}.monster-family-tabs button.active{color:#e3dcff;border-color:rgba(143,120,227,.42);background:rgba(121,95,204,.15)}
+.monster-family-detail{padding:9px;border-radius:11px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025)}
+.monster-project-title{display:flex;justify-content:space-between;gap:8px}.monster-project-title b{font-size:9px;color:#ded7f5}.monster-project-title em{font-style:normal;font-size:5px;color:#c0b6e3}
+.monster-family-detail p{font-size:5.5px;color:#94a0a4;line-height:1.55}
+.evo-track{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:7px}.evo-node{padding:6px;border-radius:8px;background:rgba(255,255,255,.035);font-size:5px;color:#929ca0}.evo-node b{display:block;font-size:6.5px;color:#d3cbe9}.evo-node.locked{opacity:.4}
+.mut-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:6px}.mut-grid span{padding:5px;border-radius:7px;text-align:center;background:rgba(115,93,179,.07);font-size:5px;color:#a7a0be}
+.danger-badge{display:inline-block;padding:2px 5px;border-radius:999px;font-size:5px;font-weight:900;margin-left:4px}
+@media(max-width:560px){
+ .monster-lineage-btn{height:27px!important;padding:0 4px!important;font-size:5px!important}
+ .monster-lineage-panel{align-items:end;padding:3px}.monster-lineage-shell{width:100%;max-height:84dvh;border-radius:17px 17px 0 0;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+ .danger-scale>div{grid-template-columns:repeat(3,1fr)}.evo-track{grid-template-columns:1fr 1fr}.mut-grid{grid-template-columns:1fr 1fr}.world-observer-badge{font-size:5px}
+}

@@ -141,6 +141,7 @@ export class CivitasWorldMap{
   this.overlay.querySelector('#mapZoomIn').onclick=()=>{this.scale=clamp(this.scale*1.18,.72,4);this.draw()};
   this.overlay.querySelector('#mapZoomOut').onclick=()=>{this.scale=clamp(this.scale/1.18,.72,4);this.draw()};
   this.overlay.querySelector('#mapReset').onclick=()=>{this.scale=1;this.ox=0;this.oy=0;this.draw()};
+  this.overlay.querySelector('#mapLocateObserver').onclick=()=>this.focusObserver(true);
   this.canvas.addEventListener('pointerdown',e=>this.pDown(e),{passive:false});
   this.canvas.addEventListener('pointermove',e=>this.pMove(e),{passive:false});
   this.canvas.addEventListener('pointerup',e=>this.pUp(e),{passive:false});
@@ -161,6 +162,18 @@ export class CivitasWorldMap{
   const p=clamp(exp.progress||0,0,1),mx=a.x+(b.x-a.x)*p,my=a.y+(b.y-a.y)*p;
   this.scale=2.0;const t=this.baseTransform(),dpr=this.canvas.width/Math.max(1,this.canvas.clientWidth),s=t.base*this.scale,mapCx=(t.minX+t.maxX)/2,mapCy=(t.minY+t.maxY)/2;
   this.ox=-(mx-mapCx)*s/dpr;this.oy=-(my-mapCy)*s/dpr;this.draw()
+ }
+ observerMapPosition(){
+  const st=this.getState(),o=st.world.observerLocation||{},city=o.cityId?this.cityById.get(o.cityId):this.cityById.get(this.data.meta.startCityId);
+  if(Number.isFinite(o.worldX)&&Number.isFinite(o.worldY))return{x:o.worldX,y:o.worldY,label:o.label||city?.name||'현재 위치',country:o.country,region:o.region};
+  if(city)return{x:city.x,y:city.y,label:o.label||city.name,country:o.country||this.controllerOf(city),region:o.region||city.region};
+  return null
+ }
+ focusObserver(zoom=true){
+  const pos=this.observerMapPosition();if(!pos)return;
+  if(zoom)this.scale=Math.max(this.scale,2.15);
+  const t=this.baseTransform(),dpr=this.canvas.width/Math.max(1,this.canvas.clientWidth),s=t.base*this.scale,mapCx=(t.minX+t.maxX)/2,mapCy=(t.minY+t.maxY)/2;
+  this.ox=-(pos.x-mapCx)*s/dpr;this.oy=-(pos.y-mapCy)*s/dpr;this.draw()
  }
  close(){this.overlay.classList.add('hidden');this.onClose?.()}
  resize(){
@@ -431,6 +444,19 @@ export class CivitasWorldMap{
    ctx.strokeStyle=countryColor(owner,.92);ctx.lineWidth=changed?3:1.4;ctx.beginPath();ctx.arc(p.x,p.y,start?9:Math.max(4,4.2*this.scale),0,Math.PI*2);ctx.stroke();
    if(start){ctx.strokeStyle='#ffbe4b';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,11,0,Math.PI*2);ctx.stroke()}
    if((start||this.scale>2.0)&&this.mode==='future'){ctx.fillStyle='#f5ebd5';ctx.font=`${Math.max(8,9*this.scale)}px -apple-system,sans-serif`;ctx.textAlign='left';ctx.fillText(start?'라엔 분지':cty.name,p.x+8,p.y-5)}
+  }
+
+
+  // Current observer position: always visible, even before local residents know the area.
+  const observer=this.observerMapPosition();
+  if(observer){
+   const P=this.screen(observer.x,observer.y),pulse=12+Math.sin(performance.now()*.006)*2.2;
+   ctx.save();ctx.strokeStyle='#fff0a1';ctx.fillStyle='#ef5b61';ctx.lineWidth=3;
+   ctx.beginPath();ctx.arc(P.x,P.y,pulse,0,Math.PI*2);ctx.stroke();
+   ctx.beginPath();ctx.arc(P.x,P.y,5.5,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle='#fff5c5';ctx.font='bold 11px -apple-system,sans-serif';ctx.textAlign='left';
+   ctx.fillText(`📍 나 · ${observer.label}`,P.x+14,P.y+4);ctx.restore();
+   const badge=this.overlay.querySelector('#worldObserverBadge');if(badge)badge.textContent=`📍 나 · ${observer.country||''} · ${observer.label||observer.region||''}`
   }
 
   // Observer mode: no information fog. Contact status remains separate from visibility.

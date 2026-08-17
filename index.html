@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=10.6">
+<link rel="stylesheet" href="./styles.css?v=11">
 
 </head>
 <body>
@@ -80,6 +80,22 @@
 
 
 
+
+<section id="monsterLineagePanel" class="monster-lineage-panel hidden">
+ <div class="monster-lineage-shell">
+  <div class="monster-lineage-head">
+   <div><small>EXPERIMENT EVOLUTION ARCHIVE</small><b>🧪 실험체 변이 계통도</b><span id="monsterLineageSummary">실험체 자료 분석</span></div>
+   <button id="monsterLineageClose">×</button>
+  </div>
+  <div class="danger-scale">
+   <b>절대 위험등급</b>
+   <div><span class="danger-5"><b>5급</b>낮음</span><span class="danger-4"><b>4급</b>주의</span><span class="danger-3"><b>3급</b>위험</span><span class="danger-2"><b>2급</b>고위험</span><span class="danger-1"><b>1급</b>재난</span><span class="danger-special"><b>특급</b>봉쇄대상</span></div>
+  </div>
+  <div id="monsterFamilyTabs" class="monster-family-tabs"></div>
+  <div id="monsterFamilyDetail" class="monster-family-detail"></div>
+ </div>
+</section>
+
 <section id="dogLineagePanel" class="dog-lineage-panel hidden">
   <div class="dog-lineage-shell">
     <div class="dog-lineage-head">
@@ -139,7 +155,7 @@
 <section id="playerHud" class="player-hud glass">
   <div id="playerFocusBtn" class="player-orb" title="내 캐릭터 추적">⚔️</div>
   <div class="player-copy"><b id="playerName">나 · 관찰자</b><span id="playerStatus">마을을 걷는 중 · 각성은 세계력 55년</span><div class="player-hp"><i id="playerHpBar"></i></div></div>
-  <div class="player-actions"><button id="rpgBtn" class="rpg-btn">🎒 장비</button><button id="autoHuntBtn" class="hunt-btn locked">사냥 AUTO</button></div>
+  <div class="player-actions"><button id="rpgBtn" class="rpg-btn">🎒 장비</button><button id="monsterLineageBtn" class="monster-lineage-btn">🧪 계통</button><button id="autoHuntBtn" class="hunt-btn locked">사냥 AUTO</button></div>
 </section>
 
 <div id="mobileGameControls" class="mobile-game-controls">
@@ -192,11 +208,11 @@
     <div class="world-map-toolbar">
 <div class="planet-scale-note">🌐 행성 둘레 <b>40,075km</b> · 도보 <b>30km/일</b> · 기승 <b>48km/일</b> · 항해 <b>110km/일</b></div>
       <div class="map-mode"><button id="mapModeCurrent" class="active">관찰자 현재</button><button id="mapMode200">200년 기준</button></div>
-      <div class="map-zoom"><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
+      <div class="map-zoom"><button id="mapLocateObserver">📍 나</button><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
     </div>
     <div class="world-map-direct-hint">👆 지도에서 <b>도시·권역을 한 번 터치</b>하면 해당 3D 현지로 바로 이동</div>
 <div class="world-map-main">
-      <div class="world-map-canvas-wrap"><canvas id="worldMapCanvas"></canvas><div class="world-scale-bar"><i></i>약 10,000 km 축척 기준</div></div>
+      <div class="world-map-canvas-wrap"><div id="worldObserverBadge" class="world-observer-badge">📍 현재 위치 확인 중</div><canvas id="worldMapCanvas"></canvas><div class="world-scale-bar"><i></i>약 10,000 km 축척 기준</div></div>
       <aside class="world-map-side">
         <div id="worldMapStatus" class="world-map-status"></div>
         <div id="worldMapDetail" class="world-map-detail"><b>라엔 분지(감나무뜰)</b><span>아르케아 중앙대륙</span><p>창세기 시작점. 현재 문명의 실제 탐사와 항해가 지도에 누적됩니다.</p></div>
@@ -207,6 +223,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=10.6"></script>
+<script type="module" src="./game.js?v=11"></script>
 </body>
 </html>
