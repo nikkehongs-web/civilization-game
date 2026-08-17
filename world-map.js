@@ -379,10 +379,11 @@ export class CivitasWorldMap{
   this.detail.innerHTML=`<b>${name}</b><span>${c.region} · ${c.stage||'소집단'}</span>
    <p>👁 관찰자 현재 인구 <strong>${c.population}명</strong> · 전년 대비 ${delta>=0?'+':''}${delta} · 정착지 ${c.settlements||1}/${c.cities}</p>
    <div><em>출생 ${c.births||0}</em><em>사망 ${c.deaths||0}</em><em>아이 ${c.children||0}</em><em>성인 ${c.adults||0}</em><em>노인 ${c.elders||0}</em><em>가구 ${c.households||0}</em></div>
-   <div><em>식량 ${Math.round(c.food||0)}</em><em>기술 ${Math.round(c.tech||0)}</em><em>기반 ${Math.round(c.infrastructure||0)}</em><em>군사 ${Math.round(c.military||0)}</em><em>안정 ${Math.round(c.stability||0)}</em><em>탐사 ${Math.round(c.exploration||0)}</em></div>
+   <div><em>식량 ${Math.round(c.food||0)}</em><em>기술 ${Math.round(c.tech||0)}</em><em>기반 ${Math.round(c.infrastructure||0)}</em><em>군사 ${Math.round(c.military||0)}</em><em>안정 ${Math.round(c.stability||0)}</em><em>탐사 ${Math.round(c.exploration||0)}</em></div><div><em>군 동원 ${c.army?.mobilized||0}</em><em>보급 ${Math.round(c.army?.supply||0)}</em><em>난민 유입 ${c.refugeesIn||0}</em><em>난민 유출 ${c.refugeesOut||0}</em><em>교역로 ${(c.tradeRoutes||[]).filter(t=>t.active).length}</em><em>조약 ${(c.treaties||[]).filter(t=>t.active).length}</em></div><div><em>사슴 ${c.ecology?.deer||0}</em><em>토끼 ${c.ecology?.rabbit||0}</em><em>멧돼지 ${c.ecology?.boar||0}</em><em>늑대 ${c.ecology?.wolf||0}</em><em>숲 ${Math.round(c.ecology?.forest||0)}</em><em>생태압 ${Math.round(c.ecology?.pressure||0)}</em></div>
    <p>이 나라가 알고 있는 다른 세력: ${known}/30 · 관찰자는 접촉 여부와 무관하게 전부 볼 수 있음.</p>
    ${bars}
    ${events?`<ul class="country-event-list">${events}</ul>`:''}
+   ${(c.causal||[]).length?`<div class="country-causal">${(c.causal||[]).slice(0,5).map(x=>`<div><b>${x.y}년 ${x.d||''}일</b> ${x.cause} → ${x.effect}</div>`).join('')}</div>`:''}
    <div class="census-head"><b>실제 주민 명부 ${people.length}명</b><span>${page+1}/${pages}쪽</span></div>
    <div class="country-census">${rows.map(p=>`<div><b>${p.n}</b><span>${p.g==='F'?'여':'남'} · ${p.a}세 · ${p.j}</span><small>${p.ct} · ${p.f}</small></div>`).join('')}</div>
    <div class="census-page"><button data-census-prev ${page<=0?'disabled':''}>‹ 이전</button><button data-census-next ${page>=pages-1?'disabled':''}>다음 ›</button></div>

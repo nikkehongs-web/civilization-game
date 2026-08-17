@@ -478,3 +478,20 @@ body.region-view .camera-panel{display:none!important}
 .census-page button:disabled{opacity:.28}
 .world-country-list button span{white-space:nowrap}
 @media(max-width:700px){.country-census{max-height:135px}.country-growth-bars{height:38px}}
+
+/* ===== v9 LIVING WORLD COMPLETE ===== */
+.observer-region-panel{
+ position:fixed;z-index:74;right:12px;top:72px;width:min(320px,40vw);max-height:72vh;overflow:auto;
+ padding:8px;border-radius:12px;background:rgba(6,14,17,.86);border:1px solid rgba(255,255,255,.08);
+ backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)
+}
+.orp-head{display:flex;justify-content:space-between;align-items:center}.orp-head b{font-size:8px;color:#efdba8}.orp-head button{width:27px;height:27px;border-radius:7px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:14px}
+.orp-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-top:6px}.orp-stats span{padding:4px 5px;border-radius:7px;background:rgba(255,255,255,.035);font-size:5.7px;color:#b9c8c5}
+.orp-events{margin-top:6px;display:grid;gap:3px}.orp-events div{padding:4px 5px;border-radius:7px;background:rgba(255,255,255,.025);font-size:5.3px;color:#8fa7a5;line-height:1.4}
+.region-citizen-label{font-size:6px;color:#e8dfc6}
+@media(max-width:700px){
+ .observer-region-panel{left:7px;right:7px;top:auto;bottom:8px;width:auto;max-height:28vh}
+ .orp-stats{grid-template-columns:repeat(4,1fr)}
+}
+
+.country-causal{display:grid;gap:3px;margin-top:6px}.country-causal div{padding:4px 5px;border-left:2px solid rgba(216,184,100,.45);background:rgba(216,184,100,.035);font-size:5.4px;color:#aeb7ad}.country-causal b{font-size:5.4px;color:#dcc38b}

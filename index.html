@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=8.6">
+<link rel="stylesheet" href="./styles.css?v=9">
 
 </head>
 <body>
@@ -77,6 +77,13 @@
 <div class="hint glass">드래그: 카메라 회전 · 핀치: 확대/축소 · 바닥 터치: 이동 · 더블탭: 내 캐릭터 추적</div>
 
 
+
+<section id="observerRegionPanel" class="observer-region-panel hidden">
+  <div class="orp-head"><b id="orpTitle">국가 관찰</b><button id="orpClose">×</button></div>
+  <div id="orpStats" class="orp-stats"></div>
+  <div id="orpEvents" class="orp-events"></div>
+</section>
+
 <section id="regionViewHud" class="region-view-hud hidden">
   <div><small>OBSERVER REGIONAL MAP</small><b id="regionViewTitle">아르케아 중앙대륙</b><span id="regionViewSub">지역 3D 관찰 지도</span></div>
   <div class="region-view-actions"><button id="regionWorldMapBtn">🌍 세계지도</button><button id="regionLaenBtn">⌂ 라엔 복귀</button></div>
@@ -105,6 +112,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=8.6"></script>
+<script type="module" src="./game.js?v=9"></script>
 </body>
 </html>
