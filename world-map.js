@@ -183,6 +183,6 @@ export class CivitasWorldMap{
  renderStatus(){
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
-  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'현재 관측 지도'}</b><span>세계 인구 ${st.worldPopulation} · 관측 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 분포: 아르케아 핵심 30 · 타 권역 270(세부 분포 미확인)<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>`
+  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${this.mode==='future'?'200년 기준 데이터':'현재 관측 지도'}</b><span>LIVE · 세계 인구 ${st.worldPopulation} · 관측 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 분포: 아르케아 핵심 30 · 타 권역 270(세부 분포 미확인)<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>`
  }
 }
