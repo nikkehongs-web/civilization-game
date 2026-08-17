@@ -1,0 +1,69 @@
+{
+  "version": "13",
+  "title": "문명: 감나무뜰의 창세기",
+  "world_year_0": {
+    "total_humans": 300,
+    "gamnamutteul": 30,
+    "other_seven_regions": 270,
+    "animals": [
+      "복실이 only"
+    ],
+    "plants": true,
+    "myeongja": "not among the 300 living humans; died in reality before world year 0",
+    "living_nonhuman_animals": "Bokshil only"
+  },
+  "initial_region_populations": [
+    {
+      "region": "아르케아 중앙대륙",
+      "city": "L001",
+      "population": 30
+    },
+    {
+      "region": "실바리온 수림권",
+      "city": "L019",
+      "population": 39
+    },
+    {
+      "region": "카르딘 산맥권",
+      "city": "L031",
+      "population": 39
+    },
+    {
+      "region": "세라칸 대초원",
+      "city": "L043",
+      "population": 39
+    },
+    {
+      "region": "네레이아 해권",
+      "city": "L055",
+      "population": 39
+    },
+    {
+      "region": "솔라크 사막권",
+      "city": "L067",
+      "population": 38
+    },
+    {
+      "region": "드라바스 화산군도",
+      "city": "L079",
+      "population": 38
+    },
+    {
+      "region": "루메라 부유제도",
+      "city": "L091",
+      "population": 38
+    }
+  ],
+  "milestones": {
+    "prologue": "이명자는 현실에서 사망. 서버는 닫히지 않고 복실이의 자율행동 뒤 장기 자율사회 실험 시작",
+    "year_10": "첫 장거리 항해",
+    "20s": "최초 인공동물과 인공가축",
+    "30s": "목적형 생명 설계",
+    "40s": "군사 생명공학",
+    "year_55": "최초 오크 조우 / 마수 시대"
+  },
+  "core_causality": "인간 수가 극도로 적기 때문에 기계화가 빠르게 진행되고, 기계로 해결하기 어려운 노동·수송·식량·전투력 부족을 보충하려 인공생명공학이 발전한다.",
+  "cities": "126 potential city slots; initially 8 settlements; population grows before family-based colonization.",
+  "population_rule": "birth/death changes total population; settlement migration redistributes population only; population grows before colonization",
+  "long_term_target": "126 potential cities, roughly 1,000 residents per mature city when fully populated (~126,000 total), reached organically rather than prefilled"
+}

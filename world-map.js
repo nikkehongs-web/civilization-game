@@ -177,7 +177,7 @@ export class CivitasWorldMap{
  }
  close(){this.overlay.classList.add('hidden');this.onClose?.()}
  resize(){
-  const r=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.5);
+  const r=this.canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
   const w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));
   if(this.canvas.width!==w||this.canvas.height!==h){this.canvas.width=w;this.canvas.height=h}
   this.draw()
@@ -211,7 +211,7 @@ export class CivitasWorldMap{
  }
  pCancel(e){this.pointerMap.delete(e.pointerId);this.lastSingle=null;this.lastPair=null}
  baseTransform(){
-  const w=this.canvas.width,h=this.canvas.height,pad=30*(Math.min(devicePixelRatio||1,1.5));
+  const w=this.canvas.width,h=this.canvas.height,pad=30*(Math.min(devicePixelRatio||1,2));
   const minX=80,maxX=970,minY=20,maxY=760,base=Math.min((w-pad*2)/(maxX-minX),(h-pad*2)/(maxY-minY));
   return{w,h,pad,minX,maxX,minY,maxY,base}
  }
@@ -456,7 +456,7 @@ export class CivitasWorldMap{
    ctx.beginPath();ctx.arc(P.x,P.y,5.5,0,Math.PI*2);ctx.fill();
    ctx.fillStyle='#fff5c5';ctx.font='bold 11px -apple-system,sans-serif';ctx.textAlign='left';
    ctx.fillText(`📍 나 · ${observer.label}`,P.x+14,P.y+4);ctx.restore();
-   const badge=this.overlay.querySelector('#worldObserverBadge');if(badge)badge.textContent=`📍 나 · ${observer.country||''} · ${observer.label||observer.region||''}`
+   const badge=this.overlay.querySelector('#worldObserverBadge');if(badge){const o=this.getState().world.observerLocation||{};badge.textContent=`📍 나 · ${observer.country||''} · ${observer.label||observer.region||''}${Number.isFinite(o.localX)?` · X${Math.round(o.localX)}m Z${Math.round(o.localZ)}m`:''}`}
   }
 
   // Observer mode: no information fog. Contact status remains separate from visibility.
@@ -477,12 +477,12 @@ export class CivitasWorldMap{
   const bars=hist.length?`<div class="country-growth-bars">${hist.map(h=>`<i title="${h[0]}년 ${h[1]}명" style="height:${Math.max(8,h[1]/maxP*100)}%"></i>`).join('')}</div>`:'<small>아직 연간 성장 기록 없음</small>';
   const delta=(c.population||0)-(c.lastPopulation||c.population||0),known=(c.knownCountries||[name]).length,leader=this.personById(c.politics?.leaderId),territory=this.controlledCities(name),families=new Set(people.map(p=>p.lineage||p.f)).size;
   const events=(c.events||[]).slice(0,5).map(e=>`<li>${e.y}년 · ${e.t}</li>`).join('');
-  this.detail.innerHTML=`<b>${name}</b><span>${c.region} · ${c.stage||'소집단'} · ${c.active===false?'역사국가':'현존'}</span>
+  this.detail.innerHTML=`<b>${name}</b><span>${c.region} · ${c.stage||'소집단'} · ${c.active===false?'미개척':'현존 공동체'}</span>
    <p>👁 관찰자 현재 인구 <strong>${c.population.toLocaleString()}명</strong> · 전년 대비 ${delta>=0?'+':''}${delta} · 영토 ${territory.length}도시 · 정착 ${c.settlements||0}</p>
    <div><em>정체 ${c.politics?.form||'-'}</em><em>지도자 ${leader?leader.n+' '+leader.a+'세':'공석'}</em><em>정통성 ${Math.round(c.politics?.legitimacy||0)}</em><em>정치불안 ${Math.round(c.politics?.unrest||0)}</em><em>가문 ${families}</em></div>
    <div><em>출생 ${c.births||0}</em><em>사망 ${c.deaths||0}</em><em>아이 ${c.children||0}</em><em>성인 ${c.adults||0}</em><em>노인 ${c.elders||0}</em><em>가구 ${c.households||0}</em></div>
-   <div><em>식량 ${Math.round(c.food||0)}</em><em>기술 ${Math.round(c.tech||0)}</em><em>기반 ${Math.round(c.infrastructure||0)}</em><em>군사 ${Math.round(c.military||0)}</em><em>안정 ${Math.round(c.stability||0)}</em><em>탐사 ${Math.round(c.exploration||0)}</em></div><div><em>군 동원 ${c.army?.mobilized||0}</em><em>보급 ${Math.round(c.army?.supply||0)}</em><em>난민 유입 ${c.refugeesIn||0}</em><em>난민 유출 ${c.refugeesOut||0}</em><em>교역로 ${(c.tradeRoutes||[]).filter(t=>t.active).length}</em><em>조약 ${(c.treaties||[]).filter(t=>t.active).length}</em></div><div><em>사슴 ${c.ecology?.deer||0}</em><em>토끼 ${c.ecology?.rabbit||0}</em><em>멧돼지 ${c.ecology?.boar||0}</em><em>늑대 ${c.ecology?.wolf||0}</em><em>숲 ${Math.round(c.ecology?.forest||0)}</em><em>생태압 ${Math.round(c.ecology?.pressure||0)}</em></div>
-   <p>이 나라가 알고 있는 다른 세력: ${known}/30 · 관찰자는 접촉 여부와 무관하게 전부 볼 수 있음.</p>
+   <div><em>식량 ${Math.round(c.food||0)}</em><em>기술 ${Math.round(c.tech||0)}</em><em>기반 ${Math.round(c.infrastructure||0)}</em><em>군사 ${Math.round(c.military||0)}</em><em>안정 ${Math.round(c.stability||0)}</em><em>탐사 ${Math.round(c.exploration||0)}</em></div><div><em>군 동원 ${c.army?.mobilized||0}</em><em>보급 ${Math.round(c.army?.supply||0)}</em><em>난민 유입 ${c.refugeesIn||0}</em><em>난민 유출 ${c.refugeesOut||0}</em><em>교역로 ${(c.tradeRoutes||[]).filter(t=>t.active).length}</em><em>조약 ${(c.treaties||[]).filter(t=>t.active).length}</em></div><div><em>${st.bio?.livestock?'인공생물 시대':'비인간 동물 없음'}</em><em>숲 ${Math.round(c.ecology?.forest||0)}</em><em>토양 ${Math.round(c.ecology?.soil||0)}</em><em>수자원 ${Math.round(c.ecology?.water||0)}</em><em>생태압 ${Math.round(c.ecology?.pressure||0)}</em></div>
+   <p>이 공동체가 알고 있는 다른 세력: ${known}/${this.activeCountries().length} · 관찰자는 접촉 여부와 무관하게 전부 볼 수 있음.</p>
    ${bars}
    ${events?`<ul class="country-event-list">${events}</ul>`:''}
    ${(c.causal||[]).length?`<div class="country-causal">${(c.causal||[]).slice(0,5).map(x=>`<div><b>${x.y}년 ${x.d||''}일</b> ${x.cause} → ${x.effect}</div>`).join('')}</div>`:''}
@@ -510,9 +510,9 @@ export class CivitasWorldMap{
   const st=this.getState(),w=st.world,known=w.knownRegions.length,founded=w.foundedCities.length;
   const tech=Object.entries(w.seaTech).map(([k,v])=>`${v.label} ${v.open?'✓':Math.floor(v.p)+'%'}`).join(' · ');
   const active=(w.expeditions||[]).filter(e=>e.active);
-  const ex=active.length?active.map(e=>{const ns=(e.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);const end=e.phase==='return'?e.returnArrivalAbsDay:e.arrivalAbsDay;return `<span class="expedition-pill">${e.kind==='sea'?'⛵':'🐎'} ${e.region} · ${e.phase==='return'?'귀환':'이동'} · ${Math.max(0,(end||0)-(st.year*365+st.day))}일 · ${ns.join('·')||'원정대'}</span>`}).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
+  const ex=active.length?active.map(e=>{const ns=(e.memberIds||[]).map(id=>(st.residents||[]).find(r=>r.id===id)?.name).filter(Boolean);const end=e.phase==='return'?e.returnArrivalAbsDay:e.arrivalAbsDay;return `<span class="expedition-pill">${e.kind==='sea'?'⛵':'🥾'} ${e.region} · ${e.phase==='return'?'귀환':'이동'} · ${Math.max(0,(end||0)-(st.year*365+st.day))}일 · ${ns.join('·')||'원정대'}</span>`}).join(''):'<span class="expedition-pill">진행 중 장거리 원정 없음</span>';
   const activeN=this.activeCountries().length,deadN=Object.values(w.countries||{}).filter(c=>c.active===false).length,seasonNow=st.climate?.season||'';
-  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${seasonNow} ${st.weather||''} · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 실제 사람 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 현존국 ${activeN} · 소멸/통합국 ${deadN} · 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length} · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 아르케아 핵심 30 · 타 권역 270. 도보는 30km/일, 기승 48km/일, 항해 110km/일 기준이며 지형·준비 시간이 추가됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
+  this.status.innerHTML=`<b>세계력 ${st.year}년 ${st.day}일 · ${seasonNow} ${st.weather||''} · ${this.mode==='future'?'200년 기준 데이터':'관찰자 현재 세계'}</b><span>🌐 둘레 40,075km · 👁 실제 사람 ${(st.worldPeople||[]).filter(p=>p.alive!==0).length}명 · 현존 공동체 ${activeN} · 미개척 세력슬롯 ${deadN} · 실제 세계 인구 ${st.worldPopulation} · 주민 실제 접촉국 ${(w.contactedCountries||[]).length} · 접촉 권역 ${known}/8 · 형성 거점 ${founded}/126</span><small>초기 총인구 300: 감나무뜰 30명 + 멀리 떨어진 7개 권역 270명. 다른 도시 슬롯은 미개척이며 인구가 충분히 늘어난 뒤 분가로 형성됩니다.<br>육상 탐사 ${Math.floor(w.landProgress)} · 해상 원정 ${Math.floor(w.seaProgress)} · ${tech}</small>${ex}`;
   this.renderCountries()
  }
 }

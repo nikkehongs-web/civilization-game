@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=11">
+<link rel="stylesheet" href="./styles.css?v=13">
 
 </head>
 <body>
@@ -27,7 +27,7 @@
       var txt=document.getElementById('runtimeDiagText');
       if(box&&txt){
         box.classList.remove('hidden');
-        txt.textContent='v10.5.3 시작 오류: '+text;
+        txt.textContent='v13 시작 오류: '+text;
       }
       var loading=document.getElementById('loading');
       if(loading){
@@ -43,7 +43,7 @@
 
 <div id="loading" class="loading"><div><div class="spinner"></div><b>감나무뜰을 불러오는 중</b><p>3D 세계와 주민들의 하루를 준비하고 있습니다.</p></div></div>
 <header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="worldMapBtn" class="icon world-map-btn" title="세계지도">🌍</button><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
-<section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들, 그리고 복실이가 라엔 분지의 첫 아침을 함께 맞았다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
+<section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">사람만 존재하는 세계</h2><p id="storyText">현실에서 이명자가 죽은 뒤에도 테스트 서버는 닫히지 않았다. 인간 300명과 식물, 그리고 복실이만 남아 장기 자율사회 실험이 시작됐다.</p><div id="storyQuote" class="quote">“누구도 명령하지 않았다. 복실이는 스스로 선택했다.”</div><div class="story-meta"><span id="storySpeaker">— 기록</span><span id="storyTime">세계력 0년 1일</span></div></section>
 <section id="resources" class="resources"></section>
 
 <section id="playerLocationHud" class="player-location-hud glass">
@@ -99,7 +99,7 @@
 <section id="dogLineagePanel" class="dog-lineage-panel hidden">
   <div class="dog-lineage-shell">
     <div class="dog-lineage-head">
-      <div><small>KAMNAMU DOG FAMILY ARCHIVE</small><b>🐕 복실이 후손 계보</b><span id="dogLineageSummary">계보 불러오는 중</span></div>
+      <div><small>LIFE SCIENCE ORIGIN ARCHIVE</small><b>🐕 복실이 · 생명과학 계보</b><span id="dogLineageSummary">생명과학 기록 불러오는 중</span></div>
       <button id="dogLineageClose">×</button>
     </div>
     <div id="dogLineageFounder" class="dog-founder-card"></div>
@@ -149,7 +149,7 @@
 
 <section id="mapExpansionHud" class="map-expansion-hud glass"><b id="mapExpansionTitle">라엔 분지</b><span id="mapExpansionText">탐사 범위 1단계</span></section>
 <section id="bokshilHud" class="bokshil-hud glass">
-  <b>🐕 복실이</b><span id="bokshilStatus">주민들 사이를 순찰 중</span><button id="dogLineageBtn">계보</button>
+  <b>🐕 복실이</b><span id="bokshilStatus">주민들 사이를 순찰 중</span><button id="dogLineageBtn">생명계보</button>
 </section>
 
 <section id="playerHud" class="player-hud glass">
@@ -166,7 +166,7 @@
   </div>
   <div class="camera-quick">
     <button id="mobileWorldMapBtn" class="world-quick" aria-label="세계지도">🌍</button>
-    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button><button id="transportBtn" class="transport-btn" aria-label="이동수단">🐎</button><button id="expeditionTrackBtn" class="expedition-track-btn" aria-label="원정 추적">🧭</button><button id="locateMeBtn" class="locate-me" aria-label="내 위치 확인">📍</button>
+    <button id="homeGuideBtn" class="home-guide" aria-label="감나무뜰 길찾기">⌂</button><button id="transportBtn" class="transport-btn" aria-label="관찰자 이동수단">🚶</button><button id="expeditionTrackBtn" class="expedition-track-btn" aria-label="원정 추적">🧭</button><button id="locateMeBtn" class="locate-me" aria-label="내 위치 확인">📍</button>
     <button id="dragModeBtn" aria-label="드래그 모드">✥</button>
     <button id="zoomInBtn" aria-label="확대">＋</button>
     <button id="cameraResetBtn" aria-label="카메라 초기화">◎</button>
@@ -186,7 +186,7 @@
   <div id="expeditionTrackerList"></div>
  </div>
 </section>
-<div id="transportHud" class="transport-hud hidden">🐎 기승 이동 · 3.4×</div>
+<div id="transportHud" class="transport-hud hidden">🚙 관찰차 · 관찰자 전용</div>
 
 <section id="observerRegionPanel" class="observer-region-panel hidden">
   <div class="orp-head"><b id="orpTitle">국가 관찰</b><button id="orpClose">×</button></div>
@@ -206,7 +206,7 @@
       <button id="closeWorldMap">×</button>
     </div>
     <div class="world-map-toolbar">
-<div class="planet-scale-note">🌐 행성 둘레 <b>40,075km</b> · 도보 <b>30km/일</b> · 기승 <b>48km/일</b> · 항해 <b>110km/일</b></div>
+<div class="planet-scale-note">🌐 행성 둘레 <b>40,075km</b> · 주민 원정은 실제 이동시간 적용 · 관찰자는 🚙/✈️ 전용 이동 가능</div>
       <div class="map-mode"><button id="mapModeCurrent" class="active">관찰자 현재</button><button id="mapMode200">200년 기준</button></div>
       <div class="map-zoom"><button id="mapLocateObserver">📍 나</button><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
     </div>
@@ -223,6 +223,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=11"></script>
+<script type="module" src="./game.js?v=13"></script>
 </body>
 </html>
