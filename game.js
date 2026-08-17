@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=8';
+import { CivitasWorldMap } from './world-map.js?v=8.1';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -13,7 +13,7 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=8')
+const WORLD_DATA = await fetch('./world.json?v=8.1')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -221,7 +221,7 @@ state.resources??={food:22,water:28,wood:14,stone:8,labor:22};
 state.caps??={food:100,water:100,wood:100,stone:100,labor:60};
 for(const[k,v]of Object.entries({food:22,water:28,wood:14,stone:8,labor:22}))state.resources[k]??=v;
 for(const[k,v]of Object.entries({food:100,water:100,wood:100,stone:100,labor:60}))state.caps[k]??=v;
-state.flags??={};state.storyCooldowns??={};state.schemaVersion=6;
+state.flags??={};state.storyCooldowns??={};state.schemaVersion=81;
 state.speed??=1;state.running??=true;state.logs??=[];
 if(!state.logs.length)state.logs=[{seq:1,type:'story',time:`${state.year||0}년 ${state.day||1}일`,title:'기록 복구',text:'이전 기록 일부가 비어 있어 현재 세계 상태를 기준으로 연대기를 다시 이어간다.',speaker:'기록',quote:'사라진 기록은 추측하지 않고, 남아 있는 세계에서 다시 시작한다.'}];
 state.seq??=Math.max(1,...state.logs.map(l=>Number(l.seq)||0));state.currentStorySeq??=state.logs[0]?.seq||1;state.residents??=JSON.parse(JSON.stringify(RESIDENT_SEED));state.buildings??={house:2,field:0,storage:0,workshop:0,herb:0,pen:0,meeting:0,well:0,kiln:0,kitchen:0,watch:0,loom:0};for(const k of ['house','field','storage','workshop','herb','pen','meeting','well','kiln','kitchen','watch','loom'])state.buildings[k]??=(k==='house'?2:0);state.tech??={};for(const k of ['기록습관','공동취사','건조저장','목공기초','약초분류','사육기초','수로관리','토기저장','직조기초','야간교대'])state.tech[k]??={p:0,open:false};state.demography??={births:0,arrivals:0,children:0};state.civ??={level:0,levelName:'야영지',techUnlocked:0,builds:0,lastAnnual:null,lastBuildAbsDay:-999};state.civ.lastBuildAbsDay??=-999;state.eventMemory??={};
@@ -327,8 +327,10 @@ function viewportMetrics(){
 }
 const initialViewport=viewportMetrics();
 const camera=new THREE.PerspectiveCamera(38,initialViewport.w/initialViewport.h,.1,600);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+const IS_MOBILE=matchMedia('(max-width:700px)').matches||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+const renderer=new THREE.WebGLRenderer({antialias:!IS_MOBILE,powerPreference:'high-performance',alpha:false,preserveDrawingBuffer:false});
+renderer.setClearColor(0x94a4a1,1);
+renderer.shadowMap.enabled=!IS_MOBILE;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.domElement.style.position='absolute';renderer.domElement.style.inset='0';renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';
 gameRoot.appendChild(renderer.domElement);
 let renderW=0,renderH=0;
@@ -336,12 +338,12 @@ function resizeWorld(force=false){
  const {w,h}=viewportMetrics();
  if(!force&&Math.abs(w-renderW)<2&&Math.abs(h-renderH)<2)return;
  renderW=w;renderH=h;
- renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.45));
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,IS_MOBILE?1.0:1.35));
  renderer.setSize(w,h,false);
  camera.aspect=w/h;camera.updateProjectionMatrix();
 }
 resizeWorld(true);
-scene.add(new THREE.HemisphereLight(0xdff2df,0x5a4938,2.1));const sun=new THREE.DirectionalLight(0xffe7b4,2.5);sun.position.set(-35,55,-30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-80;sun.shadow.camera.right=80;sun.shadow.camera.top=80;sun.shadow.camera.bottom=-80;scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xdff2df,0x5a4938,2.1));const sun=new THREE.DirectionalLight(0xffe7b4,2.5);sun.position.set(-35,55,-30);sun.castShadow=true;sun.shadow.mapSize.set(IS_MOBILE?512:1024,IS_MOBILE?512:1024);sun.shadow.camera.left=-80;sun.shadow.camera.right=80;sun.shadow.camera.top=80;sun.shadow.camera.bottom=-80;scene.add(sun);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,180),new THREE.MeshStandardMaterial({color:0x7e895d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
 
 const walkableSurfaces=[ground];
@@ -355,7 +357,7 @@ function createFrontierTile(x,z,w,h,level,index){
  const plane=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({color:palette[index%palette.length],roughness:1}));
  plane.rotation.x=-Math.PI/2;plane.receiveShadow=true;plane.position.y=-.015;g.add(plane);walkableSurfaces.push(plane);
  // light terrain details so expansion is visually obvious but remains mobile-friendly
- const detailCount=Math.max(5,Math.floor(w*h/1500));
+ const detailCount=IS_MOBILE?Math.max(2,Math.floor(w*h/5200)):Math.max(4,Math.floor(w*h/2400));
  for(let i=0;i<detailCount;i++){
   const rx=(seededNoise(index*100+i*3)-.5)*w*.86,rz=(seededNoise(index*100+i*3+1)-.5)*h*.86;
   if(i%3===0){
@@ -643,6 +645,7 @@ function updateAnimals(dt,now){
  ensureDomesticAnimals();
  const b=localMapBounds();
  for(const a of animals){
+  if(!a||!a.userData||!a.position)continue;
   const ud=a.userData;if(ud.raid||ud.dead)continue;
   const toPlayer=a.position.distanceTo(player.position);
   if(!ud.domestic&&toPlayer<5){
@@ -1990,10 +1993,27 @@ function tryMilestones(){
 }
 function advanceDay(){
  state.day++;
- if(state.day>365){const prev=state.civ.lastAnnual||{population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};state.day=1;state.year++;state.residents.forEach(r=>r.age++);annualWorldPopulation();annualSummary(prev)}
- processMyeongjaLifecycle();syncOfficialPopulationRuntime(true);updateLifeStages();updateLocalMapExpansion(true);dailySettlementEconomy();advanceBrainNeeds();dailyTechEngine();updateWorldEngine();maybeConflictsDaily();
- if(Math.random()<.075){state.weather=pick(['맑음','흐림','약한 비','바람']);if(state.weather==='약한 비')gain({water:2.5})}
- tryMilestones();syncVillageVisuals(false);state.demography.children=state.residents.filter(r=>r.age<16).length;
+ if(state.day>365){
+   const prev=state.civ.lastAnnual||{population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};
+   state.day=1;state.year++;state.residents.forEach(r=>r.age++);
+   guarded('연간인구',()=>annualWorldPopulation());
+   guarded('연간기록',()=>annualSummary(prev))
+ }
+ guarded('이명자생애',()=>processMyeongjaLifecycle());
+ guarded('인구동기화',()=>syncOfficialPopulationRuntime(true));
+ guarded('성장단계',()=>updateLifeStages());
+ guarded('지역확장',()=>updateLocalMapExpansion(true));
+ guarded('경제',()=>dailySettlementEconomy());
+ guarded('욕구',()=>advanceBrainNeeds());
+ guarded('기술',()=>dailyTechEngine());
+ guarded('세계시뮬',()=>updateWorldEngine());
+ guarded('분쟁발생',()=>maybeConflictsDaily());
+ guarded('날씨',()=>{
+   if(Math.random()<.075){state.weather=pick(['맑음','흐림','약한 비','바람']);if(state.weather==='약한 비')gain({water:2.5})}
+ });
+ guarded('마일스톤',()=>tryMilestones());
+ guarded('마을시각화',()=>syncVillageVisuals(false));
+ state.demography.children=state.residents.filter(r=>r.age<16).length;
  if(!state.civ.lastAnnual)state.civ.lastAnnual={population:state.residents.length,world:state.worldPopulation,house:state.buildings.house,field:state.buildings.field,tech:countOpenTech(),level:state.civ.levelName,builds:state.civ.builds||0};
  save();uiDirty=true
 }
@@ -2033,7 +2053,7 @@ if(state.buildings.herb){const q=worldToMini(LOC.herbs.x+4,LOC.herbs.z-2);mctx.f
 if(state.buildings.pen){const q=worldToMini(LOC.pen.x,LOC.pen.z);mctx.strokeStyle='#c3a574';mctx.strokeRect(q.x-5,q.y-5,10,10)}if(state.buildings.well){const q=worldToMini(20,6);mctx.fillStyle='#6f9eb1';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}if(state.buildings.kitchen){const q=worldToMini(-8,-14);mctx.fillStyle='#b58d58';mctx.fillRect(q.x-4,q.y-4,8,8)}if(state.buildings.kiln){const q=worldToMini(14,-23);mctx.fillStyle='#9a684d';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}if(state.buildings.watch){const q=worldToMini(-28,-3);mctx.fillStyle='#d0b27f';mctx.fillRect(q.x-3,q.y-6,6,12)}
 const pq=worldToMini(player.position.x,player.position.z);mctx.fillStyle='#6f8dff';mctx.beginPath();mctx.arc(pq.x,pq.y,7,0,Math.PI*2);mctx.fill();
 const bq=worldToMini(bokshil.position.x,bokshil.position.z);mctx.fillStyle='#8c5f3e';mctx.beginPath();mctx.arc(bq.x,bq.y,5,0,Math.PI*2);mctx.fill();
-for(const a of animals){const q=worldToMini(a.position.x,a.position.z);mctx.fillStyle=a.userData.domestic?'#e0bd74':'#759c67';mctx.beginPath();mctx.arc(q.x,q.y,a.userData.domestic?3.2:2.4,0,Math.PI*2);mctx.fill()}for(const h of conflictHostiles){if(h.userData.dead||!h.visible)continue;const q=worldToMini(h.position.x,h.position.z);mctx.fillStyle=h.userData.raidHuman?'#d44f43':'#c46a4d';mctx.beginPath();mctx.arc(q.x,q.y,h.userData.raidHuman?4:3.2,0,Math.PI*2);mctx.fill()}
+for(const a of animals){const q=worldToMini(a.position.x,a.position.z);mctx.fillStyle=a.userData.domestic?'#e0bd74':'#759c67';mctx.beginPath();mctx.arc(q.x,q.y,a.userData.domestic?3.2:2.4,0,Math.PI*2);mctx.fill()}for(const h of conflictHostiles){if(!h||!h.userData||!h.position||h.userData.dead||!h.visible)continue;const q=worldToMini(h.position.x,h.position.z);mctx.fillStyle=h.userData.raidHuman?'#d44f43':'#c46a4d';mctx.beginPath();mctx.arc(q.x,q.y,h.userData.raidHuman?4:3.2,0,Math.PI*2);mctx.fill()}
 if(state.flags.myeongjaDead){const gq=worldToMini(-9,10);mctx.fillStyle='#73746f';mctx.fillRect(gq.x-3,gq.y-5,6,10)}
 for(const mo of monsters){if(mo.userData.dead)continue;const q=worldToMini(mo.position.x,mo.position.z);mctx.fillStyle='#bf5f63';mctx.beginPath();mctx.arc(q.x,q.y,4,0,Math.PI*2);mctx.fill()}
 people.forEach(p=>{const q=worldToMini(p.position.x,p.position.z);mctx.fillStyle=p.userData.id==='C0001'?'#f2b665':'#f5e3b5';mctx.beginPath();mctx.arc(q.x,q.y,p.userData.id==='C0001'?7:5,0,Math.PI*2);mctx.fill()});if(eventFocus){const e=worldToMini(eventFocus.x,eventFocus.z);mctx.strokeStyle='#e66f65';mctx.lineWidth=4;mctx.beginPath();mctx.arc(e.x,e.y,12,0,Math.PI*2);mctx.stroke()}}
@@ -2125,7 +2145,65 @@ $('mobileWorldMapBtn')?.addEventListener('click',()=>worldMapUI.open());
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;uiDirty=true;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
 
 let uiDirty=true,lastUiRender=0;let last=performance.now();let viewportWatch=0;
-function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;updateSim(dt);updatePeople(dt,now);updatePlayer(dt,now);updateBokshil(dt,now);updateAnimals(dt,now);updateConflictSystem(dt,now);updateMonsters(dt,now);updateCamera(now);flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3;drawMini();if(now-viewportWatch>900){resizeWorld();viewportWatch=now}if(uiDirty&&now-lastUiRender>360){renderUI();lastUiRender=now}if((now|0)%300<18){updatePlayerHud();if(selectedBrainId)renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId));}if((now|0)%300<18)renderConflictHud();if(!$('worldMapOverlay').classList.contains('hidden')&&((now|0)%700<18))worldMapUI.draw();renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+const runtimeFaults=new Map();
+function runtimeFault(name,err){
+ const prev=runtimeFaults.get(name);
+ runtimeFaults.set(name,{count:(prev?.count||0)+1,error:String(err?.message||err),time:performance.now()});
+ console.error(`[${name}]`,err);
+ const el=$('runtimeDiag'),txt=$('runtimeDiagText');
+ if(el&&txt){
+   el.classList.remove('hidden');
+   txt.textContent=`${name}: ${String(err?.message||err).slice(0,100)}`;
+   clearTimeout(runtimeFault.hideTimer);
+   runtimeFault.hideTimer=setTimeout(()=>el.classList.add('hidden'),5000)
+ }
+}
+function guarded(name,fn){
+ try{return fn()}catch(err){runtimeFault(name,err);return undefined}
+}
+function renderFrameAlways(){
+ try{renderer.render(scene,camera)}
+ catch(err){runtimeFault('3D 렌더러',err)}
+}
+function loop(now){
+ const dt=Math.min(.04,Math.max(.001,(now-last)/1000));last=now;
+
+ // A simulation error must never stop the 3D viewport.
+ guarded('카메라',()=>updateCamera(now));
+ renderFrameAlways();
+
+ guarded('시간',()=>updateSim(dt));
+ guarded('주민AI',()=>updatePeople(dt,now));
+ guarded('플레이어',()=>updatePlayer(dt,now));
+ guarded('복실이',()=>updateBokshil(dt,now));
+ guarded('일반동물',()=>updateAnimals(dt,now));
+ guarded('습격·전쟁',()=>updateConflictSystem(dt,now));
+ guarded('몬스터',()=>updateMonsters(dt,now));
+ guarded('불빛',()=>{flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3});
+ guarded('미니맵',()=>drawMini());
+
+ if(now-viewportWatch>900){guarded('화면크기',()=>resizeWorld());viewportWatch=now}
+ if(uiDirty&&now-lastUiRender>360){guarded('UI',()=>renderUI());lastUiRender=now}
+ if((now|0)%300<18){
+   guarded('플레이어HUD',()=>updatePlayerHud());
+   if(selectedBrainId)guarded('주민패널',()=>renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId)));
+   guarded('분쟁HUD',()=>renderConflictHud())
+ }
+ if(!$('worldMapOverlay').classList.contains('hidden')&&((now|0)%700<18))guarded('세계지도',()=>worldMapUI.draw());
+
+ // Render once more after object updates.
+ renderFrameAlways();
+ requestAnimationFrame(loop)
+}
+window.addEventListener('error',e=>runtimeFault('브라우저',e.error||e.message));
+window.addEventListener('unhandledrejection',e=>runtimeFault('비동기',e.reason||'Promise 오류'));
+renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();runtimeFault('WebGL','그래픽 컨텍스트가 중단되었습니다.')},false);
+renderer.domElement.addEventListener('webglcontextrestored',()=>{resizeWorld(true);showEvent('3D 화면을 복구했습니다.')},false);
+
+// Valid camera + visible scene before simulation starts.
+updateCamera(performance.now());
+renderFrameAlways();
+requestAnimationFrame(loop);
 let resizeTimer=0;
 function scheduleResize(){
  clearTimeout(resizeTimer);resizeWorld(true);
@@ -2138,4 +2216,4 @@ window.visualViewport?.addEventListener('scroll',scheduleResize,{passive:true});
 if(window.ResizeObserver)new ResizeObserver(()=>resizeWorld()).observe(gameRoot);
 updateLifeStages();state.demography.children=state.residents.filter(r=>r.age<16).length;
 {const score=civilizationScore();let f=CIV_LEVELS[0];for(const lv of CIV_LEVELS)if(score>=lv.score)f=lv;state.civ.levelName=f.name;state.civ.level=CIV_LEVELS.indexOf(f)}
-syncVillageVisuals(false);renderUI();setTimeout(()=>$('loading').classList.add('hidden'),450);setInterval(save,5000);
+updateLocalMapExpansion(false);syncVillageVisuals(false);renderUI();setTimeout(()=>$('loading').classList.add('hidden'),450);setInterval(save,5000);

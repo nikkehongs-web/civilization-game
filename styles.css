@@ -392,3 +392,10 @@ html,body{
 .trajectory-tag{display:inline-block;padding:2px 5px;border-radius:99px;background:rgba(207,182,114,.1);font-size:6px;color:#dec88e;margin:2px}
 @media(max-width:700px){.world-country-list{max-height:125px}.observer-label{font-size:5.5px}.world-country-list button{padding:4px 5px}}
 @media(max-width:560px){.conflict-hud{top:82px;width:min(215px,58vw);padding:5px 7px}.conflict-head b{font-size:8px}.conflict-hud>span{font-size:5px}.conflict-bar{height:3px;margin-top:4px}}
+
+/* ===== v8.1 RUNTIME SAFETY ===== */
+.runtime-diag{
+ position:fixed;z-index:120;left:8px;right:8px;bottom:8px;padding:6px 8px;border-radius:10px;
+ background:rgba(70,24,18,.92);border:1px solid rgba(255,142,110,.35);pointer-events:none
+}
+.runtime-diag b{font-size:7px;color:#ffd0b8;margin-right:6px}.runtime-diag span{font-size:6px;color:#e4b8a8}

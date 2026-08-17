@@ -8,11 +8,16 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=8">
+<link rel="stylesheet" href="./styles.css?v=8.1">
 
 </head>
 <body>
 <div id="game"></div>
+
+<div id="runtimeDiag" class="runtime-diag hidden">
+  <b>시뮬레이션 보호모드</b><span id="runtimeDiagText"></span>
+</div>
+
 <div id="loading" class="loading"><div><div class="spinner"></div><b>감나무뜰을 불러오는 중</b><p>3D 세계와 주민들의 하루를 준비하고 있습니다.</p></div></div>
 <header class="topbar glass"><div><div class="eyebrow">CIVILIZATION: GENESIS · OBSERVER</div><div class="date"><b id="worldDate">세계력 0년 1일</b><span id="worldSub">아르케아 중앙대륙 · 라엔 분지</span></div></div><div class="top-actions"><button id="worldMapBtn" class="icon world-map-btn" title="세계지도">🌍</button><button id="autoDirectorBtn" class="icon active">🎥 AUTO</button><button id="hudToggleBtn" class="icon" title="HUD 숨김">◱</button><button id="novelBtn" class="icon desktop-only">TXT</button><button id="menuBtn" class="icon">☰</button></div></header>
 <section class="story glass"><div class="story-kicker">오늘의 이야기 · LIVE</div><h2 id="storyTitle">황무지의 첫 아침</h2><p id="storyText">이명자와 주민들, 그리고 복실이가 라엔 분지의 첫 아침을 함께 맞았다.</p><div id="storyQuote" class="quote">“오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div><div class="story-meta"><span id="storySpeaker">— 이명자 · C0001</span><span id="storyTime">세계력 0년 1일</span></div></section>
@@ -88,6 +93,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=8"></script>
+<script type="module" src="./game.js?v=8.1"></script>
 </body>
 </html>
