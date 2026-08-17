@@ -6,7 +6,15 @@
     "regionCount": 8,
     "cityCount": 126,
     "startCityId": "L001",
-    "startLabel": "라엔 분지(감나무뜰)"
+    "startLabel": "라엔 분지(감나무뜰)",
+    "planetScale": "earth",
+    "planetCircumferenceKm": 40075,
+    "planetDiameterKm": 12756,
+    "mapWidthKm": 40075,
+    "mapHeightKm": 20037.5,
+    "walkingKmPerDay": 30,
+    "mountedKmPerDay": 48,
+    "sailingKmPerDay": 110
   },
   "regions": [
     {

@@ -399,3 +399,36 @@ html,body{
  background:rgba(70,24,18,.92);border:1px solid rgba(255,142,110,.35);pointer-events:none
 }
 .runtime-diag b{font-size:7px;color:#ffd0b8;margin-right:6px}.runtime-diag span{font-size:6px;color:#e4b8a8}
+
+/* ===== v8.3 EARTH SCALE + MOVING CAMERA ===== */
+.planet-scale-note{
+ display:flex;align-items:center;gap:4px;flex-wrap:wrap;
+ font-size:6px;color:#9fb4b9;padding:0 4px;flex:1
+}
+.planet-scale-note b{color:#ead39c;font-size:6px}
+.world-scale-bar{
+ position:absolute;left:12px;bottom:12px;z-index:3;pointer-events:none;
+ padding:5px 7px;border-radius:8px;background:rgba(5,13,17,.72);
+ color:#c9d7d6;font-size:6px;border:1px solid rgba(255,255,255,.08)
+}
+.world-scale-bar i{display:block;width:110px;height:5px;border-left:1px solid currentColor;border-right:1px solid currentColor;border-bottom:1px solid currentColor;margin-bottom:3px}
+.expedition-pill{display:inline-block;margin:2px;padding:2px 5px;border-radius:99px;background:rgba(105,158,173,.1);color:#a9cbd3;font-size:5.5px}
+@media(max-width:700px){
+ .world-map-canvas-wrap{flex:1;min-height:68vh!important}
+ .world-map-side{max-height:24vh!important}
+ .planet-scale-note{order:3;flex-basis:100%;font-size:5.5px;padding-top:2px}
+ .world-map-toolbar{flex-wrap:wrap}
+}
+
+/* ===== v8.4 GEOGRAPHIC WORLD MAP ===== */
+.world-map-canvas-wrap{
+ background:
+   radial-gradient(circle at 50% 44%,rgba(49,105,125,.16),rgba(5,17,25,.02) 48%),
+   linear-gradient(180deg,#09212d,#06141d)!important
+}
+.world-map-head span{max-width:58vw}
+.world-map-detail p{margin:5px 0}
+@media(max-width:700px){
+ .world-map-head span{max-width:64vw}
+ .world-map-canvas-wrap{min-height:70vh!important}
+}

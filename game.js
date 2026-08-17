@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { StateMachine } from './state-machine.js';
 import { CombatRules, PlayerStates, MonsterStates } from './combat-rules.js';
-import { CivitasWorldMap } from './world-map.js?v=8.2';
+import { CivitasWorldMap } from './world-map.js?v=8.3';
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)];
 const KEY='civilization_genesis_living_ai_v1';
 const RESOURCE_META={food:['식량','🌾'],water:['물','💧'],wood:['나무','🪵'],stone:['돌','🪨'],labor:['노동','🧺']};
@@ -13,7 +13,7 @@ const OFFICIAL_LOCAL_CATALOG = await fetch('./residents.json')
   .then(r=>{if(!r.ok)throw new Error(`residents.json load failed: ${r.status}`);return r.json()});
 const MONSTER_CATALOG = await fetch('./monsters.json')
   .then(r=>{if(!r.ok)throw new Error(`monsters.json load failed: ${r.status}`);return r.json()});
-const WORLD_DATA = await fetch('./world.json?v=8.2')
+const WORLD_DATA = await fetch('./world.json?v=8.3')
   .then(r=>{if(!r.ok)throw new Error(`world.json load failed: ${r.status}`);return r.json()});
 const WORLD_CITY_BY_ID=new Map(WORLD_DATA.cities.map(c=>[c.id,c]));
 const OFFICIAL_BY_ID=new Map(OFFICIAL_LOCAL_CATALOG.map(c=>[c.id,c]));
@@ -170,7 +170,7 @@ function defaultWorldState(){
    stores:{label:'원정 저장',p:0,open:false}
   },
   firstSeaExpedition:false,lastRegionRevealAbsDay:-999,lastCityFoundationYear:-1,
-  countries:initialCountryState(),diplomacy:{},wars:[],externalWars:[],lastLocalPopulation:initialOfficialResidents(0,1).length,
+  countries:initialCountryState(),contactedCountries:['에르단 왕국'],diplomacy:{},wars:[],externalWars:[],lastLocalPopulation:initialOfficialResidents(0,1).length,
   corePopulation:30,otherPopulation:270
  }
 }
@@ -179,7 +179,14 @@ function normalizeWorldState(){
  for(const k of ['knownRegions','foundedCities','routes','expeditions'])state.world[k]??=JSON.parse(JSON.stringify(d[k]));
  for(const k of ['landProgress','seaProgress','firstSeaExpedition','lastRegionRevealAbsDay','lastCityFoundationYear','corePopulation','otherPopulation','lastLocalPopulation'])if(state.world[k]===undefined)state.world[k]=d[k];
  state.world.countries??=initialCountryState();for(const[n,v]of Object.entries(initialCountryState()))state.world.countries[n]??=v;
+ state.world.contactedCountries??=['에르단 왕국'];if(!state.world.contactedCountries.includes('에르단 왕국'))state.world.contactedCountries.unshift('에르단 왕국');
  state.world.diplomacy??={};state.world.wars??=[];state.world.externalWars??=[];
+ state.world.expeditions??=[];
+ for(const e of state.world.expeditions){
+   // Legacy v5-v8 entries had no travel clock and already represented completed contact.
+   if(e.arrivalAbsDay===undefined){e.active=false;e.completed=true;e.progress=1}
+   else{e.active??=!e.completed;e.completed??=false;e.progress??=e.completed?1:0}
+ }
  state.world.seaTech??=d.seaTech;
  for(const k of Object.keys(d.seaTech))state.world.seaTech[k]??=JSON.parse(JSON.stringify(d.seaTech[k]));
  if(!state.world.knownRegions.includes('아르케아 중앙대륙'))state.world.knownRegions.unshift('아르케아 중앙대륙');
@@ -190,6 +197,34 @@ function regionCenter(name){
  return{x:cs.reduce((s,c)=>s+c.x,0)/cs.length,y:cs.reduce((s,c)=>s+c.y,0)/cs.length}
 }
 const ARKEA_CENTER=regionCenter('아르케아 중앙대륙');
+
+const PLANET_CIRCUMFERENCE_KM=WORLD_DATA.meta.planetCircumferenceKm||40075;
+const PLANET_HALF_HEIGHT_KM=WORLD_DATA.meta.mapHeightKm||20037.5;
+function worldPointDistanceKm(a,b){
+ // CIVITAS source map is treated as an equirectangular world map:
+ // 1000 map-x = one full planetary circumference, 800 map-y = pole-to-pole.
+ let dx=Math.abs((a.x||0)-(b.x||0));
+ dx=Math.min(dx,1000-dx);
+ const dy=Math.abs((a.y||0)-(b.y||0));
+ const xKm=dx/1000*PLANET_CIRCUMFERENCE_KM;
+ const yKm=dy/800*PLANET_HALF_HEIGHT_KM;
+ return Math.hypot(xKm,yKm)
+}
+function cityDistanceKm(idA,idB){
+ const a=WORLD_CITY_BY_ID.get(idA),b=WORLD_CITY_BY_ID.get(idB);return a&&b?worldPointDistanceKm(a,b):0
+}
+function travelSpeedKmDay(kind='land'){
+ if(kind==='sea')return WORLD_DATA.meta.sailingKmPerDay||110;
+ const mounted=state.buildings?.pen&&state.tech?.사육기초?.open;
+ return mounted?(WORLD_DATA.meta.mountedKmPerDay||48):(WORLD_DATA.meta.walkingKmPerDay||30)
+}
+function expeditionTravelDays(fromId,toId,kind='land'){
+ const dist=cityDistanceKm(fromId,toId);
+ const terrainFactor=kind==='sea'?1.12:1.28;
+ const prep=kind==='sea'?18:8;
+ return Math.max(1,Math.ceil(dist*terrainFactor/travelSpeedKmDay(kind))+prep)
+}
+
 function nearestRegionToArkea(names){
  return [...names].sort((a,b)=>{const A=regionCenter(a),B=regionCenter(b);return Math.hypot(A.x-ARKEA_CENTER.x,A.y-ARKEA_CENTER.y)-Math.hypot(B.x-ARKEA_CENTER.x,B.y-ARKEA_CENTER.y)})[0]
 }
@@ -1028,6 +1063,7 @@ function movePlayerTo(v){
  if(state.player.dead)return;
  const bounds=localMapBounds();v=v.clone();v.x=clamp(v.x,-bounds.x,bounds.x);v.z=clamp(v.z,-bounds.z,bounds.z);
  player.userData.target.copy(v);player.userData.target.y=0;player.userData.moving=true;selectedMonster=null;
+ followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';if(camMode!=='follow')setCameraMode('follow');
  player.userData.fsm.set(PlayerStates.MOVING)
 }
 function setMonsterTarget(m){
@@ -1062,7 +1098,7 @@ function updatePlayer(dt,now){
      ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing*.65;
      ud.limbs.ll.rotation.x=-swing*.78;ud.limbs.rl.rotation.x=swing*.78;
      state.player.x=player.position.x;state.player.z=player.position.z;
-     followId='PLAYER';if(camMode==='auto')setCameraMode('follow');
+     followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';if(camMode!=='follow')setCameraMode('follow');
      return
    }
  }
@@ -1602,6 +1638,12 @@ function animateResting(ud,now){
 // Camera / interaction
 const CAMERA_MIN_DISTANCE=22,CAMERA_MAX_DISTANCE=78,CAMERA_DEFAULT_DISTANCE=38;
 let camMode='follow',followId='PLAYER',yaw=.72,pitch=.72,distance=CAMERA_DEFAULT_DISTANCE,autoFocus=new THREE.Vector3(0,0,0),eventFocus=null,eventFocusUntil=0,hovered=null;
+function shortestAngle(a,b){return Math.atan2(Math.sin(b-a),Math.cos(b-a))}
+function lerpAngle(a,b,t){return a+shortestAngle(a,b)*t}
+function playerFacingVector(){
+ return new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y))
+}
+
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
 const pointers=new Map();
 let gestureMoved=false,lastSingle=null,lastPair=null,pressStart=null,lastTapAt=0,dragMode='pan';
@@ -1774,8 +1816,17 @@ function focusForCamera(now){
  return autoFocus.clone()
 }
 function updateCamera(now){
- const target=focusForCamera(now);
- if(camMode!=='free')autoFocus.lerp(target,.075);
+ let target=focusForCamera(now);
+ const playerMoving=followId==='PLAYER'&&camMode==='follow'&&!state.player.dead&&(manualMove.active||player.userData.moving||selectedMonster);
+ if(playerMoving){
+   // Put the camera behind the direction of travel and look slightly ahead.
+   const facing=playerFacingVector();
+   target=player.position.clone().addScaledVector(facing,3.8);
+   const behindYaw=player.rotation.y+Math.PI;
+   yaw=lerpAngle(yaw,behindYaw,.075);
+   pitch=THREE.MathUtils.lerp(pitch,.66,.035)
+ }
+ if(camMode!=='free')autoFocus.lerp(target,playerMoving?.16:.075);
  if(camMode==='auto'){
    yaw+=.000055*Math.min(5,state.speed||1);
    pitch=THREE.MathUtils.lerp(pitch,.72,.012);
@@ -1785,7 +1836,7 @@ function updateCamera(now){
  const cp=Math.cos(pitch),sp=Math.sin(pitch);
  const off=new THREE.Vector3(Math.sin(yaw)*cp*distance,Math.max(12,5+sp*distance*.76),Math.cos(yaw)*cp*distance);
  const desired=autoFocus.clone().add(off);
- camera.position.lerp(desired,.13);
+ camera.position.lerp(desired,playerMoving?.19:.13);
  camera.position.y=Math.max(camera.position.y,9.5);
  camera.lookAt(autoFocus.clone().add(new THREE.Vector3(0,1.05,0)))
 }
@@ -1897,7 +1948,7 @@ function annualCountryPopulationSimulation(){
 }
 function countriesInRegion(region){return Object.keys(COUNTRY_META).filter(n=>COUNTRY_META[n].region===region)}
 function contactCountries(){
- return Object.keys(COUNTRY_META).filter(n=>state.world.knownRegions.includes(COUNTRY_META[n].region)&&n!=='에르단 왕국')
+ return (state.world.contactedCountries||[]).filter(n=>n!=='에르단 왕국')
 }
 function diplomacyFor(country){
  state.world.diplomacy??={};
@@ -1966,17 +2017,75 @@ function simulateExternalWarsAnnual(){
 
 function addWorldRoute(from,to,kind='land'){
  if(state.world.routes.some(r=>r.from===from&&r.to===to))return;
- state.world.routes.push({from,to,kind,year:state.year,day:state.day});addTrajectory('trade',2.5);addTrajectory('exploration',1.5)
+ const distanceKm=Math.round(cityDistanceKm(from,to));
+ state.world.routes.push({from,to,kind,distanceKm,year:state.year,day:state.day});
+ addTrajectory('trade',2.5);addTrajectory('exploration',1.5)
 }
-function revealWorldRegion(region,kind='land'){
- if(state.world.knownRegions.includes(region))return false;
- state.world.knownRegions.push(region);state.world.lastRegionRevealAbsDay=absDay();
- const c=representativeCity(region);if(c&&!state.world.foundedCities.includes(c.id))state.world.foundedCities.push(c.id);
- addWorldRoute('L001',c.id,kind);
- state.world.expeditions.push({region,kind,year:state.year,day:state.day,city:c?.id||null});
- addLog('story',`${region}으로 길이 이어지다`,`${state.year}년 ${state.day}일, 감나무뜰에서 출발한 ${kind==='sea'?'해상':'육상'} 탐사대가 ${region}의 생활권과 처음 연결되었다. 지도에는 처음으로 라엔 분지 바깥의 확실한 선이 그어졌다.`,'기록',`${region}은 더 이상 빈 지도가 아니었다.`);
+
+function countryNearestCity(country){
+ const start=WORLD_CITY_BY_ID.get('L001');
+ return WORLD_DATA.cities.filter(c=>c.country===country).sort((a,b)=>worldPointDistanceKm(start,a)-worldPointDistanceKm(start,b))[0]||null
+}
+function activeExpeditionToCountry(country){
+ return (state.world.expeditions||[]).find(e=>e.country===country&&e.active)
+}
+function scheduleCountryExpedition(country,kind='land'){
+ if((state.world.contactedCountries||[]).includes(country)||activeExpeditionToCountry(country))return false;
+ const c=countryNearestCity(country);if(!c)return false;
+ const from='L001',distanceKm=Math.round(cityDistanceKm(from,c.id));
+ const speedKmDay=travelSpeedKmDay(kind),travelDays=expeditionTravelDays(from,c.id,kind),startAbs=absDay();
+ const exp={
+  id:`EXP-C-${state.year}-${state.day}-${country}`,targetType:'country',country,region:c.region,kind,from,to:c.id,city:c.id,
+  startYear:state.year,startDay:state.day,startAbsDay:startAbs,arrivalAbsDay:startAbs+travelDays,
+  distanceKm,speedKmDay,travelDays,active:true,completed:false,progress:0
+ };
+ state.world.expeditions.push(exp);
+ addLog('story',`${country} 접촉 원정 출발`,`${state.year}년 ${state.day}일, 주민들이 ${country} 쪽으로 원정대를 보냈다. 라엔 기준 약 ${distanceKm.toLocaleString()}km, 예상 이동 ${travelDays}일. 관찰자는 이미 그 나라를 볼 수 있지만 주민들은 실제 도착 전까지 외교 관계를 맺지 않는다.`,'관찰 AI','보이는 것과 갈 수 있는 것은 다른 문제였다.');
  return true
 }
+
+function activeExpeditionTo(region){
+ return (state.world.expeditions||[]).find(e=>e.region===region&&e.active)
+}
+function scheduleWorldExpedition(region,kind='land'){
+ if(state.world.knownRegions.includes(region)||activeExpeditionTo(region))return false;
+ const c=representativeCity(region);if(!c)return false;
+ const from='L001',distanceKm=Math.round(cityDistanceKm(from,c.id));
+ const speedKmDay=travelSpeedKmDay(kind),travelDays=expeditionTravelDays(from,c.id,kind);
+ const startAbs=absDay();
+ const exp={
+  id:`EXP-${state.year}-${state.day}-${region}`,targetType:'region',region,kind,from,to:c.id,city:c.id,
+  startYear:state.year,startDay:state.day,startAbsDay:startAbs,
+  arrivalAbsDay:startAbs+travelDays,distanceKm,speedKmDay,travelDays,
+  active:true,completed:false,progress:0
+ };
+ state.world.expeditions.push(exp);
+ addLog('story',`${region} 원정대 출발`,`${state.year}년 ${state.day}일, ${kind==='sea'?'배':'도보 원정대'}가 라엔 분지를 떠났다. 목적지까지 직선 환산 약 ${distanceKm.toLocaleString()}km. 준비와 지형을 포함한 예상 소요는 약 ${travelDays}일이다.`,'기록',`며칠 걸으면 닿는 거리가 아니다. 돌아올 수 있는 거리부터 계산했다.`);
+ return true
+}
+function completeWorldExpedition(exp){
+ if(!exp||exp.completed)return false;
+ exp.active=false;exp.completed=true;exp.progress=1;exp.arriveYear=state.year;exp.arriveDay=state.day;
+ const c=WORLD_CITY_BY_ID.get(exp.to);
+ if(exp.region&&!state.world.knownRegions.includes(exp.region))state.world.knownRegions.push(exp.region);
+ if(c?.country&&!state.world.contactedCountries.includes(c.country))state.world.contactedCountries.push(c.country);
+ if(exp.country&&!state.world.contactedCountries.includes(exp.country))state.world.contactedCountries.push(exp.country);
+ state.world.lastRegionRevealAbsDay=absDay();
+ if(c&&!state.world.foundedCities.includes(c.id))state.world.foundedCities.push(c.id);
+ addWorldRoute(exp.from,exp.to,exp.kind);
+ const dest=exp.country||exp.region||c?.name||'목적지';
+ addLog('story',`${dest} 도착`,`${state.year}년 ${state.day}일, 원정대가 약 ${exp.distanceKm.toLocaleString()}km의 이동을 끝내고 ${dest}에 도착했다. 실제 이동에는 ${exp.travelDays}일이 걸렸다. 이제부터 주민에게도 외교·교역·충돌 가능성이 열린다.`,'기록',`${dest}은 지도 위 이름에서 실제 관계가 가능한 생활권이 되었다.`);
+ return true
+}
+function processWorldExpeditionsDaily(){
+ const now=absDay();
+ for(const exp of state.world.expeditions||[]){
+   if(!exp.active)continue;
+   exp.progress=clamp((now-exp.startAbsDay)/Math.max(1,exp.arrivalAbsDay-exp.startAbsDay),0,1);
+   if(now>=exp.arrivalAbsDay)completeWorldExpedition(exp)
+ }
+}
+
 function updateSeaTech(){
  const t=state.world.seaTech,b=state.buildings;
  if(state.year>=3&&b.workshop){t.sail.p=clamp(t.sail.p+.08+avgSkill('목공')*.0012,0,100)}
@@ -1994,24 +2103,37 @@ function syncWorldCityTimeline(){
  }
 }
 function updateWorldEngine(){
- normalizeWorldState();updateSeaTech();simulateDiplomacyDaily();syncLocalCountryPopulation();maybeShiftTrajectory();
+ normalizeWorldState();updateSeaTech();processWorldExpeditionsDaily();simulateDiplomacyDaily();syncLocalCountryPopulation();maybeShiftTrajectory();
  const explorerCount=state.residents.filter(r=>r.brain?.action==='explore').length;
  state.world.landProgress=clamp(state.world.landProgress+.015+explorerCount*.018+avgSkill('채집')*.00025,0,9999);
  if(state.world.seaTech.sail.open&&state.world.seaTech.navigation.open&&state.world.seaTech.stores.open){
   state.world.seaProgress=clamp(state.world.seaProgress+.025+explorerCount*.012,0,9999)
  }
+
+ // Even countries on the same continent require a real expedition before residents can contact them.
+ const arkeaCountries=Object.keys(COUNTRY_META).filter(n=>COUNTRY_META[n].region==='아르케아 중앙대륙'&&n!=='에르단 왕국');
+ const uncontactedArkea=arkeaCountries.filter(n=>!state.world.contactedCountries.includes(n)&&!activeExpeditionToCountry(n))
+   .sort((a,b)=>cityDistanceKm('L001',countryNearestCity(a)?.id)-cityDistanceKm('L001',countryNearestCity(b)?.id));
+ const countryThreshold=50+state.world.contactedCountries.length*42;
+ if(uncontactedArkea.length&&state.world.landProgress>=countryThreshold&&!state.world.expeditions.some(e=>e.active&&e.kind==='land')){
+   scheduleCountryExpedition(uncontactedArkea[0],'land')
+ }
+
  const landRegions=WORLD_DATA.regions.map(r=>r.name).filter(n=>!['아르케아 중앙대륙','네레이아 해권','드라바스 화산군도','루메라 부유제도'].includes(n));
- const unknownLand=landRegions.filter(n=>!state.world.knownRegions.includes(n));
- const threshold=120+state.world.knownRegions.length*105;
- if(unknownLand.length&&state.world.landProgress>=threshold&&absDay()-state.world.lastRegionRevealAbsDay>120){
-  revealWorldRegion(nearestRegionToArkea(unknownLand),'land')
+ const unknownLand=landRegions.filter(n=>!state.world.knownRegions.includes(n)&&!activeExpeditionTo(n));
+ const threshold=260+state.world.knownRegions.length*160;
+ if(!uncontactedArkea.length&&unknownLand.length&&state.world.landProgress>=threshold&&absDay()-state.world.lastRegionRevealAbsDay>120&&!state.world.expeditions.some(e=>e.active&&e.kind==='land')){
+   scheduleWorldExpedition(nearestRegionToArkea(unknownLand),'land')
  }
+
  if(state.year>=10&&!state.world.firstSeaExpedition&&state.world.seaTech.sail.open&&state.world.seaTech.navigation.open&&state.world.seaTech.stores.open&&state.world.seaProgress>=100){
-  state.world.firstSeaExpedition=true;revealWorldRegion('네레이아 해권','sea');
-  addLog('story','첫 장거리 해상 원정',`세계력 ${state.year}년, 돛·연안항법·원정저장을 갖춘 배가 감나무뜰 생활권을 떠나 네레이아 해권과 연결되었다. 창세기 이후 처음으로 세계 확장이 바다를 건넜다.`,'기록','바다는 경계가 아니라 다음 생활권으로 가는 길이 되었다.')
+   if(scheduleWorldExpedition('네레이아 해권','sea')){
+     state.world.firstSeaExpedition=true;
+     addLog('story','첫 장거리 해상 원정 시작',`돛·연안항법·원정저장을 갖춘 배가 출항했다. 네레이아까지는 실제 거리와 항해 속도로 계산되어 수개월이 걸릴 수 있다.`,'기록','바다는 지도 한 칸이 아니라 수천 킬로미터의 생활 공간이었다.')
+   }
  }
- if(state.world.knownRegions.includes('네레이아 해권')&&state.year>=18&&state.world.seaProgress>=260)revealWorldRegion('드라바스 화산군도','sea');
- if(state.year>=24&&state.world.landProgress>=850)revealWorldRegion('루메라 부유제도','land');
+ if(state.world.knownRegions.includes('네레이아 해권')&&state.year>=18&&state.world.seaProgress>=260&&!activeExpeditionTo('드라바스 화산군도'))scheduleWorldExpedition('드라바스 화산군도','sea');
+ if(state.year>=24&&state.world.landProgress>=850&&!activeExpeditionTo('루메라 부유제도'))scheduleWorldExpedition('루메라 부유제도','land');
  syncWorldCityTimeline()
 }
 
@@ -2152,7 +2274,7 @@ function renderPeopleList(){
 }
 function renderWorld(){
  const b=state.buildings,t=state.tech,children=state.residents.filter(r=>r.age<16).length,adults=state.residents.length-children;
- $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 마을 사람들 사이를 돌아다니는 동료입니다. 관찰자를 따라오지 않으며, 야생동물 습격 때 먼저 달려가 막습니다.</p><span class="tag">복실이 마을 순찰</span><span class="tag">이명자 ${state.flags.myeongjaDead?'3년 1일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장</h3><p>주민 접촉 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p><span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div><div class="card"><h3>관찰자 세계 인구</h3><p>관찰자는 주민의 탐사 여부와 관계없이 30개 국가·세력권의 실제 시뮬레이션 인구를 모두 볼 수 있습니다.</p>${Object.entries(state.world.countries).sort((a,b)=>b[1].population-a[1].population).slice(0,10).map(([n,c])=>`<span class="tag">${n} ${c.population}명</span>`).join('')}<p>전체 국가는 🌍 세계지도에서 확인.</p></div><div class="card"><h3>현재 역사 노선 · ${trajectorySummary().name}</h3><p>고정 시나리오가 아니라 주민이 반복한 행동으로 변합니다.</p>${trajectorySummary().pairs.slice(0,5).map(([k,v])=>`<span class="trajectory-tag">${TRAJECTORY_NAMES[k]||k} ${v.toFixed(1)}</span>`).join('')}</div><div class="card"><h3>생태·전쟁 기록</h3><p>동물 습격 ${state.conflict.animalRaids}회 · 전투 ${state.conflict.warBattles}회 · 부상 ${state.conflict.wounded}명 · 식량 손실 ${state.conflict.foodLost.toFixed(1)}</p><span class="tag">현재 전쟁 ${(state.world.wars||[]).filter(w=>w.active).length}</span><span class="tag">외부 국가간 전쟁 ${(state.world.externalWars||[]).filter(w=>w.active).length}</span></div>`
+ $('worldCards').innerHTML=`<div class="card"><h3>${state.civ.levelName} · 마을 현황</h3><p>라엔 분지 주민 ${state.residents.length}명 (성인/청소년 ${adults} · 아이 ${children}) · 세계 인구 ${state.worldPopulation}명</p><span class="tag">주택 ${b.house}</span><span class="tag">밭 ${b.field}</span><span class="tag">저장고 ${b.storage}</span><span class="tag">작업장 ${b.workshop}</span><span class="tag">우물 ${b.well}</span><span class="tag">공동부엌 ${b.kitchen}</span><span class="tag">가마 ${b.kiln}</span><span class="tag">약초대 ${b.herb}</span><span class="tag">사육장 ${b.pen}</span><span class="tag">공동마루 ${b.meeting}</span><span class="tag">베틀 ${b.loom}</span><span class="tag">망루 ${b.watch}</span></div><div class="card"><h3>기술 발전 · ${countOpenTech()}개 정착</h3>${Object.entries(t).map(([k,v])=>`<p>${k} ${v.open?'✓':'· '+Math.floor(v.p)+'%'}</p><div class="bar"><i style="width:${v.open?100:Math.min(100,v.p)}%"></i></div>`).join('')}</div><div class="card"><h3>인구·세대</h3><p>공식 주민 원장을 출생년과 등장 시점에 맞춰 세계 안에 불러옵니다. 아이는 작게 보이고 성장하면서 할 수 있는 일이 늘어납니다.</p><span class="tag">출생 ${state.demography.births}</span><span class="tag">합류 ${state.demography.arrivals}</span><span class="tag">아이 ${children}</span></div><div class="card"><h3>핵심 인물·동료</h3><p>🐕 복실이: 세계력 0년 1일부터 마을 사람들 사이를 돌아다니는 동료입니다. 관찰자를 따라오지 않으며, 야생동물 습격 때 먼저 달려가 막습니다.</p><span class="tag">복실이 마을 순찰</span><span class="tag">이명자 ${state.flags.myeongjaDead?'3년 1일 사망':'생존'}</span></div><div class="card"><h3>동물·탐사 지도</h3><p>일반 야생동물은 몬스터와 별개로 처음부터 살아 움직입니다. 사육장이 생기면 닭과 염소가 실제 3D 개체로 들어옵니다.</p><span class="tag">야생동물 ${animals.filter(a=>!a.userData.domestic).length}</span><span class="tag">사육동물 ${animals.filter(a=>a.userData.domestic).length}</span><span class="tag">지역 확장 ${state.localMap.level+1}/4</span><span class="tag">드래그 ${dragMode==='pan'?'화면 이동':'회전'}</span></div><div class="card"><h3>주민 자율 AI</h3><p>하루가 지나면 하루치 생산·연구·건축이 반드시 계산됩니다. 배속을 올려도 문명 시간이 빈 채로 지나가지 않습니다.</p></div><div class="card"><h3>세계 확장 · 지구급 행성</h3><p>행성 둘레 40,075km · 주민 접촉 권역 ${state.world.knownRegions.length}/8 · 현재 형성 거점 ${state.world.foundedCities.length}/126 · 육상 탐사 ${Math.floor(state.world.landProgress)} · 해상 원정 ${Math.floor(state.world.seaProgress)}</p>${(state.world.expeditions||[]).filter(e=>e.active).map(e=>`<span class="tag">${e.region} ${Math.round(e.progress*100)}% · ${Math.max(0,e.arrivalAbsDay-absDay())}일 남음 · ${e.distanceKm.toLocaleString()}km</span>`).join('')}<span class="tag">${state.world.seaTech.sail.label} ${state.world.seaTech.sail.open?'✓':Math.floor(state.world.seaTech.sail.p)+'%'}</span><span class="tag">${state.world.seaTech.navigation.label} ${state.world.seaTech.navigation.open?'✓':Math.floor(state.world.seaTech.navigation.p)+'%'}</span><span class="tag">${state.world.seaTech.stores.label} ${state.world.seaTech.stores.open?'✓':Math.floor(state.world.seaTech.stores.p)+'%'}</span></div><div class="card"><h3>관찰자 세계 인구</h3><p>관찰자는 주민의 탐사 여부와 관계없이 30개 국가·세력권의 실제 시뮬레이션 인구를 모두 볼 수 있습니다.</p>${Object.entries(state.world.countries).sort((a,b)=>b[1].population-a[1].population).slice(0,10).map(([n,c])=>`<span class="tag">${n} ${c.population}명</span>`).join('')}<p>전체 국가는 🌍 세계지도에서 확인.</p></div><div class="card"><h3>현재 역사 노선 · ${trajectorySummary().name}</h3><p>고정 시나리오가 아니라 주민이 반복한 행동으로 변합니다.</p>${trajectorySummary().pairs.slice(0,5).map(([k,v])=>`<span class="trajectory-tag">${TRAJECTORY_NAMES[k]||k} ${v.toFixed(1)}</span>`).join('')}</div><div class="card"><h3>생태·전쟁 기록</h3><p>동물 습격 ${state.conflict.animalRaids}회 · 전투 ${state.conflict.warBattles}회 · 부상 ${state.conflict.wounded}명 · 식량 손실 ${state.conflict.foodLost.toFixed(1)}</p><span class="tag">현재 전쟁 ${(state.world.wars||[]).filter(w=>w.active).length}</span><span class="tag">외부 국가간 전쟁 ${(state.world.externalWars||[]).filter(w=>w.active).length}</span></div>`
 }
 function renderHistory(){$('historyList').innerHTML=state.logs.slice(0,220).map(l=>`<div class="log-item ${l.type}"><b>${l.title}</b><p>${l.text}</p><time>세계력 ${l.time} · ${l.speaker||''}</time></div>`).join('')}
 function chronological(){return[...state.logs].sort((a,b)=>a.seq-b.seq)}function novelText(style='healing'){const L=chronological(),out=['문명: 감나무뜰의 창세기','CIVILIZATION: Genesis','',`원고 생성 시점: 세계력 ${stamp()}`,`현재 주민 ${state.residents.length}명 · 기록 사건 ${state.logs.length}개`,'','※ 아래 원고는 게임 안에서 실제 발생해 저장된 사건을 시간순으로 재구성한 것입니다.',''];if(style==='chronicle'){for(const l of L){out.push(`[세계력 ${l.time}] ${l.title}`,l.text,l.quote?`“${l.quote}” — ${l.speaker}`:'','')}return out.join('\n')}out.push('프롤로그 — 라엔 분지','',`아르케아 중앙대륙의 라엔 분지에는 아직 마을이라 부를 만한 것도 없었다. 흙과 물길, 낮은 둔덕, 그리고 오늘을 살아내야 하는 사람들이 있었을 뿐이었다.`,'',`말기 암을 앓는 이명자는 남은 시간을 모든 일을 혼자 해내는 데 쓰지 않았다. 대신 누가 흙을 읽고, 누가 도구를 만들고, 누가 기억을 기록으로 남기는지 바라보았다.`,'');let ch=0,lastYear=null;for(const l of L){const y=l.time.split('년')[0];if(y!==lastYear){lastYear=y;ch++;out.push(`제${ch}장 — 세계력 ${y}년`,'')}if(style==='webnovel'){out.push(l.type==='warn'?'그날, 평소와 다른 기척이 감나무뜰에 내려앉았다.':'작은 변화였다. 하지만 아무것도 없던 이곳에서는 작은 변화가 곧 역사였다.','',l.text,'',`“${storyQuoteFor(l)}”`,`${l.speaker||'이명자'}의 말이 오래 남았다.`,'')}else{out.push(l.text,'',`“${storyQuoteFor(l)}”`,`— ${l.speaker||'이명자'}`,`세계력 ${l.time}, 사람들은 그날을 ‘${l.title}’이라는 이름으로 기억했다.`,'')}}out.push('에필로그 — 계속되는 하루','',`현재 감나무뜰에는 ${state.residents.length}명의 주민이 살아간다. 식량 ${Math.floor(state.resources.food)}, 물 ${Math.floor(state.resources.water)}, 나무 ${Math.floor(state.resources.wood)}, 돌 ${Math.floor(state.resources.stone)}. 숫자는 작지만 그 안에는 사람들의 하루가 들어 있다.`,'','=== 등장인물 현재 기록 ===',...state.residents.map(r=>`${r.name}(${r.id}) · ${r.age}세 · ${r.job} · 잠재력 ${r.potential} · 개화율 ${r.bloom.toFixed(1)}% · ${r.note}`));return out.join('\n')}

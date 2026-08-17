@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css?v=8.2">
+<link rel="stylesheet" href="./styles.css?v=8.4">
 
 </head>
 <body>
@@ -74,15 +74,16 @@
 <section id="worldMapOverlay" class="world-map-overlay hidden">
   <div class="world-map-shell">
     <div class="world-map-head">
-      <div><small>CIVITAS WORLD DATA</small><b>세계 지도</b><span>현재 문명 ↔ 세계력 200년 기준 8권역·126도시</span></div>
+      <div><small>CIVITAS WORLD DATA</small><b>세계 지도</b><span>지구급 행성 · 바다·대륙·산맥·강·숲·사막 · 8권역·126도시</span></div>
       <button id="closeWorldMap">×</button>
     </div>
     <div class="world-map-toolbar">
+<div class="planet-scale-note">🌐 행성 둘레 <b>40,075km</b> · 도보 <b>30km/일</b> · 기승 <b>48km/일</b> · 항해 <b>110km/일</b></div>
       <div class="map-mode"><button id="mapModeCurrent" class="active">관찰자 현재</button><button id="mapMode200">200년 기준</button></div>
       <div class="map-zoom"><button id="mapZoomOut">－</button><button id="mapReset">◎</button><button id="mapZoomIn">＋</button></div>
     </div>
     <div class="world-map-main">
-      <div class="world-map-canvas-wrap"><canvas id="worldMapCanvas"></canvas></div>
+      <div class="world-map-canvas-wrap"><canvas id="worldMapCanvas"></canvas><div class="world-scale-bar"><i></i>약 10,000 km 축척 기준</div></div>
       <aside class="world-map-side">
         <div id="worldMapStatus" class="world-map-status"></div>
         <div id="worldMapDetail" class="world-map-detail"><b>라엔 분지(감나무뜰)</b><span>아르케아 중앙대륙</span><p>창세기 시작점. 현재 문명의 실제 탐사와 항해가 지도에 누적됩니다.</p></div>
@@ -93,6 +94,6 @@
 </section>
 
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js?v=8.2"></script>
+<script type="module" src="./game.js?v=8.4"></script>
 </body>
 </html>
