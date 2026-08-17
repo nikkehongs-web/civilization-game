@@ -1,105 +1,525 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <meta name="theme-color" content="#08110f" />
-  <title>문명 REBIRTH · 세계력 0년</title>
-  <link rel="stylesheet" href="./styles.css" />
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4eadf" />
+  <title>문명: 감나무뜰의 창세기</title>
+  <style>
+    :root{
+      --bg:#f7f3ed;
+      --bg-2:#efe8df;
+      --panel:#fffdf9;
+      --panel-soft:#fbf6ef;
+      --line:#e2d4c3;
+      --text:#3c332c;
+      --muted:#7f746a;
+      --accent:#c8804f;
+      --accent-2:#91ad7a;
+      --accent-3:#d8ad66;
+      --good:#6d9d6d;
+      --warn:#d49a56;
+      --danger:#c96f68;
+      --shadow:0 14px 40px rgba(89,69,49,.10);
+      --radius:22px;
     }
-  }
-  </script>
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:linear-gradient(180deg,var(--bg),var(--bg-2));color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Pretendard",system-ui,sans-serif}
+    body{padding-bottom:max(20px,env(safe-area-inset-bottom))}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{max-width:1440px;margin:0 auto;padding:14px}
+    .topbar{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 16px;background:rgba(255,253,249,.88);backdrop-filter:blur(18px);border:1px solid rgba(226,212,195,.85);border-radius:24px;box-shadow:var(--shadow);position:sticky;top:10px;z-index:50}
+    .brand{display:flex;align-items:center;gap:12px;min-width:0}.brand-mark{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#e0b77d,#b96d43);color:#fff;font-size:24px;box-shadow:0 8px 20px #c7865650}.brand h1{font-size:18px;margin:0;line-height:1.2}.brand small{display:block;color:var(--muted);font-size:11px;margin-top:4px}.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+    .btn{border:1px solid var(--line);background:#fffaf4;color:var(--text);border-radius:14px;padding:9px 12px;font-weight:800;font-size:12px;box-shadow:0 4px 14px rgba(73,52,35,.05)}
+    .btn:hover{transform:translateY(-1px)}.btn.primary{background:linear-gradient(145deg,#d38b59,#bb6f44);color:#fff;border-color:#b96f46}.btn.green{background:linear-gradient(145deg,#9ab685,#7d9d68);color:#fff;border-color:#7d9d68}.btn.ghost{background:transparent}.btn.danger{color:#9c4f49}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+    .hero{margin-top:14px;display:grid;grid-template-columns:1.45fr .8fr;gap:14px}
+    .hero-card,.panel{background:linear-gradient(180deg,rgba(255,253,249,.97),rgba(250,245,237,.97));border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .hero-card{padding:20px;min-height:240px;position:relative;overflow:hidden}.hero-card:before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-80px;top:-90px;background:radial-gradient(circle,#f2d4ab90,transparent 70%)}.hero-card:after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;left:-70px;bottom:-80px;background:radial-gradient(circle,#b8cba690,transparent 72%)}
+    .eyebrow{font-size:11px;font-weight:900;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}.hero h2{font-size:30px;line-height:1.25;margin:10px 0 10px;max-width:760px}.hero p{color:var(--muted);line-height:1.7;margin:0;max-width:760px;font-size:13px}.hero-stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;position:relative;z-index:2}.pill{padding:8px 11px;border:1px solid var(--line);background:#fffaf4;border-radius:999px;font-size:11px;font-weight:800}.pill.good{border-color:#b8ccb0;color:#5f8554;background:#f5fbf1}.pill.warn{border-color:#e8c996;color:#9a6f2e;background:#fff9ee}
+    .story-box{padding:18px}.story-box h3{margin:0 0 10px;font-size:15px}.story-box .quote{padding:14px;background:#fff9f1;border-left:4px solid var(--accent-3);border-radius:12px;color:#5e5147;line-height:1.65;font-size:12px}.story-box .speaker{margin-top:10px;color:var(--muted);font-size:11px}
+    .resources{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}.resource{padding:13px 14px;background:rgba(255,253,249,.95);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);min-width:0}.resource-top{display:flex;justify-content:space-between;gap:8px;align-items:center}.resource-name{font-size:11px;color:var(--muted);font-weight:800}.resource-value{font-size:22px;font-weight:950;margin-top:5px;white-space:nowrap}.delta{font-size:10px;font-weight:900}.delta.up{color:var(--good)}.delta.down{color:var(--danger)}
+    .layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(300px,.65fr);gap:14px}.panel{padding:14px}.panel-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.panel-title h3{margin:0;font-size:14px}.panel-title small{color:var(--muted);font-size:10px}
+    .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px}.tab-btn{flex:0 0 auto;border:1px solid var(--line);background:#fffaf4;color:var(--muted);font-weight:900;border-radius:13px;padding:8px 11px;font-size:11px}.tab-btn.active{background:var(--text);color:#fff;border-color:var(--text)}.tab-page{display:none}.tab-page.active{display:block}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card{background:#fffaf4;border:1px solid var(--line);border-radius:18px;padding:12px}.card h4{margin:0;font-size:12px}.card p{margin:7px 0 0;font-size:11px;color:var(--muted);line-height:1.55}
+    .progress{height:8px;background:#eee4d8;border-radius:999px;overflow:hidden;margin-top:9px}.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),#c6b66f);border-radius:999px;transition:width .3s}
+    .resident-card{display:grid;grid-template-columns:54px 1fr auto;gap:12px;align-items:center}.avatar{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;font-size:21px;font-weight:950;color:#fff;background:linear-gradient(145deg,#a88a6b,#6f8b67);box-shadow:inset 0 0 0 1px #ffffff55}.resident-main b{font-size:13px}.resident-main .meta{font-size:10px;color:var(--muted);margin-top:3px}.skill-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}.skill-tag{font-size:9px;border:1px solid var(--line);padding:4px 6px;border-radius:999px;background:#fff}.resident-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end}.mini-select{max-width:130px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px 8px;font-size:10px;color:var(--text)}
+    .building-card .topline,.research-card .topline{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.cost{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.cost span{font-size:9px;color:#6f6257;background:#f3e9de;border:1px solid #e4d2bf;padding:4px 6px;border-radius:999px}.card-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}.level{font-size:10px;color:var(--muted);font-weight:800}
+    .right-stack{display:grid;gap:14px;align-content:start}.clock{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.date{font-size:20px;font-weight:950}.season{font-size:11px;color:var(--muted);margin-top:3px}.speed{display:flex;gap:5px}.speed button{width:38px;height:34px;border:1px solid var(--line);background:#fffaf4;border-radius:11px;font-size:10px;font-weight:900}.speed button.active{background:var(--text);color:#fff}
+    .log-list{max-height:490px;overflow:auto;padding-right:4px}.log-item{padding:10px 0;border-bottom:1px dashed #e2d4c3}.log-item:last-child{border-bottom:0}.log-item b{display:block;font-size:11px}.log-item p{margin:4px 0 0;color:var(--muted);font-size:10px;line-height:1.5}.log-time{font-size:9px;color:#a28e7c;margin-top:4px}.log-item.story b{color:#a5603f}.log-item.good b{color:#63895f}.log-item.warn b{color:#a87432}
+    .achievement{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed var(--line)}.achievement:last-child{border-bottom:0}.achievement .icon{width:36px;height:36px;border-radius:12px;background:#f0e4d5;display:grid;place-items:center}.achievement b{font-size:11px}.achievement small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.achievement.locked{opacity:.42;filter:grayscale(.7)}
+    .intro{position:fixed;inset:0;z-index:100;background:linear-gradient(180deg,#efe6db,#e9dfd1);display:grid;place-items:center;padding:16px}.intro.hidden{display:none}.intro-card{width:min(760px,100%);background:#fffaf4;border:1px solid var(--line);border-radius:28px;padding:26px;box-shadow:0 30px 90px rgba(67,49,34,.18);text-align:center}.intro-mark{width:72px;height:72px;margin:0 auto;border-radius:24px;display:grid;place-items:center;background:linear-gradient(145deg,#d6a367,#9aae82);font-size:34px}.intro h1{font-size:28px;margin:16px 0 8px}.intro p{font-size:12px;line-height:1.7;color:var(--muted);max-width:560px;margin:0 auto}.intro .btn{margin-top:18px;padding:12px 20px;font-size:13px}
+    .modal{position:fixed;inset:0;background:#3c332c77;display:none;align-items:center;justify-content:center;padding:14px;z-index:80;backdrop-filter:blur(4px)}.modal.show{display:flex}.modal-card{width:min(620px,100%);max-height:80vh;overflow:auto;background:#fffaf4;border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 25px 90px rgba(42,31,22,.28)}.modal-card h3{margin:0}.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+    .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:#382f29;color:#fff;padding:11px 14px;border-radius:14px;font-size:11px;font-weight:800;opacity:0;pointer-events:none;transition:.25s;z-index:120;box-shadow:0 10px 32px #0004}.toast.show{opacity:1;transform:translate(-50%,0)}
+    .empty{padding:22px;text-align:center;color:var(--muted);font-size:11px}
+    @media(max-width:1100px){.hero{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.resources{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:720px){.app{padding:8px}.topbar{top:6px;border-radius:18px;padding:10px}.brand h1{font-size:14px}.brand small{display:none}.brand-mark{width:40px;height:40px}.top-actions .btn.ghost{display:none}.hero-card{padding:16px;min-height:210px}.hero h2{font-size:23px}.resources{grid-template-columns:repeat(2,1fr);gap:8px}.resources .resource:last-child{grid-column:1/-1}.resource-value{font-size:18px}.layout{gap:10px}.panel{padding:11px;border-radius:18px}.grid-2,.grid-3{grid-template-columns:1fr}.resident-card{grid-template-columns:46px 1fr}.avatar{width:46px;height:46px}.resident-actions{grid-column:1/-1;flex-direction:row;justify-content:flex-end}.mini-select{max-width:none;flex:1}.clock{grid-template-columns:1fr}.speed{justify-content:flex-start}.hero-stats{gap:6px}}
+  </style>
 </head>
 <body>
-  <div id="game"></div>
-
-  <header class="topbar glass">
-    <div>
-      <div class="eyebrow">CIVILIZATION · REBIRTH</div>
-      <div class="world-date"><b id="worldDate">세계력 0년 1일</b><span>아르케아 · 감나무뜰</span></div>
-    </div>
-    <div class="top-actions">
-      <button id="cameraBtn" class="icon-btn" aria-label="카메라 전환">◉</button>
-      <button id="menuBtn" class="icon-btn" aria-label="메뉴">☰</button>
-    </div>
-  </header>
-
-  <aside class="quest glass">
-    <div class="quest-kicker">현재 이야기</div>
-    <div id="questTitle" class="quest-title">불씨를 지켜라</div>
-    <div id="questText" class="quest-text">이명자가 마을 중앙의 꺼져가는 불 앞에서 사람들을 모으고 있다.</div>
-    <div class="quest-row"><span id="questStep">이명자에게 가기</span><b id="questDistance">42m</b></div>
-  </aside>
-
-  <div id="crosshair" class="crosshair"><span></span></div>
-  <div id="targetHint" class="target-hint glass">가까이 가면 상호작용할 수 있습니다</div>
-
-  <section class="character-card glass">
-    <div class="avatar">영</div>
-    <div class="character-meta">
-      <strong>영하</strong>
-      <span id="playerState">직접 조작 중</span>
-    </div>
-    <div class="meters">
-      <i class="hp"></i><i class="energy"></i>
-    </div>
-  </section>
-
-  <section class="auto-panel glass">
-    <div class="auto-head">
-      <div><span class="live-dot"></span><b>AUTO</b></div>
-      <span id="autoStatus">수동</span>
-    </div>
-    <div class="auto-modes">
-      <button data-auto="manual" class="auto-btn active">수동</button>
-      <button data-auto="semi" class="auto-btn">반자동</button>
-      <button data-auto="full" class="auto-btn">완전 AUTO</button>
-    </div>
-    <div id="autoTask" class="auto-task">네가 직접 움직입니다.</div>
-  </section>
-
-  <div class="mobile-controls">
-    <div id="joystick" class="joystick"><div id="stick" class="stick"></div></div>
-    <div class="action-cluster">
-      <button id="interactBtn" class="action big">대화</button>
-      <button id="runBtn" class="action">달리기</button>
-      <button id="focusBtn" class="action">추적</button>
+  <div id="intro" class="intro">
+    <div class="intro-card">
+      <div class="intro-mark">🌱</div>
+      <div class="eyebrow">CIVILIZATION: GENESIS</div>
+      <h1>문명: 감나무뜰의 창세기</h1>
+      <p>아르케아 중앙대륙, 라엔 분지. 세계력 0년의 작은 농지에서 모든 것이 시작됩니다. 말기 암 환자 이명자는 남은 시간을 사람들과 함께 살아갈 터전을 만드는 데 쓰기로 합니다.</p>
+      <button id="startBtn" class="btn primary">창세기 시작</button>
     </div>
   </div>
 
-  <div id="dialogue" class="dialogue hidden">
-    <div class="dialogue-inner glass">
-      <div class="speaker-row"><div id="speakerAvatar" class="speaker-avatar">명</div><div><span id="speakerRole">조언자</span><b id="speakerName">이명자</b></div></div>
-      <p id="dialogueText">이 세계에서 우리가 가진 건 사람과 시간뿐이야. 먼저 불씨부터 살리자.</p>
-      <div id="choices" class="choices"></div>
-    </div>
-  </div>
-
-  <div id="eventToast" class="event-toast glass hidden"></div>
-
-  <div id="menu" class="sheet hidden">
-    <div class="sheet-card glass">
-      <div class="sheet-top"><div><span>WORLD</span><b>세계 현황</b></div><button id="closeMenu" class="icon-btn">×</button></div>
-      <div class="stats">
-        <div><span>세계 인구</span><b>300</b></div>
-        <div><span>아르케아</span><b>30</b></div>
-        <div><span>미확인 인구</span><b>270</b></div>
-        <div><span>발견 권역</span><b>1 / 8</b></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">🌾</div>
+        <div>
+          <h1>문명: 감나무뜰의 창세기</h1>
+          <small>아르케아 중앙대륙 · 라엔 분지</small>
+        </div>
       </div>
-      <div class="menu-section">
-        <span>진행 원칙</span>
-        <p>시간은 사건을 만들고, 사건은 사람의 선택을 만들며, 선택은 역사가 됩니다.</p>
+      <div class="top-actions">
+        <button id="saveBtn" class="btn ghost">저장</button>
+        <button id="resetBtn" class="btn danger">새 세계</button>
+        <button id="playPauseBtn" class="btn primary">▶ 진행</button>
       </div>
-      <button id="resetBtn" class="danger">세계력 0년으로 초기화</button>
-    </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">GENESIS · WORLD YEAR 0</div>
+        <h2 id="heroTitle">황무지 한 조각에서, 마을의 첫 하루가 시작된다.</h2>
+        <p id="heroText">물이 흐르는 곳을 찾고, 돌을 골라내고, 흙을 뒤집습니다. 아직 국가는 없고 왕도 없습니다. 지금 필요한 것은 오늘 먹을 식량과 내일도 이어질 작은 협업입니다.</p>
+        <div class="hero-stats">
+          <span class="pill good">몬스터 없음</span>
+          <span class="pill">생존 · 개간 · 협업</span>
+          <span class="pill">잠재력 기반 성장</span>
+          <span class="pill warn" id="nextGoalPill">다음 목표: 첫 밭 완성</span>
+        </div>
+      </div>
+      <div class="hero-card story-box">
+        <h3>오늘의 이야기</h3>
+        <div id="storyQuote" class="quote">“거창하게 시작할 필요는 없어. 오늘 한 뼘만 더 갈아엎으면, 내일은 누군가 그 위에 씨앗을 놓을 수 있겠지.”</div>
+        <div id="storySpeaker" class="speaker">— 이명자, C0001</div>
+      </div>
+    </section>
+
+    <section id="resourceGrid" class="resources"></section>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="panel-title">
+          <h3>감나무뜰 운영</h3>
+          <small id="villageSummary">주민 3명 · 건물 1개</small>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="residents">주민 관리</button>
+          <button class="tab-btn" data-tab="production">생산</button>
+          <button class="tab-btn" data-tab="buildings">건축</button>
+          <button class="tab-btn" data-tab="research">기술 연구</button>
+          <button class="tab-btn" data-tab="achievements">업적</button>
+        </div>
+
+        <div id="tab-residents" class="tab-page active"><div id="residentList" class="grid-2" style="margin-top:10px"></div></div>
+        <div id="tab-production" class="tab-page"><div id="productionList" class="grid-2" style="margin-top:10px"></div></div>
+        <div id="tab-buildings" class="tab-page"><div id="buildingList" class="grid-2" style="margin-top:10px"></div></div>
+        <div id="tab-research" class="tab-page"><div id="researchList" class="grid-2" style="margin-top:10px"></div></div>
+        <div id="tab-achievements" class="tab-page"><div id="achievementList" style="margin-top:10px"></div></div>
+      </section>
+
+      <aside class="right-stack">
+        <section class="panel">
+          <div class="clock">
+            <div>
+              <div id="worldDate" class="date">세계력 0년 1일</div>
+              <div id="seasonText" class="season">초봄 · 맑음</div>
+            </div>
+            <div class="speed">
+              <button data-speed="0" class="active">Ⅱ</button>
+              <button data-speed="1">×1</button>
+              <button data-speed="5">×5</button>
+              <button data-speed="20">×20</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title"><h3>이벤트 로그</h3><small>살아있는 연대기</small></div>
+          <div id="eventLog" class="log-list"></div>
+        </section>
+      </aside>
+    </main>
   </div>
 
-  <div class="desktop-help glass">WASD 이동 · Shift 달리기 · E 대화 · 마우스 드래그 시점</div>
+  <div id="modal" class="modal"><div class="modal-card"><div id="modalBody"></div><div class="modal-actions"><button id="modalClose" class="btn">닫기</button></div></div></div>
+  <div id="toast" class="toast"></div>
 
-  <script type="module" src="./game.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const STORAGE_KEY = 'civilization_genesis_singlefile_v1';
+      const RESOURCE_META = {
+        food:{name:'식량',icon:'🌾'}, water:{name:'물',icon:'💧'}, wood:{name:'나무',icon:'🪵'}, stone:{name:'돌',icon:'🪨'}, labor:{name:'노동력',icon:'🧺'}
+      };
+      const JOBS = ['대기','농부','목수','요리사','약초사','사육사','기록자','채집가'];
+
+      const initialResidents = [
+        {id:'C0001',name:'이명자',age:58,job:'기록자',potential:94,bloom:12,traits:['관찰','끈기'],skills:{농업:36,목공:18,요리:28,약초:44,사육:10,기록:72,채집:34},note:'말기 암 환자. 모든 일을 직접 해결하기보다 사람의 재능을 알아보고 연결하는 조언자.'},
+        {id:'C0003',name:'판섭',age:21,job:'농부',potential:91,bloom:9,traits:['집중','응용'],skills:{농업:61,목공:25,요리:18,약초:22,사육:31,기록:27,채집:45},note:'작은 차이를 빨리 알아채는 청년. 흙과 물길의 변화를 유심히 본다.'},
+        {id:'C0004',name:'마루',age:27,job:'목수',potential:86,bloom:11,traits:['성실','보호'],skills:{농업:32,목공:64,요리:16,약초:20,사육:27,기록:19,채집:52},note:'손이 빠르고 도구를 아껴 쓴다. 공동 작업이 길어질수록 진가가 드러난다.'}
+      ];
+
+      const productionDefs = [
+        {id:'field',name:'밭 개간',icon:'🌱',desc:'돌을 골라내고 흙을 뒤집어 첫 경작지를 만듭니다.',requires:{labor:6,water:2},yield:{food:8},job:'농부',unlock:()=>true},
+        {id:'water',name:'물 긷기',icon:'🪣',desc:'라엔 분지의 얕은 물길에서 생활용수를 확보합니다.',requires:{labor:3},yield:{water:9},job:'채집가',unlock:()=>true},
+        {id:'wood',name:'목재 채집',icon:'🪵',desc:'말라 쓰러진 가지와 안전한 목재부터 모읍니다.',requires:{labor:4},yield:{wood:7},job:'목수',unlock:()=>true},
+        {id:'stone',name:'돌 고르기',icon:'🪨',desc:'밭에서 골라낸 돌을 모아 건축 재료로 분류합니다.',requires:{labor:4},yield:{stone:6},job:'채집가',unlock:()=>true},
+        {id:'cook',name:'공동 취사',icon:'🍲',desc:'식량과 물을 조리해 주민 피로를 덜고 노동력을 회복합니다.',requires:{food:4,water:2},yield:{labor:8},job:'요리사',unlock:s=>s.tech.공동취사.unlocked}
+      ];
+
+      const buildingDefs = [
+        {id:'fieldA',name:'첫 밭',icon:'🌿',desc:'황무지에서 시작한 첫 경작지.',cost:{wood:8,stone:4,labor:12},max:4,effect:'식량 생산 효율 +8%',req:()=>true},
+        {id:'storage',name:'공동 저장고',icon:'🏚️',desc:'식량과 씨앗을 비와 짐승에게서 보호합니다.',cost:{wood:18,stone:10,labor:16},max:3,effect:'자원 보유 한도 증가',req:s=>s.buildings.fieldA>=1},
+        {id:'workshop',name:'작은 작업장',icon:'🛠️',desc:'도구 수리와 목공 실험을 위한 공동 공간.',cost:{wood:26,stone:12,labor:20},max:2,effect:'목재·건축 효율 증가',req:s=>s.buildings.storage>=1},
+        {id:'herbHut',name:'약초 건조대',icon:'🌿',desc:'채집한 약초를 말리고 분류해 지식을 쌓습니다.',cost:{wood:16,stone:5,labor:14},max:2,effect:'약초 연구 개방',req:s=>s.tech.기록습관.unlocked},
+        {id:'meeting',name:'공동 마루',icon:'🪵',desc:'주민들이 하루 일을 나누고 다음 날을 의논하는 장소.',cost:{wood:30,stone:16,labor:28},max:1,effect:'주민 개화율 성장 +15%',req:s=>s.residents.length>=4}
+      ];
+
+      const techDefs = [
+        {id:'기록습관',name:'기록 습관',icon:'📜',desc:'날씨·수확·실패를 짧게라도 남기는 습관.',cost:{labor:10},need:60,requires:()=>true,effect:'모든 기술 연구 속도 상승'},
+        {id:'공동취사',name:'공동 취사',icon:'🍲',desc:'재료 분배와 불 사용을 표준화합니다.',cost:{food:10,water:8,labor:8},need:75,requires:s=>s.tech.기록습관.unlocked,effect:'공동 취사 생산 해금'},
+        {id:'저장법',name:'건조 저장법',icon:'🧺',desc:'곡물과 씨앗을 습기에서 지키는 방법.',cost:{wood:8,labor:12},need:90,requires:s=>s.buildings.storage>=1,effect:'식량 손실 감소'},
+        {id:'목공기초',name:'목공 기초',icon:'🪚',desc:'쐐기·맞춤·간단한 받침 구조를 체계화합니다.',cost:{wood:18,labor:14},need:100,requires:s=>s.buildings.workshop>=1,effect:'건축 비용 일부 감소'},
+        {id:'약초분류',name:'약초 분류',icon:'🍃',desc:'먹을 것, 쓸 것, 피해야 할 것을 기록합니다.',cost:{food:6,labor:12},need:85,requires:s=>s.buildings.herbHut>=1,effect:'회복 이벤트와 약초사 역할 강화'}
+      ];
+
+      const achievements = [
+        {id:'firstField',icon:'🌱',name:'첫 흙을 뒤집다',desc:'첫 밭을 완성한다.',check:s=>s.buildings.fieldA>=1},
+        {id:'firstHarvest',icon:'🌾',name:'첫 수확',desc:'식량 40 이상을 확보한다.',check:s=>s.resources.food>=40},
+        {id:'fourthResident',icon:'🤝',name:'한 사람 더',desc:'주민이 4명 이상이 된다.',check:s=>s.residents.length>=4},
+        {id:'bloom30',icon:'✨',name:'재능이 피어나다',desc:'누군가의 개화율이 30%를 넘는다.',check:s=>s.residents.some(r=>r.bloom>=30)},
+        {id:'threeTech',icon:'📚',name:'배운 것을 남기다',desc:'기술 3개를 해금한다.',check:s=>Object.values(s.tech).filter(t=>t.unlocked).length>=3}
+      ];
+
+      function freshState(){
+        const tech={}; techDefs.forEach(t=>tech[t.id]={progress:0,unlocked:false});
+        return {
+          year:0,day:1,tick:0,running:false,speed:0,
+          weather:'맑음',
+          resources:{food:18,water:24,wood:16,stone:10,labor:18},
+          lastDelta:{food:0,water:0,wood:0,stone:0,labor:0},
+          caps:{food:80,water:80,wood:80,stone:80,labor:40},
+          residents:JSON.parse(JSON.stringify(initialResidents)),
+          buildings:{fieldA:0,storage:0,workshop:0,herbHut:0,meeting:0},
+          tech,
+          logs:[
+            {type:'story',title:'세계력 0년 1일',text:'이명자와 판섭, 마루가 라엔 분지의 낮은 둔덕 아래에 짐을 풀었다.',time:'0년 1일'},
+            {type:'good',title:'첫 합의',text:'오늘은 물길을 확인하고, 돌을 골라내며, 비를 피할 장소부터 만들기로 했다.',time:'0년 1일'}
+          ],
+          unlockedAchievements:[],
+          flags:{firstFieldStory:false,firstHarvestStory:false,recruit1:false,recruit2:false,illnessScene:false},
+          totalActions:0
+        };
+      }
+
+      let state = load() || freshState();
+      let timer=null;
+      let toastTimer=null;
+
+      const $=id=>document.getElementById(id);
+      const el={
+        intro:$('intro'),startBtn:$('startBtn'),saveBtn:$('saveBtn'),resetBtn:$('resetBtn'),playPauseBtn:$('playPauseBtn'),
+        resourceGrid:$('resourceGrid'),residentList:$('residentList'),productionList:$('productionList'),buildingList:$('buildingList'),researchList:$('researchList'),achievementList:$('achievementList'),
+        worldDate:$('worldDate'),seasonText:$('seasonText'),eventLog:$('eventLog'),villageSummary:$('villageSummary'),nextGoalPill:$('nextGoalPill'),heroTitle:$('heroTitle'),heroText:$('heroText'),storyQuote:$('storyQuote'),storySpeaker:$('storySpeaker'),
+        modal:$('modal'),modalBody:$('modalBody'),modalClose:$('modalClose'),toast:$('toast')
+      };
+
+      function save(){ localStorage.setItem(STORAGE_KEY,JSON.stringify(state)); toast('저장했습니다.'); }
+      function load(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'null')}catch{return null} }
+      function hardReset(){ if(!confirm('현재 세계를 지우고 세계력 0년 1일부터 다시 시작할까요?')) return; localStorage.removeItem(STORAGE_KEY); state=freshState(); stop(); render(); el.intro.classList.remove('hidden'); }
+      function toast(msg){ clearTimeout(toastTimer); el.toast.textContent=msg; el.toast.classList.add('show'); toastTimer=setTimeout(()=>el.toast.classList.remove('show'),1900); }
+      function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+      function season(){ const d=state.day; if(d<=91)return '초봄'; if(d<=182)return '여름'; if(d<=273)return '가을'; return '겨울'; }
+      function stamp(){return `${state.year}년 ${state.day}일`}
+      function addLog(type,title,text){ state.logs.unshift({type,title,text,time:stamp()}); state.logs=state.logs.slice(0,80); }
+
+      function availableLabor(){
+        const residentsFactor=state.residents.reduce((sum,r)=>sum + (r.job==='대기'?0.6:1),0);
+        const base=8+residentsFactor*4;
+        const bloomBoost=1+state.residents.reduce((s,r)=>s+r.bloom,0)/1200;
+        return Math.round(base*bloomBoost);
+      }
+
+      function jobEfficiency(job){
+        const matching=state.residents.filter(r=>r.job===job);
+        if(!matching.length) return 0.72;
+        const vals=matching.map(r=>{
+          const skill=r.skills[job] ?? r.skills[skillKeyForJob(job)] ?? 20;
+          return 0.75 + (skill/100)*0.55 + (r.bloom/100)*0.25 + (r.potential/100)*0.15;
+        });
+        return vals.reduce((a,b)=>a+b,0)/vals.length;
+      }
+      function skillKeyForJob(job){return ({농부:'농업',목수:'목공',요리사:'요리',약초사:'약초',사육사:'사육',기록자:'기록',채집가:'채집'})[job]||'채집'}
+
+      function canAfford(cost){return Object.entries(cost).every(([k,v])=>(state.resources[k]||0)>=v)}
+      function spend(cost){Object.entries(cost).forEach(([k,v])=>state.resources[k]=Math.max(0,state.resources[k]-v))}
+      function gain(bundle){Object.entries(bundle).forEach(([k,v])=>{state.resources[k]=Math.min(state.caps[k]||9999,(state.resources[k]||0)+v);state.lastDelta[k]=(state.lastDelta[k]||0)+v})}
+
+      function doProduction(id){
+        const def=productionDefs.find(x=>x.id===id); if(!def||!def.unlock(state))return;
+        if(!canAfford(def.requires)){toast('필요한 자원이 부족합니다.');return}
+        spend(def.requires);
+        const eff=jobEfficiency(def.job);
+        const fieldBoost=id==='field'?1+state.buildings.fieldA*.08:1;
+        const workshopBoost=id==='wood'?1+state.buildings.workshop*.10:1;
+        const yieldBundle={}; Object.entries(def.yield).forEach(([k,v])=>yieldBundle[k]=Math.max(1,Math.round(v*eff*fieldBoost*workshopBoost)));
+        gain(yieldBundle);
+        improveResidents(def.job,1.2);
+        state.totalActions++;
+        addLog('good',def.name,`${def.job} 중심 작업으로 ${Object.entries(yieldBundle).map(([k,v])=>`${RESOURCE_META[k]?.name||k} +${v}`).join(', ')}.`);
+        if(id==='field'&&state.buildings.fieldA===0&&state.resources.wood>=8&&state.resources.stone>=4){ addLog('story','밭이 될 자리','판섭이 물이 오래 고이지 않는 흙을 골라 작은 경계선을 표시했다. 이제 실제 밭을 지을 준비가 됐다.'); }
+        checkNarrative(); checkAchievements(); saveSilent(); render();
+      }
+
+      function build(id){
+        const def=buildingDefs.find(x=>x.id===id); if(!def||!def.req(state))return;
+        const level=state.buildings[id]||0; if(level>=def.max){toast('현재 단계에서 더 확장할 수 없습니다.');return}
+        let cost={...def.cost};
+        if(state.tech.목공기초.unlocked) Object.keys(cost).forEach(k=>{if(k==='wood'||k==='labor')cost[k]=Math.max(1,Math.ceil(cost[k]*.88))});
+        if(!canAfford(cost)){toast('건축 자원이 부족합니다.');return}
+        spend(cost); state.buildings[id]++;
+        if(id==='storage'){state.caps.food+=60;state.caps.water+=40;state.caps.wood+=50;state.caps.stone+=50}
+        if(id==='meeting'){state.caps.labor+=15}
+        improveResidents('목수',2.1);
+        addLog('story',`${def.name} 완성`,`${def.desc} 주민들이 역할을 나눠 ${state.buildings[id]}단계를 완성했다.`);
+        checkNarrative(); checkAchievements(); saveSilent(); render();
+      }
+
+      function research(id){
+        const def=techDefs.find(x=>x.id===id); const tech=state.tech[id]; if(!def||tech.unlocked||!def.requires(state))return;
+        if(!canAfford(def.cost)){toast('연구에 필요한 자원이 부족합니다.');return}
+        spend(def.cost);
+        const recorder=state.residents.filter(r=>r.job==='기록자');
+        const eff=recorder.length?recorder.reduce((s,r)=>s+r.skills.기록+r.bloom*.5,0)/recorder.length:35;
+        const bonus=state.tech.기록습관.unlocked?1.18:1;
+        const inc=Math.round((18+eff*.18)*bonus);
+        tech.progress=Math.min(def.need,tech.progress+inc);
+        improveResidents('기록자',1.5);
+        if(tech.progress>=def.need){ tech.unlocked=true; addLog('story',`기술 해금 · ${def.name}`,`${def.desc} 이제 감나무뜰의 공동 지식이 되었다.`); toast(`${def.name} 해금!`); }
+        else addLog('good',`${def.name} 연구`,`관찰과 기록을 정리해 연구 진척 +${inc}.`);
+        checkAchievements(); saveSilent(); render();
+      }
+
+      function assignJob(residentId,job){
+        const r=state.residents.find(x=>x.id===residentId); if(!r)return;
+        const old=r.job; r.job=job;
+        addLog('good','역할 변경',`${r.name}이(가) ${old}에서 ${job}(으)로 역할을 바꾸었다.`);
+        render(); saveSilent();
+      }
+
+      function improveResidents(job,amount){
+        const key=skillKeyForJob(job);
+        state.residents.filter(r=>r.job===job).forEach(r=>{
+          r.skills[key]=clamp((r.skills[key]||0)+amount,0,100);
+          const fit=(r.skills[key]/100)*(r.potential/100);
+          const meeting=state.buildings.meeting?1.15:1;
+          r.bloom=clamp(r.bloom + Math.max(.15,fit*.55*meeting),0,100);
+        });
+      }
+
+      function simulationStep(days){
+        state.lastDelta={food:0,water:0,wood:0,stone:0,labor:0};
+        for(let i=0;i<days;i++){
+          state.day++; if(state.day>365){state.day=1;state.year++; addLog('story',`세계력 ${state.year}년`,`감나무뜰의 또 한 해가 시작되었다. 지난 해의 실패와 성공이 다음 해의 기준이 된다.`)}
+
+          const residents=state.residents.length;
+          const foodUse=Math.max(1,Math.ceil(residents*.10));
+          const waterUse=Math.max(1,Math.ceil(residents*.12));
+          state.resources.food=Math.max(0,state.resources.food-foodUse);
+          state.resources.water=Math.max(0,state.resources.water-waterUse);
+          state.lastDelta.food-=foodUse; state.lastDelta.water-=waterUse;
+
+          const laborBase=Math.max(1,Math.round(availableLabor()*.08));
+          state.resources.labor=Math.min(state.caps.labor,state.resources.labor+laborBase);
+          state.lastDelta.labor+=laborBase;
+
+          autoWork();
+          randomDailyEvent();
+          checkRecruitment();
+          checkNarrative();
+          checkAchievements();
+        }
+        saveSilent(); render();
+      }
+
+      function autoWork(){
+        const jobs=state.residents.map(r=>r.job);
+        if(jobs.includes('농부') && state.buildings.fieldA>0 && Math.random()<.42){
+          const val=Math.max(1,Math.round((2+state.buildings.fieldA)*jobEfficiency('농부'))); gain({food:val}); improveResidents('농부',.22);
+        }
+        if(jobs.includes('목수') && Math.random()<.26){ const val=Math.max(1,Math.round(1.4*jobEfficiency('목수'))); gain({wood:val}); improveResidents('목수',.18); }
+        if(jobs.includes('채집가') && Math.random()<.26){ gain({stone:1,water:2}); improveResidents('채집가',.16); }
+        if(jobs.includes('요리사') && state.resources.food>8 && state.resources.water>8 && Math.random()<.18){state.resources.food-=1;state.resources.water-=1;gain({labor:3});improveResidents('요리사',.18)}
+        if(jobs.includes('기록자') && Math.random()<.16){ Object.values(state.tech).filter(t=>!t.unlocked).forEach(t=>t.progress+=.5); improveResidents('기록자',.12); }
+      }
+
+      function randomDailyEvent(){
+        const roll=Math.random();
+        if(roll<.018){
+          state.weather=Math.random()<.55?'약한 비':'바람';
+          if(state.weather==='약한 비'){gain({water:5});addLog('good','봄비',`라엔 분지에 짧은 비가 내려 물통이 조금 찼다.`)}
+          else {addLog('warn','센 바람',`움막의 덮개를 다시 묶느라 오전 작업이 늦어졌다.`);state.resources.labor=Math.max(0,state.resources.labor-2)}
+        }else if(roll<.035){state.weather='맑음'}
+
+        if(state.residents.length>0 && Math.random()<.025){
+          const r=state.residents[Math.floor(Math.random()*state.residents.length)];
+          const key=skillKeyForJob(r.job);
+          if(key && r.job!=='대기'){
+            r.skills[key]=clamp((r.skills[key]||0)+1.2,0,100);r.bloom=clamp(r.bloom+.7,0,100);
+            addLog('good',`${r.name}의 작은 발견`,`${r.name}이(가) ${r.job} 일을 반복하다 더 나은 순서를 찾아냈다. 개화율이 조금 올랐다.`);
+          }
+        }
+      }
+
+      function checkRecruitment(){
+        if(!state.flags.recruit1 && state.buildings.fieldA>=1 && state.resources.food>=34){
+          state.flags.recruit1=true;
+          state.residents.push({id:'C0005',name:'온새',age:24,job:'요리사',potential:82,bloom:8,traits:['돌봄','차분'],skills:{농업:24,목공:15,요리:58,약초:49,사육:21,기록:33,채집:40},note:'냄비 하나와 작은 약초 꾸러미를 들고 감나무뜰에 합류한 주민.'});
+          addLog('story','새 주민 · 온새','밭 옆 연기가 보인다는 말을 듣고 온새가 감나무뜰에 머물기로 했다. 먹을 것을 나누는 사람이 생겼다.');
+        }
+        if(!state.flags.recruit2 && state.tech.기록습관.unlocked && state.buildings.storage>=1 && state.residents.length>=4){
+          state.flags.recruit2=true;
+          state.residents.push({id:'C0006',name:'나래',age:19,job:'채집가',potential:88,bloom:7,traits:['호기심','관찰'],skills:{농업:38,목공:21,요리:27,약초:41,사육:19,기록:35,채집:66},note:'분지 가장자리에서 먹을 수 있는 풀과 열매를 구분해 온 젊은 채집가.'});
+          addLog('story','새 주민 · 나래','나래가 식물의 위치를 그림처럼 표시한 나뭇조각을 보여주었다. 기록과 채집이 처음으로 연결됐다.');
+        }
+      }
+
+      function checkNarrative(){
+        if(!state.flags.firstFieldStory && state.buildings.fieldA>=1){
+          state.flags.firstFieldStory=true;
+          el.storyQuote.textContent='“밭이라고 부르기엔 작지만, 우리가 직접 만든 첫 땅이야.”';el.storySpeaker.textContent='— 판섭, C0003';
+          addLog('story','첫 밭','황무지의 돌을 걷어낸 자리에 반듯하지 않은 첫 밭이 생겼다. 모두가 잠시 일을 멈추고 그 흙을 바라봤다.');
+        }
+        if(!state.flags.firstHarvestStory && state.resources.food>=40){
+          state.flags.firstHarvestStory=true;
+          el.storyQuote.textContent='“오늘 먹고 끝나는 게 아니라, 다음 씨앗을 남겨야 해.”';el.storySpeaker.textContent='— 이명자, C0001';
+          addLog('story','첫 분배','첫 수확분을 오늘 먹을 것과 다음에 심을 것으로 나눴다. 저장이라는 생각이 공동 규칙이 되기 시작했다.');
+        }
+        if(!state.flags.illnessScene && state.day>=120){
+          state.flags.illnessScene=true;
+          addLog('warn','이명자의 몸 상태','이명자는 일을 마친 뒤 오래 앉아 숨을 골랐다. 그는 직접 나서기보다 판섭과 마루에게 판단을 맡기는 시간이 늘었다.');
+        }
+      }
+
+      function checkAchievements(){
+        achievements.forEach(a=>{if(!state.unlockedAchievements.includes(a.id)&&a.check(state)){state.unlockedAchievements.push(a.id);addLog('good',`업적 · ${a.name}`,a.desc);toast(`업적 달성: ${a.name}`)}})
+      }
+
+      function nextGoal(){
+        if(state.buildings.fieldA<1)return '첫 밭 완성';
+        if(state.resources.food<40)return '첫 수확 40 식량';
+        if(state.buildings.storage<1)return '공동 저장고 건설';
+        if(!state.tech.기록습관.unlocked)return '기록 습관 연구';
+        if(state.residents.length<4)return '새 주민 정착';
+        if(state.buildings.workshop<1)return '작은 작업장 건설';
+        return '감나무뜰 안정화';
+      }
+
+      function formatCost(cost){return Object.entries(cost).map(([k,v])=>`${RESOURCE_META[k]?.icon||''}${RESOURCE_META[k]?.name||k} ${v}`).join(' · ')}
+
+      function renderResources(){
+        el.resourceGrid.innerHTML=Object.entries(RESOURCE_META).map(([key,m])=>{
+          const v=Math.floor(state.resources[key]); const d=Math.floor(state.lastDelta[key]||0);
+          return `<div class="resource"><div class="resource-top"><div class="resource-name">${m.icon} ${m.name}</div><div class="delta ${d>=0?'up':'down'}">${d===0?'±0':(d>0?'+':'')+d}</div></div><div class="resource-value">${v}<span style="font-size:10px;color:var(--muted);font-weight:800"> / ${state.caps[key]}</span></div></div>`
+        }).join('');
+      }
+
+      function renderResidents(){
+        el.residentList.innerHTML=state.residents.map(r=>{
+          const best=Object.entries(r.skills).sort((a,b)=>b[1]-a[1]).slice(0,2);
+          return `<div class="card resident-card">
+            <div class="avatar">${r.name[0]}</div>
+            <div class="resident-main"><b>${r.name} <span style="font-size:9px;color:var(--muted)">${r.id}</span></b><div class="meta">${r.age}세 · ${r.job} · 잠재력 ${r.potential}</div><div class="progress"><span style="width:${r.bloom}%"></span></div><div class="meta">개화율 ${r.bloom.toFixed(1)}%</div><div class="skill-tags">${best.map(([k,v])=>`<span class="skill-tag">${k} ${Math.round(v)}</span>`).join('')}</div></div>
+            <div class="resident-actions"><select class="mini-select" data-job-for="${r.id}">${JOBS.map(j=>`<option ${j===r.job?'selected':''}>${j}</option>`).join('')}</select><button class="btn" data-view-resident="${r.id}">상세</button></div>
+          </div>`
+        }).join('');
+        document.querySelectorAll('[data-job-for]').forEach(s=>s.addEventListener('change',e=>assignJob(e.target.dataset.jobFor,e.target.value)));
+        document.querySelectorAll('[data-view-resident]').forEach(b=>b.addEventListener('click',()=>openResident(b.dataset.viewResident)));
+      }
+
+      function renderProduction(){
+        const list=productionDefs.filter(d=>d.unlock(state));
+        el.productionList.innerHTML=list.map(d=>`<div class="card building-card"><div class="topline"><div><h4>${d.icon} ${d.name}</h4><p>${d.desc}</p></div><span class="pill">${d.job}</span></div><div class="cost">${Object.entries(d.requires).map(([k,v])=>`<span>${RESOURCE_META[k].icon} ${RESOURCE_META[k].name} ${v}</span>`).join('')}</div><div class="card-footer"><span class="level">직업 효율 ${Math.round(jobEfficiency(d.job)*100)}%</span><button class="btn green" data-produce="${d.id}">실행</button></div></div>`).join('');
+        document.querySelectorAll('[data-produce]').forEach(b=>b.addEventListener('click',()=>doProduction(b.dataset.produce)));
+      }
+
+      function renderBuildings(){
+        el.buildingList.innerHTML=buildingDefs.map(d=>{
+          const lv=state.buildings[d.id]||0, unlocked=d.req(state), max=lv>=d.max;
+          let cost={...d.cost}; if(state.tech.목공기초.unlocked)Object.keys(cost).forEach(k=>{if(k==='wood'||k==='labor')cost[k]=Math.max(1,Math.ceil(cost[k]*.88))});
+          return `<div class="card building-card" style="${unlocked?'':'opacity:.5'}"><div class="topline"><div><h4>${d.icon} ${d.name}</h4><p>${d.desc}</p></div><span class="pill">Lv.${lv}</span></div><div class="cost">${Object.entries(cost).map(([k,v])=>`<span>${RESOURCE_META[k].icon} ${RESOURCE_META[k].name} ${v}</span>`).join('')}</div><div class="card-footer"><span class="level">${d.effect}</span><button class="btn primary" data-build="${d.id}" ${(!unlocked||max)?'disabled':''}>${max?'완성':'건설'}</button></div></div>`
+        }).join('');
+        document.querySelectorAll('[data-build]').forEach(b=>b.addEventListener('click',()=>build(b.dataset.build)));
+      }
+
+      function renderResearch(){
+        el.researchList.innerHTML=techDefs.map(d=>{
+          const t=state.tech[d.id], unlockedReq=d.requires(state);
+          return `<div class="card research-card" style="${unlockedReq?'':'opacity:.5'}"><div class="topline"><div><h4>${d.icon} ${d.name}</h4><p>${d.desc}</p></div><span class="pill ${t.unlocked?'good':''}">${t.unlocked?'완료':Math.round(t.progress)+' / '+d.need}</span></div><div class="progress"><span style="width:${Math.min(100,t.progress/d.need*100)}%"></span></div><div class="cost">${Object.entries(d.cost).map(([k,v])=>`<span>${RESOURCE_META[k].icon} ${RESOURCE_META[k].name} ${v}</span>`).join('')}</div><div class="card-footer"><span class="level">${d.effect}</span><button class="btn green" data-research="${d.id}" ${(!unlockedReq||t.unlocked)?'disabled':''}>${t.unlocked?'해금됨':'연구'}</button></div></div>`
+        }).join('');
+        document.querySelectorAll('[data-research]').forEach(b=>b.addEventListener('click',()=>research(b.dataset.research)));
+      }
+
+      function renderAchievements(){
+        el.achievementList.innerHTML=achievements.map(a=>{const open=state.unlockedAchievements.includes(a.id);return `<div class="achievement ${open?'':'locked'}"><div class="icon">${a.icon}</div><div><b>${a.name}</b><small>${a.desc}</small></div><div style="margin-left:auto;font-size:10px;font-weight:900">${open?'달성':'미달성'}</div></div>`}).join('');
+      }
+
+      function renderLog(){
+        el.eventLog.innerHTML=state.logs.length?state.logs.map(l=>`<div class="log-item ${l.type||''}"><b>${l.title}</b><p>${l.text}</p><div class="log-time">세계력 ${l.time}</div></div>`).join(''):'<div class="empty">아직 기록이 없습니다.</div>';
+      }
+
+      function openResident(id){
+        const r=state.residents.find(x=>x.id===id); if(!r)return;
+        const skills=Object.entries(r.skills).sort((a,b)=>b[1]-a[1]);
+        el.modalBody.innerHTML=`<h3>${r.name} <span style="color:var(--muted);font-size:11px">${r.id}</span></h3><p style="color:var(--muted);font-size:11px;line-height:1.6">${r.note}</p><div class="grid-2" style="margin-top:12px"><div class="card"><h4>잠재력</h4><div class="resource-value">${r.potential}</div></div><div class="card"><h4>개화율</h4><div class="resource-value">${r.bloom.toFixed(1)}%</div></div></div><div class="card" style="margin-top:10px"><h4>기술</h4>${skills.map(([k,v])=>`<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:8px"><span>${k}</span><b>${Math.round(v)}</b></div><div class="progress"><span style="width:${v}%"></span></div>`).join('')}</div>`;
+        el.modal.classList.add('show');
+      }
+
+      function render(){
+        renderResources(); renderResidents(); renderProduction(); renderBuildings(); renderResearch(); renderAchievements(); renderLog();
+        el.worldDate.textContent=`세계력 ${state.year}년 ${state.day}일`;
+        el.seasonText.textContent=`${season()} · ${state.weather}`;
+        el.villageSummary.textContent=`주민 ${state.residents.length}명 · 건물 ${Object.values(state.buildings).reduce((a,b)=>a+b,0)}개 · 기술 ${Object.values(state.tech).filter(t=>t.unlocked).length}개`;
+        el.nextGoalPill.textContent=`다음 목표: ${nextGoal()}`;
+        el.playPauseBtn.textContent=state.running?'Ⅱ 일시정지':'▶ 진행';
+        document.querySelectorAll('.speed button').forEach(b=>b.classList.toggle('active',Number(b.dataset.speed)===state.speed));
+        updateHero();
+      }
+
+      function updateHero(){
+        if(state.buildings.fieldA<1){el.heroTitle.textContent='황무지 한 조각에서, 마을의 첫 하루가 시작된다.';el.heroText.textContent='물을 확보하고 돌을 걷어내며 첫 밭을 준비하세요. 성장은 숫자가 아니라 반복되는 실제 작업과 주민의 숙련에서 시작됩니다.'}
+        else if(state.buildings.storage<1){el.heroTitle.textContent='첫 밭이 생겼다. 이제 남기는 법을 배울 차례다.';el.heroText.textContent='수확한 것을 모두 먹지 않고 일부를 남겨야 다음 계절이 시작됩니다. 저장고는 문명을 하루 너머로 이어주는 첫 장치입니다.'}
+        else if(!state.tech.기록습관.unlocked){el.heroTitle.textContent='마을은 기억하기 시작한다.';el.heroText.textContent='누가 무엇을 잘했고, 어떤 날씨에 무엇이 실패했는지 남기면 경험이 공동 지식으로 바뀝니다.'}
+        else {el.heroTitle.textContent='감나무뜰은 작은 생활권으로 자라난다.';el.heroText.textContent='직업과 기술이 분화되고 새로운 주민이 합류합니다. 서두르지 않아도 됩니다. 작은 개선이 쌓이면 문명이 됩니다.'}
+      }
+
+      function saveSilent(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+      function start(speed=1){state.running=true;state.speed=speed||1;setupTimer();render()}
+      function stop(){state.running=false;state.speed=0;if(timer){clearInterval(timer);timer=null}render()}
+      function setupTimer(){if(timer)clearInterval(timer);if(!state.running||state.speed<=0)return;const ms=state.speed===1?1500:state.speed===5?650:260;timer=setInterval(()=>simulationStep(state.speed===20?3:1),ms)}
+
+      el.startBtn.addEventListener('click',()=>{el.intro.classList.add('hidden');start(1);addLog('story','창세기 시작','세 사람은 오늘 할 수 있는 일부터 시작하기로 했다.');render()});
+      el.saveBtn.addEventListener('click',save);
+      el.resetBtn.addEventListener('click',hardReset);
+      el.playPauseBtn.addEventListener('click',()=>state.running?stop():start(state.speed||1));
+      el.modalClose.addEventListener('click',()=>el.modal.classList.remove('show'));
+      el.modal.addEventListener('click',e=>{if(e.target===el.modal)el.modal.classList.remove('show')});
+      document.querySelectorAll('.tab-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab-page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active')}));
+      document.querySelectorAll('.speed button').forEach(b=>b.addEventListener('click',()=>{const s=Number(b.dataset.speed);if(s===0){stop()}else{state.running=true;state.speed=s;setupTimer();render()}}));
+
+      // 첫 방문이 아니면 인트로를 자동으로 닫아 저장된 세계를 이어갑니다.
+      if(load()) el.intro.classList.add('hidden');
+      render();
+    })();
+  </script>
 </body>
 </html>
