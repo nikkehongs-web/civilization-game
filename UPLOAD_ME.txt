@@ -1,14 +1,15 @@
-아이폰 GitHub 업로드용 — 폴더 없는 버전
+아이폰 모바일 조작 수정판 v4
 
-아래 8개 파일을 GitHub 저장소 최상위에 모두 올리세요.
-index.html
-styles.css
-game.js
-state-machine.js
-combat-rules.js
-residents.json
-seed_residents.json
-monsters.json
+GitHub 저장소 최상위에 이 ZIP 안 파일 전부를 덮어쓰세요.
 
-GitHub Pages: main / root
-폴더 생성 필요 없음. assets도 현재는 필요 없음.
+핵심 수정
+- WebGL 화면이 왼쪽 위 일부만 보이던 iPhone viewport/canvas 크기 문제 보정
+- 핀치 줌이 follow 모드에서 16으로 다시 끌려가던 오류 제거
+- 카메라 최소 거리 22 / 기본 38로 건물 초근접 방지
+- + / - 확대축소 버튼 추가
+- ◎ 카메라 초기화
+- 왼쪽 아래 가상 조이스틱으로 내 캐릭터 직접 이동
+- 탭 이동도 계속 지원
+- 한 손가락 드래그 회전 / 두 손가락 이동+핀치
+- 더블탭으로 내 캐릭터 카메라 복귀
+- 모바일 HUD 대폭 축소

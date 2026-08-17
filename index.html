@@ -8,7 +8,7 @@
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js"}}
 </script>
-<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./styles.css?v=4">
 
 </head>
 <body>
@@ -34,9 +34,23 @@
   <div class="player-copy"><b id="playerName">나 · 관찰자</b><span id="playerStatus">마을을 걷는 중 · 각성은 세계력 55년</span><div class="player-hp"><i id="playerHpBar"></i></div></div>
   <button id="autoHuntBtn" class="hunt-btn locked">사냥 AUTO</button>
 </section>
+
+<div id="mobileGameControls" class="mobile-game-controls">
+  <div id="moveJoystick" class="move-joystick" aria-label="캐릭터 이동 조이스틱">
+    <div class="joy-ring"></div>
+    <div id="joyKnob" class="joy-knob"></div>
+    <span>이동</span>
+  </div>
+  <div class="camera-quick">
+    <button id="zoomInBtn" aria-label="확대">＋</button>
+    <button id="cameraResetBtn" aria-label="카메라 초기화">◎</button>
+    <button id="zoomOutBtn" aria-label="축소">－</button>
+  </div>
+</div>
+
 <div class="bottom-hud"><section class="ticker glass"><small>최신 연대기</small><b id="tickerTitle">창세기 시작</b><p id="tickerText">아직 마을이라 부르기 어려운 터에서 첫 하루가 시작됐다.</p></section><section class="speed glass"><button data-speed="0">Ⅱ</button><button data-speed="1" class="active">×1</button><button data-speed="5">×5</button><button data-speed="20">×20</button></section></div>
-<div class="hint glass">한 손가락 드래그: 카메라 회전 · 두 손가락: 화면 이동/핀치 줌 · 바닥 터치: 내 캐릭터 이동</div>
+<div class="hint glass">드래그: 카메라 회전 · 핀치: 확대/축소 · 바닥 터치: 이동 · 더블탭: 내 캐릭터 추적</div>
 <div id="sheet" class="sheet hidden"><div class="sheet-card glass"><div class="sheet-top"><div><span>WORLD ARCHIVE</span><b>감나무뜰 관찰 기록</b></div><button id="closeSheet" class="close">×</button></div><div class="tabs"><button class="tab active" data-tab="people">주민</button><button class="tab" data-tab="world">마을·기술</button><button class="tab" data-tab="history">연대기</button><button class="tab" data-tab="novel">소설 TXT</button></div><div id="tab-people" class="tabpage active"><div id="peopleList" class="grid"></div></div><div id="tab-world" class="tabpage"><div id="worldCards" class="grid"></div></div><div id="tab-history" class="tabpage"><div id="historyList" class="log-list"></div></div><div id="tab-novel" class="tabpage"><div class="novel-tools"><select id="novelStyle"><option value="healing">힐링 성장소설</option><option value="webnovel">웹소설형</option><option value="chronicle">연대기형</option></select><button id="refreshNovel">원고 갱신</button><button id="downloadNovel">소설 TXT 다운로드</button><button id="downloadChronicle">원본 연대기 TXT</button></div><div id="novelPreview" class="novel-preview"></div></div><button id="resetBtn" class="danger">세계력 0년 1일로 초기화</button></div></div>
-<script type="module" src="./game.js"></script>
+<script type="module" src="./game.js?v=4"></script>
 </body>
 </html>

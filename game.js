@@ -190,7 +190,29 @@ function storyQuoteFor(log){
 
 // ---------- THREE WORLD ----------
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x94a4a1);scene.fog=new THREE.FogExp2(0xaab0a1,.0075);
-const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,600);const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;$('game').appendChild(renderer.domElement);
+const gameRoot=$('game');
+function viewportMetrics(){
+ const rect=gameRoot.getBoundingClientRect(),vv=window.visualViewport;
+ const w=Math.max(1,Math.round(rect.width||vv?.width||document.documentElement.clientWidth||innerWidth||1));
+ const h=Math.max(1,Math.round(rect.height||vv?.height||document.documentElement.clientHeight||innerHeight||1));
+ return{w,h}
+}
+const initialViewport=viewportMetrics();
+const camera=new THREE.PerspectiveCamera(38,initialViewport.w/initialViewport.h,.1,600);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.domElement.style.position='absolute';renderer.domElement.style.inset='0';renderer.domElement.style.width='100%';renderer.domElement.style.height='100%';
+gameRoot.appendChild(renderer.domElement);
+let renderW=0,renderH=0;
+function resizeWorld(force=false){
+ const {w,h}=viewportMetrics();
+ if(!force&&Math.abs(w-renderW)<2&&Math.abs(h-renderH)<2)return;
+ renderW=w;renderH=h;
+ renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.45));
+ renderer.setSize(w,h,false);
+ camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+resizeWorld(true);
 scene.add(new THREE.HemisphereLight(0xdff2df,0x5a4938,2.1));const sun=new THREE.DirectionalLight(0xffe7b4,2.5);sun.position.set(-35,55,-30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-80;sun.shadow.camera.right=80;sun.shadow.camera.top=80;sun.shadow.camera.bottom=-80;scene.add(sun);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(220,180),new THREE.MeshStandardMaterial({color:0x7e895d,roughness:1}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
 function hill(x,z,sx,sz,h,c=0x5f7952){const m=new THREE.Mesh(new THREE.SphereGeometry(1,24,12),new THREE.MeshStandardMaterial({color:c,roughness:1}));m.scale.set(sx,h,sz);m.position.set(x,-.8,z);m.receiveShadow=true;scene.add(m)}hill(-70,-42,38,30,8);hill(72,-46,46,32,10);hill(-82,58,55,37,8);hill(85,58,47,33,7);
@@ -511,6 +533,27 @@ function updatePlayer(dt,now){
  }
  ud.attackCooldown=Math.max(0,ud.attackCooldown-dt*scale);
  ud.attackAnim=Math.max(0,ud.attackAnim-dt*scale);
+
+ // Direct joystick control always wins over tap movement and AUTO hunting.
+ if(manualMove.active){
+   state.player.autoHunt=false;selectedMonster=null;ud.moving=false;
+   const forward=new THREE.Vector3();camera.getWorldDirection(forward);forward.y=0;
+   if(forward.lengthSq()<.001)forward.set(0,0,-1);forward.normalize();
+   const right=new THREE.Vector3().crossVectors(forward,new THREE.Vector3(0,1,0)).normalize();
+   const d=forward.multiplyScalar(manualMove.y).add(right.multiplyScalar(manualMove.x));
+   const mag=clamp(d.length(),0,1);
+   if(mag>.04){
+     d.normalize();ud.fsm.set(PlayerStates.MOVING);
+     player.position.addScaledVector(d,CombatRules.playerMoveSpeed*(.55+.45*mag)*scale*dt);
+     player.rotation.y=Math.atan2(d.x,d.z);
+     const swing=Math.sin(now*.014*4*scale)*.62*mag;
+     ud.limbs.la.rotation.x=swing;ud.limbs.ra.rotation.x=-swing*.65;
+     ud.limbs.ll.rotation.x=-swing*.78;ud.limbs.rl.rotation.x=swing*.78;
+     state.player.x=player.position.x;state.player.z=player.position.z;
+     followId='PLAYER';if(camMode==='auto')setCameraMode('follow');
+     return
+   }
+ }
 
  if(state.player.autoHunt&&state.player.awakened&&(!selectedMonster||selectedMonster.userData.dead))selectedMonster=nearestMonster();
 
@@ -1016,14 +1059,26 @@ function animateResting(ud,now){
 }
 
 // Camera / interaction
-let camMode='auto',followId='PLAYER',yaw=.72,pitch=.78,distance=42,autoFocus=new THREE.Vector3(0,0,0),eventFocus=null,eventFocusUntil=0,hovered=null;
+const CAMERA_MIN_DISTANCE=22,CAMERA_MAX_DISTANCE=78,CAMERA_DEFAULT_DISTANCE=38;
+let camMode='follow',followId='PLAYER',yaw=.72,pitch=.72,distance=CAMERA_DEFAULT_DISTANCE,autoFocus=new THREE.Vector3(0,0,0),eventFocus=null,eventFocusUntil=0,hovered=null;
 const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
 const pointers=new Map();
-let gestureMoved=false,lastSingle=null,lastPair=null,pressStart=null;
+let gestureMoved=false,lastSingle=null,lastPair=null,pressStart=null,lastTapAt=0;
+const manualMove={x:0,y:0,active:false,pointerId:null};
 
 function pointerXY(e){return{x:e.clientX,y:e.clientY}}
+function clampCameraDistance(v){return clamp(v,CAMERA_MIN_DISTANCE,CAMERA_MAX_DISTANCE)}
+function zoomCamera(factor){
+ distance=clampCameraDistance(distance*factor);
+ if(camMode==='auto')setCameraMode('follow');
+}
+function resetPlayerCamera(){
+ followId='PLAYER';if($('followSelect'))$('followSelect').value='PLAYER';
+ yaw=.72;pitch=.72;distance=CAMERA_DEFAULT_DISTANCE;
+ setCameraMode('follow');
+}
 function panCamera(dx,dy){
- const factor=distance*.0024;
+ const factor=distance*.0027;
  const right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));
  const forward=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw));
  autoFocus.addScaledVector(right,-dx*factor);
@@ -1035,11 +1090,11 @@ renderer.domElement.addEventListener('pointerdown',e=>{
  try{renderer.domElement.setPointerCapture(e.pointerId)}catch{}
  pointers.set(e.pointerId,pointerXY(e));
  gestureMoved=false;pressStart={x:e.clientX,y:e.clientY,t:performance.now()};
- if(camMode==='auto')setCameraMode('free');
+ if(camMode==='auto')setCameraMode('follow');
  if(pointers.size===1)lastSingle=pointerXY(e);
  if(pointers.size===2){
    const p=[...pointers.values()],cx=(p[0].x+p[1].x)/2,cy=(p[0].y+p[1].y)/2;
-   lastPair={cx,cy,d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)};
+   lastPair={cx,cy,d:Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y))};
  }
 },{passive:false});
 renderer.domElement.addEventListener('pointermove',e=>{
@@ -1049,57 +1104,106 @@ renderer.domElement.addEventListener('pointermove',e=>{
    const p=[...pointers.values()][0];
    if(lastSingle){
      const dx=p.x-lastSingle.x,dy=p.y-lastSingle.y;
-     if(Math.abs(dx)+Math.abs(dy)>1)gestureMoved=true;
-     yaw-=dx*.0062;pitch=clamp(pitch-dy*.0048,.35,1.18);
+     if(Math.abs(dx)+Math.abs(dy)>2)gestureMoved=true;
+     yaw-=dx*.0056;pitch=clamp(pitch-dy*.0042,.43,1.05);
    }
    lastSingle=p;
  }else if(pointers.size>=2){
-   const p=[...pointers.values()].slice(0,2),cx=(p[0].x+p[1].x)/2,cy=(p[0].y+p[1].y)/2,d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+   const p=[...pointers.values()].slice(0,2),cx=(p[0].x+p[1].x)/2,cy=(p[0].y+p[1].y)/2,d=Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));
    if(lastPair){
      panCamera(cx-lastPair.cx,cy-lastPair.cy);
-     distance=clamp(distance+(lastPair.d-d)*.055,10,95);
-     if(Math.abs(cx-lastPair.cx)+Math.abs(cy-lastPair.cy)+Math.abs(d-lastPair.d)>1)gestureMoved=true;
+     const ratio=clamp(lastPair.d/d,.72,1.38);
+     distance=clampCameraDistance(distance*Math.pow(ratio,1.15));
+     if(Math.abs(cx-lastPair.cx)+Math.abs(cy-lastPair.cy)+Math.abs(d-lastPair.d)>2)gestureMoved=true;
    }
    lastPair={cx,cy,d};
  }
 },{passive:false});
 function handleTap(e){
- mouse.x=e.clientX/innerWidth*2-1;mouse.y=-(e.clientY/innerHeight)*2+1;ray.setFromCamera(mouse,camera);
+ const rect=renderer.domElement.getBoundingClientRect();
+ mouse.x=((e.clientX-rect.left)/Math.max(1,rect.width))*2-1;
+ mouse.y=-((e.clientY-rect.top)/Math.max(1,rect.height))*2+1;
+ ray.setFromCamera(mouse,camera);
  const mhit=ray.intersectObjects(monsters.filter(m=>!m.userData.dead),true)[0];
  if(mhit){
    let o=mhit.object;while(o.parent&&o.parent!==monsterGroup)o=o.parent;
-   setMonsterTarget(o);setCameraMode('follow');followId='PLAYER';return;
+   setMonsterTarget(o);followId='PLAYER';setCameraMode('follow');return;
  }
  const phit=ray.intersectObjects(people,true)[0];
  if(phit){
    let o=phit.object;while(o.parent&&!o.userData.id)o=o.parent;
-   if(o.userData.id){followId=o.userData.id;$('followSelect').value=followId;setCameraMode('follow');renderBrainPanel(state.residents.find(r=>r.id===followId));return}
+   if(o.userData.id){
+     followId=o.userData.id;if($('followSelect'))$('followSelect').value=followId;
+     setCameraMode('follow');renderBrainPanel(state.residents.find(r=>r.id===followId));return
+   }
  }
  const ghit=ray.intersectObject(ground,false)[0];
- if(ghit){state.player.autoHunt=false;movePlayerTo(ghit.point);followId='PLAYER';setCameraMode('follow');}
+ if(ghit){
+   state.player.autoHunt=false;movePlayerTo(ghit.point);followId='PLAYER';setCameraMode('follow')
+ }
 }
 renderer.domElement.addEventListener('pointerup',e=>{
  e.preventDefault();
  const elapsed=pressStart?performance.now()-pressStart.t:999;
  const moved=pressStart?Math.hypot(e.clientX-pressStart.x,e.clientY-pressStart.y):999;
  pointers.delete(e.pointerId);
- if(!gestureMoved&&moved<9&&elapsed<450)handleTap(e);
+ if(!gestureMoved&&moved<9&&elapsed<420){
+   const now=performance.now();
+   if(now-lastTapAt<285){resetPlayerCamera();lastTapAt=0}
+   else{handleTap(e);lastTapAt=now}
+ }
  lastSingle=pointers.size===1?[...pointers.values()][0]:null;lastPair=null;pressStart=null;
 },{passive:false});
 renderer.domElement.addEventListener('pointercancel',e=>{pointers.delete(e.pointerId);lastSingle=null;lastPair=null;pressStart=null},{passive:false});
 renderer.domElement.addEventListener('contextmenu',e=>e.preventDefault());
-renderer.domElement.addEventListener('wheel',e=>{distance=clamp(distance+e.deltaY*.025,10,95)},{passive:true});
+renderer.domElement.addEventListener('wheel',e=>{e.preventDefault();zoomCamera(Math.exp(e.deltaY*.0013))},{passive:false});
 
-function setCameraMode(m){camMode=m;document.querySelectorAll('.cam-btn').forEach(b=>b.classList.toggle('active',b.dataset.camera===m));$('autoDirectorBtn').classList.toggle('active',m==='auto')}
-document.querySelectorAll('.cam-btn').forEach(b=>b.onclick=()=>setCameraMode(b.dataset.camera));$('autoDirectorBtn').onclick=()=>setCameraMode(camMode==='auto'?'free':'auto');
+function setCameraMode(m){
+ camMode=m;
+ document.querySelectorAll('.cam-btn').forEach(b=>b.classList.toggle('active',b.dataset.camera===m));
+ if($('autoDirectorBtn'))$('autoDirectorBtn').classList.toggle('active',m==='auto')
+}
+document.querySelectorAll('.cam-btn').forEach(b=>b.onclick=()=>setCameraMode(b.dataset.camera));
+$('autoDirectorBtn').onclick=()=>setCameraMode(camMode==='auto'?'follow':'auto');
 refreshFollowSelect();$('followSelect').value=followId;$('followSelect').onchange=e=>{followId=e.target.value;setCameraMode('follow')};
-$('playerFocusBtn').onclick=()=>{followId='PLAYER';$('followSelect').value='PLAYER';setCameraMode('follow')};
+$('playerFocusBtn').onclick=resetPlayerCamera;
+$('zoomInBtn')?.addEventListener('click',()=>zoomCamera(.82));
+$('zoomOutBtn')?.addEventListener('click',()=>zoomCamera(1.22));
+$('cameraResetBtn')?.addEventListener('click',resetPlayerCamera);
 $('autoHuntBtn').onclick=()=>{
- if(!state.player.awakened){showEvent(`사냥은 세계력 55년부터 활성화됩니다`);followId='PLAYER';setCameraMode('follow');return}if(state.player.dead){showEvent('부활 후 사냥할 수 있습니다');return}
+ if(!state.player.awakened){showEvent(`사냥은 세계력 55년부터 활성화됩니다`);resetPlayerCamera();return}
+ if(state.player.dead){showEvent('부활 후 사냥할 수 있습니다');return}
  state.player.autoHunt=!state.player.autoHunt;
  if(!state.player.autoHunt)selectedMonster=null;
  updatePlayerHud();
 };
+
+// Virtual joystick: movement relative to current camera facing.
+const joystick=$('moveJoystick'),joyKnob=$('joyKnob');
+function resetJoystick(){
+ manualMove.x=0;manualMove.y=0;manualMove.active=false;manualMove.pointerId=null;
+ if(joyKnob)joyKnob.style.transform='translate3d(0,0,0)'
+}
+function updateJoystick(e){
+ if(!joystick)return;
+ const r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+ let dx=e.clientX-cx,dy=e.clientY-cy;
+ const max=Math.max(24,r.width*.31),len=Math.hypot(dx,dy);
+ if(len>max){dx=dx/len*max;dy=dy/len*max}
+ manualMove.x=clamp(dx/max,-1,1);manualMove.y=clamp(-dy/max,-1,1);
+ manualMove.active=Math.hypot(manualMove.x,manualMove.y)>.08;
+ joyKnob.style.transform=`translate3d(${dx}px,${dy}px,0)`;
+}
+joystick?.addEventListener('pointerdown',e=>{
+ e.preventDefault();e.stopPropagation();manualMove.pointerId=e.pointerId;
+ try{joystick.setPointerCapture(e.pointerId)}catch{};updateJoystick(e)
+},{passive:false});
+joystick?.addEventListener('pointermove',e=>{
+ if(e.pointerId!==manualMove.pointerId)return;e.preventDefault();e.stopPropagation();updateJoystick(e)
+},{passive:false});
+joystick?.addEventListener('pointerup',e=>{if(e.pointerId===manualMove.pointerId)resetJoystick()},{passive:false});
+joystick?.addEventListener('pointercancel',resetJoystick,{passive:false});
+
 function focusForCamera(now){
  if(camMode==='follow'){
    if(followId==='PLAYER')return player.position.clone();
@@ -1109,17 +1213,25 @@ function focusForCamera(now){
    if(eventFocus&&now<eventFocusUntil)return eventFocus.clone();
    const important=personMap.get('C0001'),t=(now/1000)%36;
    if(state.player.awakened&&t<9)return player.position.clone();
-   if(t<18)return LOC.field.clone();if(t<27)return important.position.clone();return LOC.center.clone()
+   if(t<18)return LOC.field.clone();if(t<27&&important)return important.position.clone();return LOC.center.clone()
  }
  return autoFocus.clone()
 }
 function updateCamera(now){
  const target=focusForCamera(now);
- if(camMode!=='free')autoFocus.lerp(target,.045);
- if(camMode==='auto'){yaw+=.00007*Math.min(5,state.speed||1);pitch=THREE.MathUtils.lerp(pitch,.78,.015);distance=THREE.MathUtils.lerp(distance,state.player.awakened?31:38,.02)}
- if(camMode==='follow')distance=THREE.MathUtils.lerp(distance,selectedMonster?13:16,.03);
- const cp=Math.cos(pitch),sp=Math.sin(pitch),off=new THREE.Vector3(Math.sin(yaw)*cp*distance,6+sp*distance*.72,Math.cos(yaw)*cp*distance);
- camera.position.lerp(autoFocus.clone().add(off),.11);camera.lookAt(autoFocus.clone().add(new THREE.Vector3(0,1.15,0)))
+ if(camMode!=='free')autoFocus.lerp(target,.075);
+ if(camMode==='auto'){
+   yaw+=.000055*Math.min(5,state.speed||1);
+   pitch=THREE.MathUtils.lerp(pitch,.72,.012);
+   distance=THREE.MathUtils.lerp(distance,CAMERA_DEFAULT_DISTANCE,.012)
+ }
+ distance=clampCameraDistance(distance);
+ const cp=Math.cos(pitch),sp=Math.sin(pitch);
+ const off=new THREE.Vector3(Math.sin(yaw)*cp*distance,Math.max(12,5+sp*distance*.76),Math.cos(yaw)*cp*distance);
+ const desired=autoFocus.clone().add(off);
+ camera.position.lerp(desired,.13);
+ camera.position.y=Math.max(camera.position.y,9.5);
+ camera.lookAt(autoFocus.clone().add(new THREE.Vector3(0,1.05,0)))
 }
 
 // ---------- SIMULATION ----------
@@ -1327,8 +1439,18 @@ applyHud();
 // menu/events
 $('menuBtn').onclick=()=>{$('sheet').classList.remove('hidden');renderUI()};$('closeSheet').onclick=()=>$('sheet').classList.add('hidden');$('sheet').addEventListener('click',e=>{if(e.target===$('sheet'))$('sheet').classList.add('hidden')});document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tabpage').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('tab-'+b.dataset.tab).classList.add('active');if(b.dataset.tab==='novel')renderNovel()});document.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{state.speed=Number(b.dataset.speed);state.running=state.speed>0;uiDirty=true;renderUI();save()});$('novelBtn').onclick=()=>download(`문명_감나무뜰_세계력_${state.year}년_${state.day}일.txt`,novelText('healing'));$('refreshNovel').onclick=renderNovel;$('novelStyle').onchange=renderNovel;$('downloadNovel').onclick=()=>download(`문명_감나무뜰_소설_${state.year}년_${state.day}일.txt`,novelText($('novelStyle').value));$('downloadChronicle').onclick=()=>download(`감나무뜰_원본연대기_${state.year}년_${state.day}일.txt`,chronicleText());$('resetBtn').onclick=()=>{if(confirm('모든 진행 기록을 지우고 세계력 0년 1일부터 다시 시작할까요?')){localStorage.removeItem(KEY);location.reload()}};
 
-let uiDirty=true,lastUiRender=0;let last=performance.now();function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;updateSim(dt);updatePeople(dt,now);updatePlayer(dt,now);updateMonsters(dt,now);updateCamera(now);flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3;drawMini();if(uiDirty&&now-lastUiRender>360){renderUI();lastUiRender=now}if((now|0)%300<18){updatePlayerHud();if(selectedBrainId)renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId));}renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+let uiDirty=true,lastUiRender=0;let last=performance.now();let viewportWatch=0;
+function loop(now){const dt=Math.min(.04,(now-last)/1000);last=now;updateSim(dt);updatePeople(dt,now);updatePlayer(dt,now);updateMonsters(dt,now);updateCamera(now);flame.scale.y=.88+Math.sin(now*.012)*.14;fireLight.intensity=14+Math.sin(now*.02)*3;drawMini();if(now-viewportWatch>900){resizeWorld();viewportWatch=now}if(uiDirty&&now-lastUiRender>360){renderUI();lastUiRender=now}if((now|0)%300<18){updatePlayerHud();if(selectedBrainId)renderBrainPanel(state.residents.find(r=>r.id===selectedBrainId));}renderer.render(scene,camera);requestAnimationFrame(loop)}requestAnimationFrame(loop);
+let resizeTimer=0;
+function scheduleResize(){
+ clearTimeout(resizeTimer);resizeWorld(true);
+ resizeTimer=setTimeout(()=>resizeWorld(true),180)
+}
+addEventListener('resize',scheduleResize,{passive:true});
+addEventListener('orientationchange',()=>{scheduleResize();setTimeout(()=>resizeWorld(true),420)},{passive:true});
+window.visualViewport?.addEventListener('resize',scheduleResize,{passive:true});
+window.visualViewport?.addEventListener('scroll',scheduleResize,{passive:true});
+if(window.ResizeObserver)new ResizeObserver(()=>resizeWorld()).observe(gameRoot);
 updateLifeStages();state.demography.children=state.residents.filter(r=>r.age<16).length;
 {const score=civilizationScore();let f=CIV_LEVELS[0];for(const lv of CIV_LEVELS)if(score>=lv.score)f=lv;state.civ.levelName=f.name;state.civ.level=CIV_LEVELS.indexOf(f)}
 syncVillageVisuals(false);renderUI();setTimeout(()=>$('loading').classList.add('hidden'),450);setInterval(save,5000);
